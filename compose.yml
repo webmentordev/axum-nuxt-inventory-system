@@ -1,0 +1,12 @@
+services:
+  inventory_db:
+    image: postgres:latest
+    restart: always
+    environment:
+      POSTGRES_DB: inventory_db
+      POSTGRES_USER: inventory_user
+      POSTGRES_PASSWORD: 'mypassword123'
+    ports:
+      - 127.0.0.1:5466:5432
+    volumes:
+      - ./db_inventory:/var/lib/postgresql
