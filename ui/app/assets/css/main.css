@@ -1,0 +1,10 @@
+@import "tailwindcss";
+
+@theme {
+    --color-navy: #062B5B;
+    --color-orange: #F9A900;
+}
+
+body {
+    @apply bg-white text-slate-800;
+}
