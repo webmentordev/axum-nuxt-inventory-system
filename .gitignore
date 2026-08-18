@@ -1,3 +1,5 @@
 /target
 /db_inventory
 .env
+/uploads
+/inventory

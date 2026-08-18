@@ -1,6 +1,18 @@
-use chrono::{DateTime, Utc};
+use argon2::{
+    Argon2,
+    password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString, rand_core::OsRng},
+};
+use axum::{
+    Extension, Json,
+    extract::{Path, State},
+    http::StatusCode,
+};
+use chrono::{DateTime, Duration, Utc};
+use jsonwebtoken::{EncodingKey, Header, encode};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
+use crate::AppState;
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct User {
@@ -70,9 +82,207 @@ pub struct UpdateUser {
 }
 
 // For JWT claims (jsonwebtoken)
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Claims {
     pub sub: Uuid, // user id
     pub is_admin: bool,
     pub exp: i64, // expiry timestamp
+}
+
+pub async fn get_users(State(state): State<AppState>) -> Result<Json<Vec<UserPublic>>, StatusCode> {
+    let users = sqlx::query_as!(
+        User,
+        r#"SELECT id, name, email, password_hash, is_admin, is_active, last_login_at, created_at, updated_at
+           FROM users
+           ORDER BY created_at DESC"#
+    )
+    .fetch_all(&state.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let users = users.into_iter().map(UserPublic::from).collect();
+
+    Ok(Json(users))
+}
+
+pub async fn register_user(
+    State(state): State<AppState>,
+    Json(payload): Json<RegisterUser>,
+) -> Result<(StatusCode, Json<UserPublic>), StatusCode> {
+    let salt = SaltString::generate(&mut OsRng);
+    let password_hash = Argon2::default()
+        .hash_password(payload.password.as_bytes(), &salt)
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .to_string();
+
+    let mut tx = state
+        .db
+        .begin()
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    sqlx::query!("LOCK TABLE users IN SHARE ROW EXCLUSIVE MODE")
+        .execute(&mut *tx)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let existing_count = sqlx::query_scalar!("SELECT COUNT(*) FROM users")
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .unwrap_or(0);
+
+    let is_admin = existing_count == 0;
+
+    let user = sqlx::query_as!(
+        User,
+        r#"INSERT INTO users (name, email, password_hash, is_admin)
+           VALUES ($1, $2, $3, $4)
+           RETURNING id, name, email, password_hash, is_admin, is_active, last_login_at, created_at, updated_at"#,
+        payload.name,
+        payload.email,
+        password_hash,
+        is_admin
+    )
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|err| match &err {
+        sqlx::Error::Database(db_err) if db_err.code().as_deref() == Some("23505") => {
+            StatusCode::CONFLICT
+        }
+        _ => StatusCode::INTERNAL_SERVER_ERROR,
+    })?;
+
+    tx.commit()
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    Ok((StatusCode::CREATED, Json(UserPublic::from(user))))
+}
+
+pub async fn login_user(
+    State(state): State<AppState>,
+    Json(payload): Json<LoginUser>,
+) -> Result<Json<serde_json::Value>, StatusCode> {
+    let user = sqlx::query_as!(
+        User,
+        r#"SELECT id, name, email, password_hash, is_admin, is_active, last_login_at, created_at, updated_at
+           FROM users
+           WHERE email = $1"#,
+        payload.email
+    )
+    .fetch_optional(&state.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+    .ok_or(StatusCode::UNAUTHORIZED)?;
+
+    if !user.is_active {
+        return Err(StatusCode::FORBIDDEN);
+    }
+
+    let parsed_hash =
+        PasswordHash::new(&user.password_hash).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    Argon2::default()
+        .verify_password(payload.password.as_bytes(), &parsed_hash)
+        .map_err(|_| StatusCode::UNAUTHORIZED)?;
+
+    sqlx::query!(
+        "UPDATE users SET last_login_at = NOW() WHERE id = $1",
+        user.id
+    )
+    .execute(&state.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let exp = (Utc::now() + Duration::hours(24)).timestamp();
+    let claims = Claims {
+        sub: user.id,
+        is_admin: user.is_admin,
+        exp,
+    };
+
+    let token = encode(
+        &Header::default(),
+        &claims,
+        &EncodingKey::from_secret(state.jwt_secret.as_bytes()),
+    )
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    Ok(Json(serde_json::json!({
+        "token": token,
+        "user": UserPublic::from(user)
+    })))
+}
+
+pub async fn get_user(
+    State(state): State<AppState>,
+    Path(uuid): Path<Uuid>,
+) -> Result<Json<UserPublic>, StatusCode> {
+    let user = sqlx::query_as!(
+        User,
+        r#"SELECT id, name, email, password_hash, is_admin, is_active, last_login_at, created_at, updated_at
+           FROM users
+           WHERE id = $1"#,
+        uuid
+    )
+    .fetch_optional(&state.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+    .ok_or(StatusCode::NOT_FOUND)?;
+
+    Ok(Json(UserPublic::from(user)))
+}
+
+pub async fn update_user(
+    State(state): State<AppState>,
+    Path(uuid): Path<Uuid>,
+    Json(payload): Json<UpdateUser>,
+) -> Result<Json<UserPublic>, StatusCode> {
+    let user = sqlx::query_as!(
+        User,
+        r#"UPDATE users
+           SET name = COALESCE($1, name),
+               email = COALESCE($2, email),
+               is_admin = COALESCE($3, is_admin),
+               is_active = COALESCE($4, is_active),
+               updated_at = NOW()
+           WHERE id = $5
+           RETURNING id, name, email, password_hash, is_admin, is_active, last_login_at, created_at, updated_at"#,
+        payload.name,
+        payload.email,
+        payload.is_admin,
+        payload.is_active,
+        uuid
+    )
+    .fetch_optional(&state.db)
+    .await
+    .map_err(|err| match &err {
+        sqlx::Error::Database(db_err) if db_err.code().as_deref() == Some("23505") => {
+            StatusCode::CONFLICT
+        }
+        _ => StatusCode::INTERNAL_SERVER_ERROR,
+    })?
+    .ok_or(StatusCode::NOT_FOUND)?;
+
+    Ok(Json(UserPublic::from(user)))
+}
+
+pub async fn delete_user(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(uuid): Path<Uuid>,
+) -> Result<StatusCode, StatusCode> {
+    if claims.sub == uuid {
+        return Err(StatusCode::FORBIDDEN);
+    }
+    let result = sqlx::query!("DELETE FROM users WHERE id = $1", uuid)
+        .execute(&state.db)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    if result.rows_affected() == 0 {
+        return Err(StatusCode::NOT_FOUND);
+    }
+    Ok(StatusCode::NO_CONTENT)
 }
