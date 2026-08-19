@@ -20,7 +20,7 @@ pub struct User {
     pub name: String,
     pub email: String,
 
-    #[serde(skip_serializing)] // never send the hash back in API responses
+    #[serde(skip_serializing)]
     pub password_hash: String,
 
     pub is_admin: bool,
@@ -32,7 +32,6 @@ pub struct User {
     pub updated_at: DateTime<Utc>,
 }
 
-// Public-safe version to return from API responses (no password_hash at all)
 #[derive(Debug, Clone, Serialize, sqlx::FromRow)]
 pub struct UserPublic {
     pub id: Uuid,
@@ -58,13 +57,11 @@ impl From<User> for UserPublic {
     }
 }
 
-// ---------- Request DTOs ----------
-
 #[derive(Debug, Deserialize)]
 pub struct RegisterUser {
     pub name: String,
     pub email: String,
-    pub password: String, // plaintext in, hashed before insert — never stored raw
+    pub password: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -81,12 +78,11 @@ pub struct UpdateUser {
     pub is_active: Option<bool>,
 }
 
-// For JWT claims (jsonwebtoken)
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Claims {
-    pub sub: Uuid, // user id
+    pub sub: Uuid,
     pub is_admin: bool,
-    pub exp: i64, // expiry timestamp
+    pub exp: i64,
 }
 
 pub async fn get_users(State(state): State<AppState>) -> Result<Json<Vec<UserPublic>>, StatusCode> {

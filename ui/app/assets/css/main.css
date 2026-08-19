@@ -3,6 +3,19 @@
 @theme {
     --color-navy: #062B5B;
     --color-orange: #F9A900;
+    --color-dark: #0a0a0a;
+    --color-dark-100: #121212;
+    --color-dark-200: #1a1a1a;
+    --color-dark-300: #232323;
+    --color-dark-400: #2e2e2e;
+
+    --color-lime-main: #a3e635;
+    --color-lime-hover: #bef264;
+    --color-lime-active: #84cc16;
+    --color-lime-dim: #4d7c0f;
+    --color-lime-bg: rgba(163, 230, 53, 0.10);
+    --color-lime-bg-strong: rgba(163, 230, 53, 0.18);
+    --color-lime-glow: rgba(163, 230, 53, 0.45);
 }
 
 body {

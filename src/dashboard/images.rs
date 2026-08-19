@@ -22,14 +22,6 @@ pub struct Image {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct UpdateImage {
-    pub product_id: Option<Uuid>,
-    pub category_id: Option<Uuid>,
-    pub sub_category_id: Option<Uuid>,
-    pub name: Option<String>,
-}
-
 const UPLOAD_DIR: &str = "uploads/images";
 
 pub async fn create_image(
@@ -166,24 +158,115 @@ pub async fn get_image(
 pub async fn update_image(
     State(state): State<AppState>,
     Path(uuid): Path<Uuid>,
-    Json(payload): Json<UpdateImage>,
+    mut multipart: Multipart,
 ) -> Result<Json<Image>, StatusCode> {
-    let image = sqlx::query_as!(
+    let existing = sqlx::query_as!(
         Image,
-        r#"UPDATE images
-           SET product_id = COALESCE($1, product_id),
-               category_id = COALESCE($2, category_id),
-               sub_category_id = COALESCE($3, sub_category_id),
-               name = COALESCE($4, name)
-           WHERE id = $5
-           RETURNING id, product_id, category_id, sub_category_id, name, file_path, created_at"#,
-        payload.product_id,
-        payload.category_id,
-        payload.sub_category_id,
-        payload.name,
+        r#"SELECT id, product_id, category_id, sub_category_id, name, file_path, created_at
+           FROM images
+           WHERE id = $1"#,
         uuid
     )
     .fetch_optional(&state.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+    .ok_or(StatusCode::NOT_FOUND)?;
+
+    let mut product_id: Option<Uuid> = existing.product_id;
+    let mut category_id: Option<Uuid> = existing.category_id;
+    let mut sub_category_id: Option<Uuid> = existing.sub_category_id;
+    let mut name: String = existing.name.clone();
+    let mut new_file_bytes: Option<Vec<u8>> = None;
+    let mut extension = String::from("bin");
+
+    while let Some(field) = multipart
+        .next_field()
+        .await
+        .map_err(|_| StatusCode::BAD_REQUEST)?
+    {
+        let field_name = field.name().unwrap_or("").to_string();
+
+        match field_name.as_str() {
+            "product_id" => {
+                let text = field.text().await.map_err(|_| StatusCode::BAD_REQUEST)?;
+                product_id = if text.is_empty() {
+                    None
+                } else {
+                    Some(Uuid::parse_str(&text).map_err(|_| StatusCode::BAD_REQUEST)?)
+                };
+            }
+            "category_id" => {
+                let text = field.text().await.map_err(|_| StatusCode::BAD_REQUEST)?;
+                category_id = if text.is_empty() {
+                    None
+                } else {
+                    Some(Uuid::parse_str(&text).map_err(|_| StatusCode::BAD_REQUEST)?)
+                };
+            }
+            "sub_category_id" => {
+                let text = field.text().await.map_err(|_| StatusCode::BAD_REQUEST)?;
+                sub_category_id = if text.is_empty() {
+                    None
+                } else {
+                    Some(Uuid::parse_str(&text).map_err(|_| StatusCode::BAD_REQUEST)?)
+                };
+            }
+            "name" => {
+                name = field.text().await.map_err(|_| StatusCode::BAD_REQUEST)?;
+            }
+            "file" => {
+                if let Some(filename) = field.file_name() {
+                    if let Some(ext) = FsPath::new(filename).extension() {
+                        extension = ext.to_string_lossy().to_string();
+                    }
+                }
+                let data = field.bytes().await.map_err(|_| StatusCode::BAD_REQUEST)?;
+                new_file_bytes = Some(data.to_vec());
+            }
+            _ => {}
+        }
+    }
+
+    let file_path = if let Some(bytes) = new_file_bytes {
+        fs::create_dir_all(UPLOAD_DIR)
+            .await
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+        let file_name = format!("{}.{}", Uuid::new_v4(), extension);
+        let new_path = format!("{UPLOAD_DIR}/{file_name}");
+
+        let mut file = fs::File::create(&new_path)
+            .await
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        file.write_all(&bytes)
+            .await
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+        let _ = fs::remove_file(&existing.file_path).await;
+
+        new_path
+    } else {
+        existing.file_path.clone()
+    };
+
+    let image = sqlx::query_as!(
+        Image,
+        r#"UPDATE images
+           SET product_id = $1,
+               category_id = $2,
+               sub_category_id = $3,
+               name = $4,
+               file_path = $5
+           WHERE id = $6
+           RETURNING id, product_id, category_id, sub_category_id, name, file_path, created_at"#,
+        product_id,
+        category_id,
+        sub_category_id,
+        name,
+        file_path,
+        uuid
+    )
+    .fetch_one(&state.db)
     .await
     .map_err(|err| match &err {
         sqlx::Error::Database(db_err) if db_err.code().as_deref() == Some("23503") => {
@@ -193,8 +276,7 @@ pub async fn update_image(
             StatusCode::BAD_REQUEST
         }
         _ => StatusCode::INTERNAL_SERVER_ERROR,
-    })?
-    .ok_or(StatusCode::NOT_FOUND)?;
+    })?;
 
     Ok(Json(image))
 }
