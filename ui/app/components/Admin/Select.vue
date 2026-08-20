@@ -33,9 +33,6 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick } from 'vue'
-import { onClickOutside } from '@vueuse/core'
-
 const props = defineProps({
     modelValue: {
         type: [String, Number, null],

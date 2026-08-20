@@ -16,8 +16,6 @@
 </template>
 
 <script setup>
-import { watch, onBeforeUnmount } from 'vue'
-
 const props = defineProps({
     modelValue: {
         type: Boolean,
