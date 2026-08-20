@@ -1,5 +1,6 @@
 use crate::auth::*;
 use crate::dashboard::barcodes::*;
+use crate::dashboard::brands::*;
 use crate::dashboard::categories::*;
 use crate::dashboard::contacts::*;
 use crate::dashboard::images::*;
@@ -94,6 +95,13 @@ pub async fn init_route(pool: PgPool, jwt_secret: String) -> Result<Router> {
         .route("/", get(get_contacts))
         .route("/{uuid}", delete(delete_contact));
 
+    let brands = Router::new()
+        .route("/", get(get_brands).post(create_brand))
+        .route(
+            "/{uuid}",
+            get(get_brand).patch(update_brand).delete(delete_brand),
+        );
+
     let api_routes = Router::new()
         .nest("/products", product)
         .nest("/categories", categories)
@@ -103,6 +111,7 @@ pub async fn init_route(pool: PgPool, jwt_secret: String) -> Result<Router> {
         .nest("/barcodes", barcodes)
         .nest("/users", users_protected)
         .nest("/contacts", contacts_protected)
+        .nest("/brands", brands)
         .layer(axum_middleware::from_fn_with_state(
             state.clone(),
             require_admin,

@@ -1,4 +1,5 @@
 pub mod barcodes;
+pub mod brands;
 pub mod categories;
 pub mod contacts;
 pub mod images;

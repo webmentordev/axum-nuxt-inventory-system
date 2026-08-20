@@ -1,3 +1,4 @@
+-- Add migration script here
 CREATE TYPE barcode_type AS ENUM ('code128', 'ean13', 'upc_a', 'qr');
 
 CREATE TABLE

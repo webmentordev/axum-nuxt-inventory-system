@@ -8,13 +8,14 @@ use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::AppState;
+use crate::{AppState, utils::slugify};
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct Product {
     pub id: Uuid,
-    pub category_id: Uuid,
+    pub category_id: Option<Uuid>,
     pub sub_category_id: Option<Uuid>,
+    pub brand_id: Option<Uuid>,
 
     pub name: String,
     pub slug: String,
@@ -45,7 +46,8 @@ pub struct Product {
 #[derive(Debug, Deserialize)]
 pub struct CreateProduct {
     pub category_id: Uuid,
-    pub sub_category_id: Option<Uuid>,
+    pub sub_category_id: Uuid,
+    pub brand_id: Uuid,
     pub name: String,
     pub sku: String,
     pub brand: Option<String>,
@@ -67,6 +69,7 @@ pub struct CreateProduct {
 pub struct UpdateProduct {
     pub category_id: Option<Uuid>,
     pub sub_category_id: Option<Uuid>,
+    pub brand_id: Option<Uuid>,
     pub name: Option<String>,
     pub sku: Option<String>,
     pub brand: Option<String>,
@@ -85,25 +88,10 @@ pub struct UpdateProduct {
     pub is_active: Option<bool>,
 }
 
-fn slugify(name: &str) -> String {
-    let base: String = name
-        .to_lowercase()
-        .chars()
-        .map(|c| if c.is_alphanumeric() { c } else { '-' })
-        .collect();
-
-    let base: Vec<&str> = base.split('-').filter(|s| !s.is_empty()).collect();
-    let base = base.join("-");
-
-    let suffix: u32 = rand::random_range(1000..10000);
-
-    format!("{base}-{suffix}")
-}
-
 pub async fn get_products(State(state): State<AppState>) -> Result<Json<Vec<Product>>, StatusCode> {
     let products = sqlx::query_as!(
         Product,
-        r#"SELECT id, category_id, sub_category_id, name, slug, sku, brand, model, description,
+        r#"SELECT id, category_id, sub_category_id, brand_id, name, slug, sku, brand, model, description,
                   power_rating_watts, voltage_rating, capacity_ah, warranty_months,
                   cost_price, selling_price, quantity_in_stock, reorder_level, unit,
                   image_url, is_active, created_at, updated_at
@@ -129,17 +117,18 @@ pub async fn create_product(
     let product = sqlx::query_as!(
         Product,
         r#"INSERT INTO products (
-               category_id, sub_category_id, name, slug, sku, brand, model, description,
+               category_id, sub_category_id, brand_id, name, slug, sku, brand, model, description,
                power_rating_watts, voltage_rating, capacity_ah, warranty_months,
                cost_price, selling_price, quantity_in_stock, reorder_level, unit, image_url
            )
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
-           RETURNING id, category_id, sub_category_id, name, slug, sku, brand, model, description,
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+           RETURNING id, category_id, sub_category_id, brand_id, name, slug, sku, brand, model, description,
                      power_rating_watts, voltage_rating, capacity_ah, warranty_months,
                      cost_price, selling_price, quantity_in_stock, reorder_level, unit,
                      image_url, is_active, created_at, updated_at"#,
-        payload.category_id,
-        payload.sub_category_id,
+        Some(payload.category_id),
+        Some(payload.sub_category_id),
+        Some(payload.brand_id),
         payload.name,
         slug,
         payload.sku,
@@ -178,7 +167,7 @@ pub async fn get_product(
 ) -> Result<Json<Product>, StatusCode> {
     let product = sqlx::query_as!(
         Product,
-        r#"SELECT id, category_id, sub_category_id, name, slug, sku, brand, model, description,
+        r#"SELECT id, category_id, sub_category_id, brand_id, name, slug, sku, brand, model, description,
                   power_rating_watts, voltage_rating, capacity_ah, warranty_months,
                   cost_price, selling_price, quantity_in_stock, reorder_level, unit,
                   image_url, is_active, created_at, updated_at
@@ -206,31 +195,33 @@ pub async fn update_product(
         r#"UPDATE products
            SET category_id = COALESCE($1, category_id),
                sub_category_id = COALESCE($2, sub_category_id),
-               name = COALESCE($3, name),
-               slug = COALESCE($4, slug),
-               sku = COALESCE($5, sku),
-               brand = COALESCE($6, brand),
-               model = COALESCE($7, model),
-               description = COALESCE($8, description),
-               power_rating_watts = COALESCE($9, power_rating_watts),
-               voltage_rating = COALESCE($10, voltage_rating),
-               capacity_ah = COALESCE($11, capacity_ah),
-               warranty_months = COALESCE($12, warranty_months),
-               cost_price = COALESCE($13, cost_price),
-               selling_price = COALESCE($14, selling_price),
-               quantity_in_stock = COALESCE($15, quantity_in_stock),
-               reorder_level = COALESCE($16, reorder_level),
-               unit = COALESCE($17, unit),
-               image_url = COALESCE($18, image_url),
-               is_active = COALESCE($19, is_active),
+               brand_id = COALESCE($3, brand_id),
+               name = COALESCE($4, name),
+               slug = COALESCE($5, slug),
+               sku = COALESCE($6, sku),
+               brand = COALESCE($7, brand),
+               model = COALESCE($8, model),
+               description = COALESCE($9, description),
+               power_rating_watts = COALESCE($10, power_rating_watts),
+               voltage_rating = COALESCE($11, voltage_rating),
+               capacity_ah = COALESCE($12, capacity_ah),
+               warranty_months = COALESCE($13, warranty_months),
+               cost_price = COALESCE($14, cost_price),
+               selling_price = COALESCE($15, selling_price),
+               quantity_in_stock = COALESCE($16, quantity_in_stock),
+               reorder_level = COALESCE($17, reorder_level),
+               unit = COALESCE($18, unit),
+               image_url = COALESCE($19, image_url),
+               is_active = COALESCE($20, is_active),
                updated_at = NOW()
-           WHERE id = $20
-           RETURNING id, category_id, sub_category_id, name, slug, sku, brand, model, description,
+           WHERE id = $21
+           RETURNING id, category_id, sub_category_id, brand_id, name, slug, sku, brand, model, description,
                      power_rating_watts, voltage_rating, capacity_ah, warranty_months,
                      cost_price, selling_price, quantity_in_stock, reorder_level, unit,
                      image_url, is_active, created_at, updated_at"#,
         payload.category_id,
         payload.sub_category_id,
+        payload.brand_id,
         payload.name,
         new_slug,
         payload.sku,

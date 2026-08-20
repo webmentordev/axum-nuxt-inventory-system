@@ -11,18 +11,71 @@ use uuid::Uuid;
 
 use crate::AppState;
 
+const UPLOAD_DIR: &str = "uploads/images";
+
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct Image {
     pub id: Uuid,
     pub product_id: Option<Uuid>,
     pub category_id: Option<Uuid>,
     pub sub_category_id: Option<Uuid>,
+    pub brand_id: Option<Uuid>,
     pub name: String,
     pub file_path: String,
     pub created_at: DateTime<Utc>,
 }
 
-const UPLOAD_DIR: &str = "uploads/images";
+pub trait WithFullUrl {
+    fn with_full_url(self) -> Self;
+}
+
+impl WithFullUrl for Image {
+    fn with_full_url(mut self) -> Self {
+        let mut domain =
+            std::env::var("DOMAIN").unwrap_or_else(|_| "http://127.0.0.1:7765".to_string());
+        if domain.trim().is_empty() {
+            domain = "http://127.0.0.1:7765".to_string();
+        }
+        let domain = domain.trim_end_matches('/');
+        self.file_path = format!("{domain}/{}", self.file_path);
+        self
+    }
+}
+
+pub async fn get_images(State(state): State<AppState>) -> Result<Json<Vec<Image>>, StatusCode> {
+    let images = sqlx::query_as!(
+        Image,
+        r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, created_at
+           FROM images
+           ORDER BY created_at DESC"#
+    )
+    .fetch_all(&state.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let images: Vec<Image> = images.into_iter().map(Image::with_full_url).collect();
+    Ok(Json(images))
+}
+
+pub async fn get_image(
+    State(state): State<AppState>,
+    Path(uuid): Path<Uuid>,
+) -> Result<Json<Image>, StatusCode> {
+    let image = sqlx::query_as!(
+        Image,
+        r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, created_at
+           FROM images
+           WHERE id = $1"#,
+        uuid
+    )
+    .fetch_optional(&state.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+    .ok_or(StatusCode::NOT_FOUND)?
+    .with_full_url();
+
+    Ok(Json(image))
+}
 
 pub async fn create_image(
     State(state): State<AppState>,
@@ -31,6 +84,7 @@ pub async fn create_image(
     let mut product_id: Option<Uuid> = None;
     let mut category_id: Option<Uuid> = None;
     let mut sub_category_id: Option<Uuid> = None;
+    let mut brand_id: Option<Uuid> = None;
     let mut name: Option<String> = None;
     let mut file_bytes: Option<Vec<u8>> = None;
     let mut extension = String::from("bin");
@@ -61,6 +115,12 @@ pub async fn create_image(
                 if !text.is_empty() {
                     sub_category_id =
                         Some(Uuid::parse_str(&text).map_err(|_| StatusCode::BAD_REQUEST)?);
+                }
+            }
+            "brand_id" => {
+                let text = field.text().await.map_err(|_| StatusCode::BAD_REQUEST)?;
+                if !text.is_empty() {
+                    brand_id = Some(Uuid::parse_str(&text).map_err(|_| StatusCode::BAD_REQUEST)?);
                 }
             }
             "name" => {
@@ -98,12 +158,13 @@ pub async fn create_image(
 
     let image = sqlx::query_as!(
         Image,
-        r#"INSERT INTO images (product_id, category_id, sub_category_id, name, file_path)
-           VALUES ($1, $2, $3, $4, $5)
-           RETURNING id, product_id, category_id, sub_category_id, name, file_path, created_at"#,
+        r#"INSERT INTO images (product_id, category_id, sub_category_id, brand_id, name, file_path)
+           VALUES ($1, $2, $3, $4, $5, $6)
+           RETURNING id, product_id, category_id, sub_category_id, brand_id, name, file_path, created_at"#,
         product_id,
         category_id,
         sub_category_id,
+        brand_id,
         name,
         file_path
     )
@@ -119,40 +180,8 @@ pub async fn create_image(
         _ => StatusCode::INTERNAL_SERVER_ERROR,
     })?;
 
+    let image = image.with_full_url();
     Ok((StatusCode::CREATED, Json(image)))
-}
-
-pub async fn get_images(State(state): State<AppState>) -> Result<Json<Vec<Image>>, StatusCode> {
-    let images = sqlx::query_as!(
-        Image,
-        r#"SELECT id, product_id, category_id, sub_category_id, name, file_path, created_at
-           FROM images
-           ORDER BY created_at DESC"#
-    )
-    .fetch_all(&state.db)
-    .await
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    Ok(Json(images))
-}
-
-pub async fn get_image(
-    State(state): State<AppState>,
-    Path(uuid): Path<Uuid>,
-) -> Result<Json<Image>, StatusCode> {
-    let image = sqlx::query_as!(
-        Image,
-        r#"SELECT id, product_id, category_id, sub_category_id, name, file_path, created_at
-           FROM images
-           WHERE id = $1"#,
-        uuid
-    )
-    .fetch_optional(&state.db)
-    .await
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-    .ok_or(StatusCode::NOT_FOUND)?;
-
-    Ok(Json(image))
 }
 
 pub async fn update_image(
@@ -162,7 +191,7 @@ pub async fn update_image(
 ) -> Result<Json<Image>, StatusCode> {
     let existing = sqlx::query_as!(
         Image,
-        r#"SELECT id, product_id, category_id, sub_category_id, name, file_path, created_at
+        r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, created_at
            FROM images
            WHERE id = $1"#,
         uuid
@@ -175,6 +204,7 @@ pub async fn update_image(
     let mut product_id: Option<Uuid> = existing.product_id;
     let mut category_id: Option<Uuid> = existing.category_id;
     let mut sub_category_id: Option<Uuid> = existing.sub_category_id;
+    let mut brand_id: Option<Uuid> = existing.brand_id;
     let mut name: String = existing.name.clone();
     let mut new_file_bytes: Option<Vec<u8>> = None;
     let mut extension = String::from("bin");
@@ -206,6 +236,14 @@ pub async fn update_image(
             "sub_category_id" => {
                 let text = field.text().await.map_err(|_| StatusCode::BAD_REQUEST)?;
                 sub_category_id = if text.is_empty() {
+                    None
+                } else {
+                    Some(Uuid::parse_str(&text).map_err(|_| StatusCode::BAD_REQUEST)?)
+                };
+            }
+            "brand_id" => {
+                let text = field.text().await.map_err(|_| StatusCode::BAD_REQUEST)?;
+                brand_id = if text.is_empty() {
                     None
                 } else {
                     Some(Uuid::parse_str(&text).map_err(|_| StatusCode::BAD_REQUEST)?)
@@ -255,13 +293,15 @@ pub async fn update_image(
            SET product_id = $1,
                category_id = $2,
                sub_category_id = $3,
-               name = $4,
-               file_path = $5
-           WHERE id = $6
-           RETURNING id, product_id, category_id, sub_category_id, name, file_path, created_at"#,
+               brand_id = $4,
+               name = $5,
+               file_path = $6
+           WHERE id = $7
+           RETURNING id, product_id, category_id, sub_category_id, brand_id, name, file_path, created_at"#,
         product_id,
         category_id,
         sub_category_id,
+        brand_id,
         name,
         file_path,
         uuid
@@ -278,6 +318,7 @@ pub async fn update_image(
         _ => StatusCode::INTERNAL_SERVER_ERROR,
     })?;
 
+    let image = image.with_full_url();
     Ok(Json(image))
 }
 
@@ -287,7 +328,7 @@ pub async fn delete_image(
 ) -> Result<StatusCode, StatusCode> {
     let image = sqlx::query_as!(
         Image,
-        r#"SELECT id, product_id, category_id, sub_category_id, name, file_path, created_at
+        r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, created_at
            FROM images
            WHERE id = $1"#,
         uuid
