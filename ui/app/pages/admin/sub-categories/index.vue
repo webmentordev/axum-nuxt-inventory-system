@@ -107,9 +107,6 @@
 </template>
 
 <script setup lang="js">
-import { computed } from 'vue';
-import { onClickOutside } from '@vueuse/core';
-
 definePageMeta({
     middleware: 'auth'
 });

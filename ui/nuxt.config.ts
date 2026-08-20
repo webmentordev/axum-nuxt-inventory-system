@@ -11,6 +11,13 @@ export default defineNuxtConfig({
     ],
   },
 
+  icon: {
+    clientBundle: {
+      scan: true,
+      sizeLimitKb: 256,
+    },
+  },
+
   runtimeConfig: {
     apiUrl: '',
   },
