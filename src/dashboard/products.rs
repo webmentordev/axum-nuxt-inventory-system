@@ -8,6 +8,7 @@ use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use crate::dashboard::products_seo::ProductSeo;
 use crate::{AppState, utils::slugify};
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
@@ -88,7 +89,75 @@ pub struct UpdateProduct {
     pub is_active: Option<bool>,
 }
 
-pub async fn get_products(State(state): State<AppState>) -> Result<Json<Vec<Product>>, StatusCode> {
+#[derive(Debug, Clone, Serialize)]
+pub struct ProductWithSeo {
+    pub id: Uuid,
+    pub category_id: Option<Uuid>,
+    pub sub_category_id: Option<Uuid>,
+    pub brand_id: Option<Uuid>,
+
+    pub name: String,
+    pub slug: String,
+    pub sku: String,
+    pub brand: Option<String>,
+    pub model: Option<String>,
+    pub description: Option<String>,
+
+    pub power_rating_watts: Option<Decimal>,
+    pub voltage_rating: Option<Decimal>,
+    pub capacity_ah: Option<Decimal>,
+    pub warranty_months: Option<i16>,
+
+    pub cost_price: Decimal,
+    pub selling_price: Decimal,
+
+    pub quantity_in_stock: i32,
+    pub reorder_level: i32,
+    pub unit: String,
+
+    pub image_url: Option<String>,
+
+    pub is_active: bool,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+
+    pub seo: Option<ProductSeo>,
+}
+
+impl ProductWithSeo {
+    fn from_product(p: Product, seo: Option<ProductSeo>) -> Self {
+        Self {
+            id: p.id,
+            category_id: p.category_id,
+            sub_category_id: p.sub_category_id,
+            brand_id: p.brand_id,
+            name: p.name,
+            slug: p.slug,
+            sku: p.sku,
+            brand: p.brand,
+            model: p.model,
+            description: p.description,
+            power_rating_watts: p.power_rating_watts,
+            voltage_rating: p.voltage_rating,
+            capacity_ah: p.capacity_ah,
+            warranty_months: p.warranty_months,
+            cost_price: p.cost_price,
+            selling_price: p.selling_price,
+            quantity_in_stock: p.quantity_in_stock,
+            reorder_level: p.reorder_level,
+            unit: p.unit,
+            image_url: p.image_url,
+            is_active: p.is_active,
+            created_at: p.created_at,
+            updated_at: p.updated_at,
+            seo,
+        }
+    }
+}
+
+pub async fn get_products(
+    State(state): State<AppState>,
+) -> Result<Json<Vec<ProductWithSeo>>, StatusCode> {
     let products = sqlx::query_as!(
         Product,
         r#"SELECT id, category_id, sub_category_id, brand_id, name, slug, sku, brand, model, description,
@@ -102,7 +171,65 @@ pub async fn get_products(State(state): State<AppState>) -> Result<Json<Vec<Prod
     .await
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    Ok(Json(products))
+    let product_ids: Vec<Uuid> = products.iter().map(|p| p.id).collect();
+
+    let seo_rows = sqlx::query_as!(
+        ProductSeo,
+        r#"SELECT id, product_id, meta_title, meta_description, meta_keywords,
+                  og_title, og_description, og_image_url, canonical_url, focus_keyword,
+                  created_at, updated_at
+           FROM products_seo
+           WHERE product_id = ANY($1)"#,
+        &product_ids
+    )
+    .fetch_all(&state.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let result = products
+        .into_iter()
+        .map(|p| {
+            let seo = seo_rows.iter().find(|s| s.product_id == p.id).cloned();
+            ProductWithSeo::from_product(p, seo)
+        })
+        .collect();
+
+    Ok(Json(result))
+}
+
+pub async fn get_product(
+    State(state): State<AppState>,
+    Path(uuid): Path<Uuid>,
+) -> Result<Json<ProductWithSeo>, StatusCode> {
+    let product = sqlx::query_as!(
+        Product,
+        r#"SELECT id, category_id, sub_category_id, brand_id, name, slug, sku, brand, model, description,
+                  power_rating_watts, voltage_rating, capacity_ah, warranty_months,
+                  cost_price, selling_price, quantity_in_stock, reorder_level, unit,
+                  image_url, is_active, created_at, updated_at
+           FROM products
+           WHERE id = $1"#,
+        uuid
+    )
+    .fetch_optional(&state.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+    .ok_or(StatusCode::NOT_FOUND)?;
+
+    let seo = sqlx::query_as!(
+        ProductSeo,
+        r#"SELECT id, product_id, meta_title, meta_description, meta_keywords,
+                  og_title, og_description, og_image_url, canonical_url, focus_keyword,
+                  created_at, updated_at
+           FROM products_seo
+           WHERE product_id = $1"#,
+        uuid
+    )
+    .fetch_optional(&state.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    Ok(Json(ProductWithSeo::from_product(product, seo)))
 }
 
 pub async fn create_product(
@@ -112,7 +239,7 @@ pub async fn create_product(
     let quantity_in_stock = payload.quantity_in_stock.unwrap_or(0);
     let reorder_level = payload.reorder_level.unwrap_or(0);
     let unit = payload.unit.unwrap_or_else(|| "piece".to_string());
-    let slug = slugify(&payload.name);
+    let slug = slugify(&payload.name, true);
 
     let product = sqlx::query_as!(
         Product,
@@ -161,34 +288,12 @@ pub async fn create_product(
     Ok((StatusCode::CREATED, Json(product)))
 }
 
-pub async fn get_product(
-    State(state): State<AppState>,
-    Path(uuid): Path<Uuid>,
-) -> Result<Json<Product>, StatusCode> {
-    let product = sqlx::query_as!(
-        Product,
-        r#"SELECT id, category_id, sub_category_id, brand_id, name, slug, sku, brand, model, description,
-                  power_rating_watts, voltage_rating, capacity_ah, warranty_months,
-                  cost_price, selling_price, quantity_in_stock, reorder_level, unit,
-                  image_url, is_active, created_at, updated_at
-           FROM products
-           WHERE id = $1"#,
-        uuid
-    )
-    .fetch_optional(&state.db)
-    .await
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-    .ok_or(StatusCode::NOT_FOUND)?;
-
-    Ok(Json(product))
-}
-
 pub async fn update_product(
     State(state): State<AppState>,
     Path(uuid): Path<Uuid>,
     Json(payload): Json<UpdateProduct>,
 ) -> Result<Json<Product>, StatusCode> {
-    let new_slug = payload.name.as_ref().map(|name| slugify(name));
+    let new_slug = payload.name.as_ref().map(|name| slugify(name, true));
 
     let product = sqlx::query_as!(
         Product,

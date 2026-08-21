@@ -171,7 +171,7 @@ pub async fn create_category(
     State(state): State<AppState>,
     Json(payload): Json<CreateCategory>,
 ) -> Result<(StatusCode, Json<Category>), StatusCode> {
-    let slug = slugify(&payload.name);
+    let slug = slugify(&payload.name, false);
 
     let category = sqlx::query_as!(
         Category,
@@ -199,7 +199,7 @@ pub async fn update_category(
     Path(uuid): Path<Uuid>,
     Json(payload): Json<UpdateCategory>,
 ) -> Result<Json<Category>, StatusCode> {
-    let new_slug = payload.name.as_ref().map(|name| slugify(name));
+    let new_slug = payload.name.as_ref().map(|name| slugify(name, false));
 
     let category = sqlx::query_as!(
         Category,

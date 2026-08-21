@@ -18,7 +18,9 @@ export const useAuthFetch = () => {
         } catch (error) {
             if (error.status === 401 || error.status === 403) {
                 const { removeToken } = useAuthToken();
+                const { removeUser } = useAuthUser();
                 removeToken();
+                removeUser();
                 await navigateTo('/login');
             }
             throw error;

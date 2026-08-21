@@ -4,7 +4,7 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
   css: ['~/assets/css/main.css'],
-  modules: ['@nuxt/icon', '@vueuse/nuxt'],
+  modules: ['@nuxt/icon', '@vueuse/nuxt', '@nuxtjs/turnstile'],
   vite: {
     plugins: [
       tailwindcss(),
@@ -18,8 +18,15 @@ export default defineNuxtConfig({
     },
   },
 
+  turnstile: {
+    siteKey: '1x00000000000000000000AA',
+    addValidateEndpoint: true
+  },
   runtimeConfig: {
     apiUrl: '',
+    turnstile: {
+      secretKey: '1x0000000000000000000000000000000AA',
+    },
   },
 
   app: {

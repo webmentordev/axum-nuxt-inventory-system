@@ -5,10 +5,13 @@
                 <h1 class="text-xl font-bold text-white">Sub-categories</h1>
                 <p class="text-sm text-zinc-500 mt-1">{{ subCategories.length }} total</p>
             </div>
-            <NuxtLink to="/admin/sub-categories/create"
-                class="px-4 py-2 rounded-md text-sm font-semibold bg-lime-main text-dark hover:bg-lime-hover transition-colors">
-                Add sub-category
-            </NuxtLink>
+            <div class="flex items-center">
+                <AdminButton @click="fetchSubCategories()" icon="tabler:refresh">Refresh</AdminButton>
+                <NuxtLink to="/admin/sub-categories/create"
+                    class="px-4 py-2 rounded-md text-sm font-semibold bg-lime-main text-dark hover:bg-lime-hover transition-colors ml-2">
+                    Add sub-category
+                </NuxtLink>
+            </div>
         </div>
 
         <div class="mb-4 max-w-sm">
@@ -26,6 +29,8 @@
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Category</th>
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Products</th>
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Status</th>
+                        <th class="text-left px-4 py-3 font-semibold text-zinc-400">Created</th>
+                        <th class="text-left px-4 py-3 font-semibold text-zinc-400">Updated</th>
                         <th class="text-right px-4 py-3 font-semibold text-zinc-400 w-12"></th>
                     </tr>
                 </thead>
@@ -67,6 +72,10 @@
                                 {{ subCategory.is_active ? 'Active' : 'Inactive' }}
                             </span>
                         </td>
+                        <td class="px-4 py-3 text-zinc-400 whitespace-nowrap">{{ formatDate(subCategory.created_at) }}
+                        </td>
+                        <td class="px-4 py-3 text-zinc-400 whitespace-nowrap">{{ subCategory.created_at ==
+                            subCategory.updated_at ? '-' : formatDate(subCategory.updated_at) }}</td>
                         <td class="px-4 py-3 text-right relative" :ref="(el) => setMenuRef(subCategory.id, el)">
                             <button type="button" @click="toggleMenu(subCategory.id)"
                                 class="p-1.5 rounded-md text-zinc-400 hover:text-white hover:bg-dark-300 transition-colors">
@@ -103,6 +112,9 @@
         </div>
 
         <AdminStatusCard v-model="showStatus" :type="statusType" :message="statusMessage" />
+        <AdminConfirmModal v-model="confirmOpen" title="Delete sub-category"
+            :message="`Are you sure you want to delete ${subCategoryToDelete?.name}? This cannot be undone.`"
+            @confirm="confirmDelete" />
     </section>
 </template>
 
@@ -118,10 +130,21 @@ const errors = ref({});
 const openMenuId = ref(null);
 const menuRefs = ref({});
 
+const showStatus = ref(false);
+const statusType = ref('loading');
+const statusMessage = ref('');
+
+const confirmOpen = ref(false);
+const subCategoryToDelete = ref(null);
+
+const route = useRoute();
+search.value = route.query.search || '';
+
 const filteredSubCategories = computed(() => {
     if (!search.value.trim()) return subCategories.value;
     const query = search.value.trim().toLowerCase();
     return subCategories.value.filter((subCategory) =>
+        subCategory.id.toLowerCase().includes(query) ||
         subCategory.name.toLowerCase().includes(query) ||
         subCategory.slug.toLowerCase().includes(query) ||
         (subCategory.description || '').toLowerCase().includes(query)
@@ -141,10 +164,6 @@ const activeMenuEl = computed(() => menuRefs.value[openMenuId.value] || null);
 onClickOutside(activeMenuEl, () => {
     closeMenu();
 });
-
-const showStatus = ref(false);
-const statusType = ref('loading');
-const statusMessage = ref('');
 
 async function fetchSubCategories() {
     try {
@@ -182,6 +201,7 @@ async function handleToggleActive(subCategory) {
             body: { is_active: !subCategory.is_active }
         });
         subCategory.is_active = !subCategory.is_active;
+        subCategory.updated_at = new Date().toISOString();
         statusType.value = 'success';
         statusMessage.value = subCategory.is_active ? 'Sub-category activated.' : 'Sub-category deactivated.';
     } catch (e) {
@@ -194,8 +214,16 @@ async function handleToggleActive(subCategory) {
     }
 }
 
-async function handleDelete(subCategory) {
+function handleDelete(subCategory) {
     closeMenu();
+    subCategoryToDelete.value = subCategory;
+    confirmOpen.value = true;
+}
+
+async function confirmDelete() {
+    const subCategory = subCategoryToDelete.value;
+    if (!subCategory) return;
+
     statusType.value = 'loading';
     statusMessage.value = 'Deleting sub-category...';
     showStatus.value = true;
@@ -211,10 +239,21 @@ async function handleDelete(subCategory) {
         statusType.value = 'error';
         statusMessage.value = e.statusMessage || 'Failed to delete sub-category.';
     } finally {
+        subCategoryToDelete.value = null;
         setTimeout(() => {
             showStatus.value = false;
         }, 5000);
     }
+}
+
+function formatDate(utcString) {
+    return new Date(utcString).toLocaleString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit'
+    });
 }
 
 await fetchSubCategories();

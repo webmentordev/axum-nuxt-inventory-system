@@ -5,10 +5,13 @@
                 <h1 class="text-xl font-bold text-white">Categories</h1>
                 <p class="text-sm text-zinc-500 mt-1">{{ categories.length }} total</p>
             </div>
-            <NuxtLink to="/admin/categories/create"
-                class="px-4 py-2 rounded-md text-sm font-semibold bg-lime-main text-dark hover:bg-lime-hover transition-colors">
-                Add category
-            </NuxtLink>
+            <div class="flex items-center">
+                <AdminButton @click="fetchCategories()" icon="tabler:refresh">Refresh</AdminButton>
+                <NuxtLink to="/admin/categories/create"
+                    class="px-4 py-2 rounded-md text-sm font-semibold bg-lime-main text-dark hover:bg-lime-hover transition-colors ml-2">
+                    Add category
+                </NuxtLink>
+            </div>
         </div>
 
         <div class="mb-4 max-w-sm">
@@ -26,6 +29,8 @@
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Products</th>
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Sub-categories</th>
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Status</th>
+                        <th class="text-left px-4 py-3 font-semibold text-zinc-400">Created</th>
+                        <th class="text-left px-4 py-3 font-semibold text-zinc-400">Updated</th>
                         <th class="text-right px-4 py-3 font-semibold text-zinc-400 w-12"></th>
                     </tr>
                 </thead>
@@ -60,6 +65,9 @@
                                 {{ category.is_active ? 'Active' : 'Inactive' }}
                             </span>
                         </td>
+                        <td class="px-4 py-3 text-zinc-400 whitespace-nowrap">{{ formatDate(category.created_at) }}</td>
+                        <td class="px-4 py-3 text-zinc-400 whitespace-nowrap">{{ category.created_at ==
+                            category.updated_at ? '-' : formatDate(category.updated_at) }}</td>
                         <td class="px-4 py-3 text-right relative" :ref="(el) => setMenuRef(category.id, el)">
                             <button type="button" @click="toggleMenu(category.id)"
                                 class="p-1.5 rounded-md text-zinc-400 hover:text-white hover:bg-dark-300 transition-colors">
@@ -95,6 +103,9 @@
         </div>
 
         <AdminStatusCard v-model="showStatus" :type="statusType" :message="statusMessage" />
+        <AdminConfirmModal v-model="confirmOpen" title="Delete category"
+            :message="`Are you sure you want to delete ${categoryToDelete?.name}? This cannot be undone.`"
+            @confirm="confirmDelete" />
     </section>
 </template>
 
@@ -110,10 +121,21 @@ const errors = ref({});
 const openMenuId = ref(null);
 const menuRefs = ref({});
 
+const showStatus = ref(false);
+const statusType = ref('loading');
+const statusMessage = ref('');
+
+const confirmOpen = ref(false);
+const categoryToDelete = ref(null);
+
+const route = useRoute();
+search.value = route.query.search || '';
+
 const filteredCategories = computed(() => {
     if (!search.value.trim()) return categories.value;
     const query = search.value.trim().toLowerCase();
     return categories.value.filter((category) =>
+        category.id.toLowerCase().includes(query) ||
         category.name.toLowerCase().includes(query) ||
         category.slug.toLowerCase().includes(query) ||
         (category.description || '').toLowerCase().includes(query)
@@ -134,9 +156,6 @@ onClickOutside(activeMenuEl, () => {
     closeMenu();
 });
 
-const showStatus = ref(false);
-const statusType = ref('loading');
-const statusMessage = ref('');
 
 async function fetchCategories() {
     try {
@@ -174,6 +193,7 @@ async function handleToggleActive(category) {
             body: { is_active: !category.is_active }
         });
         category.is_active = !category.is_active;
+        category.updated_at = new Date().toISOString();
         statusType.value = 'success';
         statusMessage.value = category.is_active ? 'Category activated.' : 'Category deactivated.';
     } catch (e) {
@@ -186,8 +206,16 @@ async function handleToggleActive(category) {
     }
 }
 
-async function handleDelete(category) {
+function handleDelete(category) {
     closeMenu();
+    categoryToDelete.value = category;
+    confirmOpen.value = true;
+}
+
+async function confirmDelete() {
+    const category = categoryToDelete.value;
+    if (!category) return;
+
     statusType.value = 'loading';
     statusMessage.value = 'Deleting category...';
     showStatus.value = true;
@@ -203,10 +231,21 @@ async function handleDelete(category) {
         statusType.value = 'error';
         statusMessage.value = e.statusMessage || 'Failed to delete category.';
     } finally {
+        categoryToDelete.value = null;
         setTimeout(() => {
             showStatus.value = false;
         }, 5000);
     }
+}
+
+function formatDate(utcString) {
+    return new Date(utcString).toLocaleString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit'
+    });
 }
 
 onMounted(fetchCategories);

@@ -163,7 +163,7 @@ pub async fn create_brand(
     State(state): State<AppState>,
     Json(payload): Json<CreateBrand>,
 ) -> Result<(StatusCode, Json<Brand>), StatusCode> {
-    let slug = slugify(&payload.name);
+    let slug = slugify(&payload.name, false);
 
     let brand = sqlx::query_as!(
         Brand,
@@ -191,7 +191,7 @@ pub async fn update_brand(
     Path(uuid): Path<Uuid>,
     Json(payload): Json<UpdateBrand>,
 ) -> Result<Json<Brand>, StatusCode> {
-    let new_slug = payload.name.as_ref().map(|name| slugify(name));
+    let new_slug = payload.name.as_ref().map(|name| slugify(name, false));
 
     let brand = sqlx::query_as!(
         Brand,

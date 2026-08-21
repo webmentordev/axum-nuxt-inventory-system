@@ -6,6 +6,8 @@ use crate::dashboard::contacts::*;
 use crate::dashboard::images::*;
 use crate::dashboard::orders::*;
 use crate::dashboard::products::*;
+use crate::dashboard::products_seo::*;
+use crate::dashboard::stats::*;
 use crate::dashboard::sub_categories::*;
 use crate::middleware::require_admin;
 use axum::middleware as axum_middleware;
@@ -102,6 +104,17 @@ pub async fn init_route(pool: PgPool, jwt_secret: String) -> Result<Router> {
             get(get_brand).patch(update_brand).delete(delete_brand),
         );
 
+    let stats = Router::new().route("/", get(get_dashboard_stats));
+
+    let seo = Router::new()
+        .route("/", get(get_products_seo).post(create_product_seo))
+        .route(
+            "/{uuid}",
+            get(get_product_seo)
+                .patch(update_product_seo)
+                .delete(delete_product_seo),
+        );
+
     let api_routes = Router::new()
         .nest("/products", product)
         .nest("/categories", categories)
@@ -112,6 +125,8 @@ pub async fn init_route(pool: PgPool, jwt_secret: String) -> Result<Router> {
         .nest("/users", users_protected)
         .nest("/contacts", contacts_protected)
         .nest("/brands", brands)
+        .nest("/stats", stats)
+        .nest("/seo", seo)
         .layer(axum_middleware::from_fn_with_state(
             state.clone(),
             require_admin,

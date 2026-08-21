@@ -1,4 +1,4 @@
-pub fn slugify(name: &str) -> String {
+pub fn slugify(name: &str, random: bool) -> String {
     let base: String = name
         .to_lowercase()
         .chars()
@@ -10,5 +10,8 @@ pub fn slugify(name: &str) -> String {
 
     let suffix: u32 = rand::random_range(1000..10000);
 
-    format!("{base}-{suffix}")
+    if random {
+        return format!("{base}-{suffix}");
+    }
+    format!("{base}")
 }

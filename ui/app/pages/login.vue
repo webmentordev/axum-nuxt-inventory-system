@@ -23,7 +23,6 @@
                             src="https://api.iconify.design/line-md:arrow-right.svg?color=%23ffffff" width="15">
                     </button>
 
-
                     <p class="text-para-light inline-block text-sm ml-1 mt-3">Don't have an account? <NuxtLink
                             to="/register" class="text-navy underline">Register here</NuxtLink>
                     </p>
@@ -44,6 +43,7 @@ definePageMeta({
 });
 const { authFetch } = useAuthFetch();
 const { setToken } = useAuthToken();
+const { setUser } = useAuthUser();
 
 const email = ref("");
 const password = ref("");
@@ -79,7 +79,12 @@ async function login() {
         });
         if (data) {
             setToken(data.token);
-            await navigateTo('/');
+            setUser(data.user);
+            if (data.user.is_admin == true) {
+                await navigateTo('/admin/dashboard');
+            } else {
+                await navigateTo('/');
+            }
         }
     } catch (e) {
         errors.value.message = e.statusMessage || 'Something went wrong!';

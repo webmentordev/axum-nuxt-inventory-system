@@ -5,10 +5,13 @@
                 <h1 class="text-xl font-bold text-white">Brands</h1>
                 <p class="text-sm text-zinc-500 mt-1">{{ brands.length }} total</p>
             </div>
-            <NuxtLink to="/admin/brands/create"
-                class="px-4 py-2 rounded-md text-sm font-semibold bg-lime-main text-dark hover:bg-lime-hover transition-colors">
-                Add brand
-            </NuxtLink>
+            <div class="flex items-center">
+                <AdminButton @click="fetchBrands()" icon="tabler:refresh">Refresh</AdminButton>
+                <NuxtLink to="/admin/brands/create"
+                    class="px-4 py-2 rounded-md text-sm font-semibold bg-lime-main text-dark hover:bg-lime-hover transition-colors ml-2">
+                    Add brand
+                </NuxtLink>
+            </div>
         </div>
 
         <div class="mb-4 max-w-sm">
@@ -25,6 +28,8 @@
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Description</th>
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Products</th>
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Status</th>
+                        <th class="text-left px-4 py-3 font-semibold text-zinc-400">Created</th>
+                        <th class="text-left px-4 py-3 font-semibold text-zinc-400">Updated</th>
                         <th class="text-right px-4 py-3 font-semibold text-zinc-400 w-12"></th>
                     </tr>
                 </thead>
@@ -58,6 +63,9 @@
                                 {{ brand.is_active ? 'Active' : 'Inactive' }}
                             </span>
                         </td>
+                        <td class="px-4 py-3 text-zinc-400 whitespace-nowrap">{{ formatDate(brand.created_at) }}</td>
+                        <td class="px-4 py-3 text-zinc-400 whitespace-nowrap">{{ brand.created_at ==
+                            brand.updated_at ? '-' : formatDate(brand.updated_at) }}</td>
                         <td class="px-4 py-3 text-right relative" :ref="(el) => setMenuRef(brand.id, el)">
                             <button type="button" @click="toggleMenu(brand.id)"
                                 class="p-1.5 rounded-md text-zinc-400 hover:text-white hover:bg-dark-300 transition-colors">
@@ -93,6 +101,9 @@
         </div>
 
         <AdminStatusCard v-model="showStatus" :type="statusType" :message="statusMessage" />
+        <AdminConfirmModal v-model="confirmOpen" title="Delete brand"
+            :message="`Are you sure you want to delete ${brandToDelete?.name}? This cannot be undone.`"
+            @confirm="confirmDelete" />
     </section>
 </template>
 
@@ -108,10 +119,21 @@ const errors = ref({});
 const openMenuId = ref(null);
 const menuRefs = ref({});
 
+const showStatus = ref(false);
+const statusType = ref('loading');
+const statusMessage = ref('');
+
+const confirmOpen = ref(false);
+const brandToDelete = ref(null);
+
+const route = useRoute();
+search.value = route.query.search || '';
+
 const filteredBrands = computed(() => {
     if (!search.value.trim()) return brands.value;
     const query = search.value.trim().toLowerCase();
     return brands.value.filter((brand) =>
+        brand.id.toLowerCase().includes(query) ||
         brand.name.toLowerCase().includes(query) ||
         brand.slug.toLowerCase().includes(query) ||
         (brand.description || '').toLowerCase().includes(query)
@@ -168,6 +190,7 @@ async function handleToggleActive(brand) {
             body: { is_active: !brand.is_active }
         });
         brand.is_active = !brand.is_active;
+        brand.updated_at = new Date().toISOString();
         statusType.value = 'success';
         statusMessage.value = brand.is_active ? 'Brand activated.' : 'Brand deactivated.';
     } catch (e) {
@@ -180,8 +203,16 @@ async function handleToggleActive(brand) {
     }
 }
 
-async function handleDelete(brand) {
+function handleDelete(brand) {
     closeMenu();
+    brandToDelete.value = brand;
+    confirmOpen.value = true;
+}
+
+async function confirmDelete() {
+    const brand = brandToDelete.value;
+    if (!brand) return;
+
     statusType.value = 'loading';
     statusMessage.value = 'Deleting brand...';
     showStatus.value = true;
@@ -197,15 +228,22 @@ async function handleDelete(brand) {
         statusType.value = 'error';
         statusMessage.value = e.statusMessage || 'Failed to delete brand.';
     } finally {
+        brandToDelete.value = null;
         setTimeout(() => {
             showStatus.value = false;
         }, 5000);
     }
 }
 
-const showStatus = ref(false);
-const statusType = ref('loading');
-const statusMessage = ref('');
+function formatDate(utcString) {
+    return new Date(utcString).toLocaleString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit'
+    });
+}
 
 await fetchBrands();
 </script>

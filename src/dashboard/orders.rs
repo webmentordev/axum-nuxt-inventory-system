@@ -94,7 +94,8 @@ pub struct OrderWithItems {
 }
 
 fn generate_order_number() -> String {
-    format!("ORD-{}", Uuid::new_v4().simple())
+    let number: u32 = rand::random_range(1_000_000..10_000_000);
+    number.to_string()
 }
 
 pub async fn get_orders(State(state): State<AppState>) -> Result<Json<Vec<Order>>, StatusCode> {
@@ -176,30 +177,46 @@ pub async fn create_order(
     let tax_amount = Decimal::ZERO;
     let shipping_amount = Decimal::ZERO;
     let total_amount = subtotal + tax_amount + shipping_amount;
-    let order_number = generate_order_number();
 
-    let order = sqlx::query_as!(
-        Order,
-        r#"INSERT INTO orders (order_number, customer_name, customer_email, customer_phone,
-                                shipping_address, notes, subtotal, tax_amount, shipping_amount, total_amount)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-           RETURNING id, order_number, customer_name, customer_email, customer_phone,
-                     shipping_address, status as "status: OrderStatus", subtotal, tax_amount,
-                     shipping_amount, total_amount, notes, created_at, updated_at"#,
-        order_number,
-        payload.customer_name,
-        payload.customer_email,
-        payload.customer_phone,
-        payload.shipping_address,
-        payload.notes,
-        subtotal,
-        tax_amount,
-        shipping_amount,
-        total_amount
-    )
-    .fetch_one(&mut *tx)
-    .await
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let mut order = None;
+    for _ in 0..5 {
+        let order_number = generate_order_number();
+
+        let attempt = sqlx::query_as!(
+            Order,
+            r#"INSERT INTO orders (order_number, customer_name, customer_email, customer_phone,
+                                    shipping_address, notes, subtotal, tax_amount, shipping_amount, total_amount)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+               RETURNING id, order_number, customer_name, customer_email, customer_phone,
+                         shipping_address, status as "status: OrderStatus", subtotal, tax_amount,
+                         shipping_amount, total_amount, notes, created_at, updated_at"#,
+            order_number,
+            payload.customer_name,
+            payload.customer_email,
+            payload.customer_phone,
+            payload.shipping_address,
+            payload.notes,
+            subtotal,
+            tax_amount,
+            shipping_amount,
+            total_amount
+        )
+        .fetch_one(&mut *tx)
+        .await;
+
+        match attempt {
+            Ok(o) => {
+                order = Some(o);
+                break;
+            }
+            Err(sqlx::Error::Database(db_err)) if db_err.code().as_deref() == Some("23505") => {
+                continue;
+            }
+            Err(_) => return Err(StatusCode::INTERNAL_SERVER_ERROR),
+        }
+    }
+
+    let order = order.ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
 
     let mut items = Vec::with_capacity(resolved_items.len());
 

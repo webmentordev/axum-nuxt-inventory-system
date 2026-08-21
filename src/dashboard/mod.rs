@@ -5,4 +5,6 @@ pub mod contacts;
 pub mod images;
 pub mod orders;
 pub mod products;
+pub mod products_seo;
+pub mod stats;
 pub mod sub_categories;
