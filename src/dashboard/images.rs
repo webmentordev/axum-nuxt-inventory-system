@@ -10,6 +10,7 @@ use tokio::{fs, io::AsyncWriteExt};
 use uuid::Uuid;
 
 use crate::AppState;
+use crate::utils::slugify;
 
 const UPLOAD_DIR: &str = "uploads/images";
 
@@ -42,7 +43,126 @@ impl WithFullUrl for Image {
     }
 }
 
-pub async fn get_images(State(state): State<AppState>) -> Result<Json<Vec<Image>>, StatusCode> {
+#[derive(Debug, Clone, Serialize)]
+pub struct MiniProduct {
+    pub id: Uuid,
+    pub name: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct MiniCategory {
+    pub id: Uuid,
+    pub name: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct MiniSubCategory {
+    pub id: Uuid,
+    pub name: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct MiniBrand {
+    pub id: Uuid,
+    pub name: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ImageWithDetails {
+    pub id: Uuid,
+    pub product: Option<MiniProduct>,
+    pub category: Option<MiniCategory>,
+    pub sub_category: Option<MiniSubCategory>,
+    pub brand: Option<MiniBrand>,
+    pub name: String,
+    pub file_path: String,
+    pub created_at: DateTime<Utc>,
+}
+
+async fn attach_details(
+    state: &AppState,
+    images: Vec<Image>,
+) -> Result<Vec<ImageWithDetails>, StatusCode> {
+    let product_ids: Vec<Uuid> = images.iter().filter_map(|i| i.product_id).collect();
+    let category_ids: Vec<Uuid> = images.iter().filter_map(|i| i.category_id).collect();
+    let sub_category_ids: Vec<Uuid> = images.iter().filter_map(|i| i.sub_category_id).collect();
+    let brand_ids: Vec<Uuid> = images.iter().filter_map(|i| i.brand_id).collect();
+
+    let products = sqlx::query_as!(
+        MiniProduct,
+        "SELECT id, name FROM products WHERE id = ANY($1)",
+        &product_ids
+    )
+    .fetch_all(&state.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let categories = sqlx::query_as!(
+        MiniCategory,
+        "SELECT id, name FROM categories WHERE id = ANY($1)",
+        &category_ids
+    )
+    .fetch_all(&state.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let sub_categories = sqlx::query_as!(
+        MiniSubCategory,
+        "SELECT id, name FROM sub_categories WHERE id = ANY($1)",
+        &sub_category_ids
+    )
+    .fetch_all(&state.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let brands = sqlx::query_as!(
+        MiniBrand,
+        "SELECT id, name FROM brands WHERE id = ANY($1)",
+        &brand_ids
+    )
+    .fetch_all(&state.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let result = images
+        .into_iter()
+        .map(|img| {
+            let product = img
+                .product_id
+                .and_then(|id| products.iter().find(|p| p.id == id))
+                .cloned();
+            let category = img
+                .category_id
+                .and_then(|id| categories.iter().find(|c| c.id == id))
+                .cloned();
+            let sub_category = img
+                .sub_category_id
+                .and_then(|id| sub_categories.iter().find(|s| s.id == id))
+                .cloned();
+            let brand = img
+                .brand_id
+                .and_then(|id| brands.iter().find(|b| b.id == id))
+                .cloned();
+
+            ImageWithDetails {
+                id: img.id,
+                product,
+                category,
+                sub_category,
+                brand,
+                name: img.name,
+                file_path: img.file_path,
+                created_at: img.created_at,
+            }
+        })
+        .collect();
+
+    Ok(result)
+}
+
+pub async fn get_images(
+    State(state): State<AppState>,
+) -> Result<Json<Vec<ImageWithDetails>>, StatusCode> {
     let images = sqlx::query_as!(
         Image,
         r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, created_at
@@ -54,13 +174,15 @@ pub async fn get_images(State(state): State<AppState>) -> Result<Json<Vec<Image>
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     let images: Vec<Image> = images.into_iter().map(Image::with_full_url).collect();
-    Ok(Json(images))
+    let result = attach_details(&state, images).await?;
+
+    Ok(Json(result))
 }
 
 pub async fn get_image(
     State(state): State<AppState>,
     Path(uuid): Path<Uuid>,
-) -> Result<Json<Image>, StatusCode> {
+) -> Result<Json<ImageWithDetails>, StatusCode> {
     let image = sqlx::query_as!(
         Image,
         r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, created_at
@@ -73,6 +195,12 @@ pub async fn get_image(
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
     .ok_or(StatusCode::NOT_FOUND)?
     .with_full_url();
+
+    let result = attach_details(&state, vec![image]).await?;
+    let image = result
+        .into_iter()
+        .next()
+        .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
 
     Ok(Json(image))
 }
@@ -146,7 +274,7 @@ pub async fn create_image(
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    let file_name = format!("{}.{}", Uuid::new_v4(), extension);
+    let file_name = format!("{}.{}", slugify(&name, true), extension);
     let file_path = format!("{UPLOAD_DIR}/{file_name}");
 
     let mut file = fs::File::create(&file_path)
@@ -176,6 +304,9 @@ pub async fn create_image(
         }
         sqlx::Error::Database(db_err) if db_err.code().as_deref() == Some("23514") => {
             StatusCode::BAD_REQUEST
+        }
+        sqlx::Error::Database(db_err) if db_err.code().as_deref() == Some("23505") => {
+            StatusCode::CONFLICT
         }
         _ => StatusCode::INTERNAL_SERVER_ERROR,
     })?;
@@ -314,6 +445,9 @@ pub async fn update_image(
         }
         sqlx::Error::Database(db_err) if db_err.code().as_deref() == Some("23514") => {
             StatusCode::BAD_REQUEST
+        }
+        sqlx::Error::Database(db_err) if db_err.code().as_deref() == Some("23505") => {
+            StatusCode::CONFLICT
         }
         _ => StatusCode::INTERNAL_SERVER_ERROR,
     })?;

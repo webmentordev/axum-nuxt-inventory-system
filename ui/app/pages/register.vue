@@ -1,5 +1,5 @@
 <template>
-    <div class="w-full h-screen">
+    <div class="w-full h-[80vh]">
         <div class="w-full h-full flex items-center justify-center">
             <div class="flex flex-col max-w-87.5 w-full">
                 <div class="flex items-center m-auto mb-6">

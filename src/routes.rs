@@ -38,6 +38,7 @@ pub async fn init_route(pool: PgPool, jwt_secret: String) -> Result<Router> {
 
     let product = Router::new()
         .route("/", get(get_products).post(create_product))
+        .route("/list", get(get_products_list))
         .route(
             "/{uuid}",
             get(get_product)

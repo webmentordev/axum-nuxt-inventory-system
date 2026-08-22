@@ -6,8 +6,12 @@
             <span :class="selectedLabel ? 'text-zinc-200' : 'text-zinc-500'">
                 {{ selectedLabel || placeholder }}
             </span>
-            <Icon name="mdi:chevron-down" size="18" class="text-zinc-500 shrink-0 transition-transform"
-                :class="{ 'rotate-180': isOpen }" />
+            <span class="flex items-center gap-1 shrink-0">
+                <Icon v-if="modelValue !== null" name="mdi:close" size="16"
+                    class="text-zinc-500 hover:text-white transition-colors" @click.stop="clearSelection" />
+                <Icon name="mdi:chevron-down" size="18" class="text-zinc-500 transition-transform"
+                    :class="{ 'rotate-180': isOpen }" />
+            </span>
         </button>
 
         <div v-if="isOpen"
@@ -33,6 +37,9 @@
 </template>
 
 <script setup>
+import { ref, computed, nextTick } from 'vue'
+import { onClickOutside } from '@vueuse/core'
+
 const props = defineProps({
     modelValue: {
         type: [String, Number, null],
@@ -80,6 +87,11 @@ function toggleOpen() {
 
 function selectOption(option) {
     emit('update:modelValue', option.value)
+    isOpen.value = false
+}
+
+function clearSelection() {
+    emit('update:modelValue', null)
     isOpen.value = false
 }
 </script>

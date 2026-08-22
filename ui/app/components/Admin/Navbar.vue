@@ -1,5 +1,8 @@
 <template>
     <nav class="flex flex-col justify-between w-full p-2 h-full">
+        <div class="w-full mb-3 pb-3 border-b border-dark-400">
+            <img src="/kaleem-solar-logo-t-4.png" width="160px" class="justify-center flex w-fit">
+        </div>
         <div class="w-full flex flex-col gap-1 h-full">
             <NuxtLink to="/"
                 class="w-full flex items-center px-3 py-2 rounded-md text-sm font-semibold text-zinc-300 transition-colors hover:text-white hover:bg-dark-300"
@@ -36,6 +39,12 @@
                 active-class="!text-lime-main !bg-lime-bg !border !border-lime-main/30">
                 <Icon name="material-symbols:filter-list-rounded" size="20" />
                 <strong class="ml-1">Sub categories</strong>
+            </NuxtLink>
+            <NuxtLink to="/admin/images"
+                class="w-full flex items-center px-3 py-2 rounded-md text-sm font-semibold text-zinc-300 transition-colors hover:text-white hover:bg-dark-300"
+                active-class="!text-lime-main !bg-lime-bg !border !border-lime-main/30">
+                <Icon name="tabler:image-generation" size="20" />
+                <strong class="ml-1">Images</strong>
             </NuxtLink>
             <NuxtLink to="/admin/contacts"
                 class="w-full flex items-center px-3 py-2 rounded-md text-sm font-semibold text-zinc-300 transition-colors hover:text-white hover:bg-dark-300"

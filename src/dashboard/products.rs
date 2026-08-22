@@ -155,6 +155,29 @@ impl ProductWithSeo {
     }
 }
 
+#[derive(Debug, Serialize, sqlx::FromRow)]
+pub struct ProductOption {
+    pub id: Uuid,
+    pub name: String,
+    pub is_active: bool,
+}
+
+pub async fn get_products_list(
+    State(state): State<AppState>,
+) -> Result<Json<Vec<ProductOption>>, StatusCode> {
+    let products = sqlx::query_as!(
+        ProductOption,
+        r#"SELECT id, name, is_active
+           FROM products
+           ORDER BY name ASC"#
+    )
+    .fetch_all(&state.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    Ok(Json(products))
+}
+
 pub async fn get_products(
     State(state): State<AppState>,
 ) -> Result<Json<Vec<ProductWithSeo>>, StatusCode> {
