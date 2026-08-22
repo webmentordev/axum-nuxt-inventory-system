@@ -48,7 +48,7 @@ async function handleSubmit() {
     statusMessage.value = 'Creating category...';
     showStatus.value = true;
     try {
-        const data = await authFetch('/api/categories', {
+        const data = await authFetch('/api/admin/categories', {
             method: 'POST',
             body: {
                 name: name.value.trim(),

@@ -84,10 +84,10 @@ const targetLabel = computed(() => {
 });
 
 const targetEndpoints = {
-    category_id: '/api/categories',
-    sub_category_id: '/api/sub-categories',
-    brand_id: '/api/brands',
-    product_id: '/api/products/list',
+    category_id: '/api/admin/categories',
+    sub_category_id: '/api/admin/sub-categories',
+    brand_id: '/api/admin/brands',
+    product_id: '/api/admin/products/list',
 };
 
 const targetOptions = computed(() => targetOptionsMap.value[targetType.value] || []);
@@ -147,7 +147,7 @@ async function handleSubmit() {
             formData.append(targetType.value, targetId.value);
         }
 
-        const data = await authFetch('/api/images', {
+        const data = await authFetch('/api/admin/images', {
             method: 'POST',
             body: formData
         });

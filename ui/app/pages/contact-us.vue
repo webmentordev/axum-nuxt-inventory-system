@@ -131,7 +131,7 @@ async function submit() {
         return;
     };
     try {
-        const data = await publicFetch('/api/contacts', {
+        const data = await publicFetch('/api/public/contacts', {
             method: "POST",
             body: {
                 name: name.value.trim(),

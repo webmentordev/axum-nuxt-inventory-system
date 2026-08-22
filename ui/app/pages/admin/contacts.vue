@@ -111,7 +111,7 @@ onClickOutside(activeMenuEl, () => {
 
 async function fetchContacts() {
     try {
-        const data = await authFetch('/api/contacts');
+        const data = await authFetch('/api/admin/contacts');
         if (data) {
             contacts.value = data;
         }
@@ -146,7 +146,7 @@ async function confirmDelete() {
     showStatus.value = true;
 
     try {
-        await authFetch(`/api/contacts/${contact.id}`, {
+        await authFetch(`/api/admin/contacts/${contact.id}`, {
             method: 'DELETE'
         });
         contacts.value = contacts.value.filter((c) => c.id !== contact.id);

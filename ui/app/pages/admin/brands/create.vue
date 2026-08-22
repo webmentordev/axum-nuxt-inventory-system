@@ -48,7 +48,7 @@ async function handleSubmit() {
     statusMessage.value = 'Creating brand...';
     showStatus.value = true;
     try {
-        const data = await authFetch('/api/brands', {
+        const data = await authFetch('/api/admin/brands', {
             method: 'POST',
             body: {
                 name: name.value.trim(),

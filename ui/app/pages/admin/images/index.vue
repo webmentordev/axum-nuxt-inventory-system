@@ -134,7 +134,7 @@ onClickOutside(activeMenuEl, () => {
 
 async function fetchImages() {
     try {
-        const data = await authFetch('/api/images');
+        const data = await authFetch('/api/admin/images');
         if (data) {
             images.value = data;
         }
@@ -171,7 +171,7 @@ async function confirmDelete() {
     showStatus.value = true;
 
     try {
-        await authFetch(`/api/images/${image.id}`, {
+        await authFetch(`/api/admin/images/${image.id}`, {
             method: 'DELETE'
         });
         images.value = images.value.filter((i) => i.id !== image.id);

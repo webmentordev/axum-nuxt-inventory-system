@@ -156,7 +156,7 @@ onClickOutside(activeMenuEl, () => {
 
 async function fetchBrands() {
     try {
-        const data = await authFetch('/api/brands');
+        const data = await authFetch('/api/admin/brands');
         if (data) {
             brands.value = data;
         }
@@ -185,7 +185,7 @@ async function handleToggleActive(brand) {
     showStatus.value = true;
 
     try {
-        await authFetch(`/api/brands/${brand.id}`, {
+        await authFetch(`/api/admin/brands/${brand.id}`, {
             method: 'PATCH',
             body: { is_active: !brand.is_active }
         });
@@ -218,7 +218,7 @@ async function confirmDelete() {
     showStatus.value = true;
 
     try {
-        await authFetch(`/api/brands/${brand.id}`, {
+        await authFetch(`/api/admin/brands/${brand.id}`, {
             method: 'DELETE'
         });
         brands.value = brands.value.filter((b) => b.id !== brand.id);

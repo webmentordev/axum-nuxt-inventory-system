@@ -101,7 +101,7 @@ async function fetchStats() {
     loading.value = true;
     errorMessage.value = '';
     try {
-        const data = await authFetch('/api/stats');
+        const data = await authFetch('/api/admin/stats');
         if (data) {
             stats.value = data;
         }

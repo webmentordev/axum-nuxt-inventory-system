@@ -159,7 +159,7 @@ onClickOutside(activeMenuEl, () => {
 
 async function fetchCategories() {
     try {
-        const data = await authFetch('/api/categories');
+        const data = await authFetch('/api/admin/categories');
         if (data) {
             categories.value = data;
         }
@@ -188,7 +188,7 @@ async function handleToggleActive(category) {
     showStatus.value = true;
 
     try {
-        await authFetch(`/api/categories/${category.id}`, {
+        await authFetch(`/api/admin/categories/${category.id}`, {
             method: 'PATCH',
             body: { is_active: !category.is_active }
         });
@@ -221,7 +221,7 @@ async function confirmDelete() {
     showStatus.value = true;
 
     try {
-        await authFetch(`/api/categories/${category.id}`, {
+        await authFetch(`/api/admin/categories/${category.id}`, {
             method: 'DELETE'
         });
         categories.value = categories.value.filter((c) => c.id !== category.id);

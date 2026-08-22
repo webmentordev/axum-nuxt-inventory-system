@@ -26,22 +26,19 @@
                 <h3 class="mb-5 text-lg font-bold">QUICK LINKS</h3>
                 <ul class="space-y-3 text-sm text-slate-300">
                     <li>
-                        <NuxtLink to="#" class="hover:text-orange">Home</NuxtLink>
+                        <NuxtLink to="/" class="hover:text-orange">Home</NuxtLink>
                     </li>
                     <li>
-                        <NuxtLink to="#" class="hover:text-orange">About Us</NuxtLink>
+                        <NuxtLink to="/about-us" class="hover:text-orange">About Us</NuxtLink>
                     </li>
                     <li>
-                        <NuxtLink to="#" class="hover:text-orange">All Products</NuxtLink>
+                        <NuxtLink to="/products" class="hover:text-orange">All Products</NuxtLink>
                     </li>
                     <li>
                         <NuxtLink to="#" class="hover:text-orange">Solar Calculator</NuxtLink>
                     </li>
                     <li>
-                        <NuxtLink to="#" class="hover:text-orange">Blog</NuxtLink>
-                    </li>
-                    <li>
-                        <NuxtLink to="#" class="hover:text-orange">Contact Us</NuxtLink>
+                        <NuxtLink to="/contact-us" class="hover:text-orange">Contact Us</NuxtLink>
                     </li>
                 </ul>
             </div>
@@ -74,22 +71,22 @@
                 <h3 class="mb-5 text-lg font-bold">HELP & SUPPORT</h3>
                 <ul class="space-y-3 text-sm text-slate-300">
                     <li>
-                        <NuxtLink to="#" class="hover:text-orange">Shipping Policy</NuxtLink>
+                        <NuxtLink to="/shipping-policy" class="hover:text-orange">Shipping Policy</NuxtLink>
                     </li>
                     <li>
-                        <NuxtLink to="#" class="hover:text-orange">Return Policy</NuxtLink>
+                        <NuxtLink to="/warranty-policy" class="hover:text-orange">Warranty Policy</NuxtLink>
                     </li>
                     <li>
-                        <NuxtLink to="#" class="hover:text-orange">Terms & Conditions</NuxtLink>
+                        <NuxtLink to="/return-policy" class="hover:text-orange">Return/Refund Policy</NuxtLink>
                     </li>
                     <li>
-                        <NuxtLink to="#" class="hover:text-orange">Privacy Policy</NuxtLink>
+                        <NuxtLink to="/terms-of-service" class="hover:text-orange">Terms of service</NuxtLink>
                     </li>
                     <li>
-                        <NuxtLink to="#" class="hover:text-orange">FAQs</NuxtLink>
+                        <NuxtLink to="/privacy-policy" class="hover:text-orange">Privacy Policy</NuxtLink>
                     </li>
                     <li>
-                        <NuxtLink to="#" class="hover:text-orange">Track Your Order</NuxtLink>
+                        <NuxtLink to="/trac-your-order" class="hover:text-orange">Track Your Order</NuxtLink>
                     </li>
                 </ul>
             </div>
@@ -115,8 +112,8 @@
                 class="mx-auto flex max-w-7xl flex-col justify-between gap-3 px-4 py-5 text-xs text-slate-400 md:flex-row">
                 <p>© 2026 کلیم سولر. All Rights Reserved.</p>
                 <div class="flex gap-6">
-                    <NuxtLink to="#" class="hover:text-white">Terms & Conditions</NuxtLink>
-                    <NuxtLink to="#" class="hover:text-white">Privacy Policy</NuxtLink>
+                    <NuxtLink to="/terms-of-service" class="hover:text-white">Terms of service</NuxtLink>
+                    <NuxtLink to="/privacy-policy" class="hover:text-white">Privacy Policy</NuxtLink>
                 </div>
             </div>
         </div>

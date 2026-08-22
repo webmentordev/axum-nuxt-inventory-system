@@ -6,7 +6,7 @@ use axum::{
 };
 use jsonwebtoken::{DecodingKey, Validation, decode};
 
-use crate::{auth::Claims, routes::AppState};
+use crate::{AppState, auth::Claims};
 
 pub async fn require_admin(
     State(state): State<AppState>,

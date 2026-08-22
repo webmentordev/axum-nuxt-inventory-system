@@ -6,3 +6,9 @@
         </div>
     </section>
 </template>
+
+<script setup lang="js">
+definePageMeta({
+    middleware: 'auth'
+});
+</script>

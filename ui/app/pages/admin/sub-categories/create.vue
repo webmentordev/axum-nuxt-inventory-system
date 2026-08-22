@@ -63,7 +63,7 @@ const categoryOptions = computed(() =>
 async function fetchCategories() {
     categoriesLoading.value = true;
     try {
-        const data = await authFetch('/api/categories');
+        const data = await authFetch('/api/admin/categories');
         if (data) {
             categories.value = data;
         }
@@ -104,7 +104,7 @@ async function handleSubmit() {
     showStatus.value = true;
 
     try {
-        const data = await authFetch('/api/sub-categories', {
+        const data = await authFetch('/api/admin/sub-categories', {
             method: 'POST',
             body: {
                 category_id: categoryId.value,

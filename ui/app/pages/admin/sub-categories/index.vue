@@ -167,7 +167,7 @@ onClickOutside(activeMenuEl, () => {
 
 async function fetchSubCategories() {
     try {
-        const data = await authFetch('/api/sub-categories');
+        const data = await authFetch('/api/admin/sub-categories');
         if (data) {
             subCategories.value = data;
         }
@@ -196,7 +196,7 @@ async function handleToggleActive(subCategory) {
     showStatus.value = true;
 
     try {
-        await authFetch(`/api/sub-categories/${subCategory.id}`, {
+        await authFetch(`/api/admin/sub-categories/${subCategory.id}`, {
             method: 'PATCH',
             body: { is_active: !subCategory.is_active }
         });
@@ -229,7 +229,7 @@ async function confirmDelete() {
     showStatus.value = true;
 
     try {
-        await authFetch(`/api/sub-categories/${subCategory.id}`, {
+        await authFetch(`/api/admin/sub-categories/${subCategory.id}`, {
             method: 'DELETE'
         });
         subCategories.value = subCategories.value.filter((sc) => sc.id !== subCategory.id);

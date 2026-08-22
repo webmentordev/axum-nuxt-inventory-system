@@ -3,7 +3,7 @@ export default defineEventHandler(async (event) => {
     const body = await readBody(event);
     const allHeaders = getRequestHeaders(event);
     try {
-        const data = await $fetch(`${apiUrl}/api/users/register`, {
+        const data = await $fetch(`${apiUrl}/api/public/users/register`, {
             method: "POST",
             headers: allHeaders,
             body: body
