@@ -28,6 +28,9 @@
                         class="absolute right-0 mt-2 w-40 rounded-md border border-gray-200 bg-white py-1 shadow-lg">
                         <NuxtLink to="/user/profile" class="block px-4 py-2 text-sm text-navy hover:bg-gray-100"
                             @click="dropdownOpen = false">Profile</NuxtLink>
+                        <NuxtLink v-if="user.is_admin" to="/admin/dashboard"
+                            class="block px-4 py-2 text-sm text-navy hover:bg-gray-100" @click="dropdownOpen = false">
+                            Dashboard</NuxtLink>
                         <button @click="handleLogout"
                             class="block w-full px-4 py-2 text-left text-sm text-navy hover:bg-gray-100">Logout</button>
                     </div>

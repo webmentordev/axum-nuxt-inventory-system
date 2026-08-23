@@ -1,6 +1,6 @@
 <template>
     <footer class="bg-navy text-white">
-        <div class="mx-auto grid max-w-7xl gap-12 px-4 py-14 md:grid-cols-2 lg:grid-cols-5">
+        <div class="mx-auto grid max-w-7xl gap-12 px-4 py-14 md:grid-cols-2 lg:grid-cols-4">
 
             <div>
                 <NuxtLink to="/" class="mb-5 text-right leading-none inline-block">
@@ -86,24 +86,9 @@
                         <NuxtLink to="/privacy-policy" class="hover:text-orange">Privacy Policy</NuxtLink>
                     </li>
                     <li>
-                        <NuxtLink to="/trac-your-order" class="hover:text-orange">Track Your Order</NuxtLink>
+                        <NuxtLink to="/track-your-order" class="hover:text-orange">Track Your Order</NuxtLink>
                     </li>
                 </ul>
-            </div>
-
-            <div>
-                <h3 class="mb-5 text-lg font-bold">NEWSLETTER</h3>
-                <p class="mb-5 text-sm text-slate-300">
-                    Subscribe to get latest updates and offers.
-                </p>
-
-                <form class="space-y-3">
-                    <input type="email" placeholder="Enter your email"
-                        class="w-full rounded-lg border-0 px-4 py-3 text-sm text-slate-900 outline-none">
-                    <button class="w-full rounded-lg bg-orange py-3 font-bold text-white">
-                        SUBSCRIBE
-                    </button>
-                </form>
             </div>
         </div>
 

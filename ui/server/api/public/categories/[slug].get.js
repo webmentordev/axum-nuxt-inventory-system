@@ -9,7 +9,7 @@ export default defineEventHandler(async (event) => {
         });
     }
     try {
-        const data = await $fetch(`${apiUrl}/api/categories/public/${slug}`);
+        const data = await $fetch(`${apiUrl}/api/public/categories/${slug}`);
         return data;
     } catch (e) {
         throw createError({

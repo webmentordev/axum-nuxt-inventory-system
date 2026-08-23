@@ -8,25 +8,25 @@ use serde::Serialize;
 use crate::AppState;
 
 #[derive(Debug, Serialize, sqlx::FromRow)]
-pub struct PublicCategoryListItem {
+pub struct PublicSubCategoryListItem {
     pub name: String,
     pub slug: String,
 }
 
 #[derive(Debug, Serialize, sqlx::FromRow)]
-pub struct PublicCategoryDetail {
+pub struct PublicSubCategoryDetail {
     pub name: String,
     pub slug: String,
     pub description: Option<String>,
 }
 
-pub async fn get_public_categories(
+pub async fn get_public_sub_categories(
     State(state): State<AppState>,
-) -> Result<Json<Vec<PublicCategoryListItem>>, StatusCode> {
-    let categories = sqlx::query_as!(
-        PublicCategoryListItem,
+) -> Result<Json<Vec<PublicSubCategoryListItem>>, StatusCode> {
+    let sub_categories = sqlx::query_as!(
+        PublicSubCategoryListItem,
         r#"SELECT name, slug
-           FROM categories
+           FROM sub_categories
            WHERE is_active = TRUE
            ORDER BY name ASC"#
     )
@@ -34,17 +34,17 @@ pub async fn get_public_categories(
     .await
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    Ok(Json(categories))
+    Ok(Json(sub_categories))
 }
 
-pub async fn get_public_category(
+pub async fn get_public_sub_category(
     State(state): State<AppState>,
     Path(slug): Path<String>,
-) -> Result<Json<PublicCategoryDetail>, StatusCode> {
-    let category = sqlx::query_as!(
-        PublicCategoryDetail,
+) -> Result<Json<PublicSubCategoryDetail>, StatusCode> {
+    let sub_category = sqlx::query_as!(
+        PublicSubCategoryDetail,
         r#"SELECT name, slug, description
-           FROM categories
+           FROM sub_categories
            WHERE slug = $1 AND is_active = TRUE"#,
         slug
     )
@@ -53,5 +53,5 @@ pub async fn get_public_category(
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
     .ok_or(StatusCode::NOT_FOUND)?;
 
-    Ok(Json(category))
+    Ok(Json(sub_category))
 }

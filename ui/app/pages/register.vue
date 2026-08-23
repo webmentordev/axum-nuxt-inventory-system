@@ -25,6 +25,11 @@
                                 error="Confirm password field is required" />
                         </div>
                     </div>
+
+                    <div class="my-3">
+                        <NuxtTurnstile ref="turnstile" v-model="ct_token" />
+                    </div>
+
                     <button v-if="!processing" type="submit"
                         class="bg-navy mt-4 text-white w-full py-3 rounded-xl flex items-center justify-center hover:bg-navy/90 group">
                         <span class="mr-3">Register</span>
@@ -59,6 +64,7 @@ const password = ref("");
 const confirm_password = ref("");
 const processing = ref(false);
 const message = ref(false);
+const ct_token = ref("");
 const errors = ref({
     count: 0
 });
@@ -99,6 +105,7 @@ async function login() {
                 email: email.value.trim(),
                 password: password.value.trim(),
                 confirm_password: confirm_password.value.trim(),
+                ct_token: ct_token.value
             }
         });
         if (data) {
