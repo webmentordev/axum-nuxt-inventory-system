@@ -66,6 +66,7 @@ struct SubCategoryRow {
     category_slug: String,
     category_description: Option<String>,
     category_is_active: bool,
+    category_is_featured: bool,
     category_created_at: DateTime<Utc>,
     category_updated_at: DateTime<Utc>,
 }
@@ -87,6 +88,7 @@ impl From<SubCategoryRow> for SubCategoryWithDetails {
                 slug: r.category_slug,
                 description: r.category_description,
                 is_active: r.category_is_active,
+                is_featured: r.category_is_featured,
                 created_at: r.category_created_at,
                 updated_at: r.category_updated_at,
             },
@@ -101,13 +103,14 @@ pub async fn get_sub_categories(
     let rows = sqlx::query_as!(
         SubCategoryRow,
         r#"SELECT sc.id, sc.name, sc.slug, sc.description, sc.is_active, sc.created_at, sc.updated_at,
-                  COUNT(DISTINCT p.id) as "products_count!",
-                  c.id as "category_id!", c.name as "category_name!", c.slug as "category_slug!",
-                  c.description as category_description, c.is_active as "category_is_active!",
-                  c.created_at as "category_created_at!", c.updated_at as "category_updated_at!"
-           FROM sub_categories sc
-           JOIN categories c ON c.id = sc.category_id
-           LEFT JOIN products p ON p.sub_category_id = sc.id
+                COUNT(DISTINCT p.id) as "products_count!",
+                c.id as "category_id!", c.name as "category_name!", c.slug as "category_slug!",
+                c.description as category_description, c.is_active as "category_is_active!",
+                c.is_featured as "category_is_featured!",
+                c.created_at as "category_created_at!", c.updated_at as "category_updated_at!"
+            FROM sub_categories sc
+            JOIN categories c ON c.id = sc.category_id
+            LEFT JOIN products p ON p.sub_category_id = sc.id
            GROUP BY sc.id, c.id
            ORDER BY sc.created_at DESC"#
     )
@@ -154,13 +157,14 @@ pub async fn get_sub_category(
     let row = sqlx::query_as!(
         SubCategoryRow,
         r#"SELECT sc.id, sc.name, sc.slug, sc.description, sc.is_active, sc.created_at, sc.updated_at,
-                  COUNT(DISTINCT p.id) as "products_count!",
-                  c.id as "category_id!", c.name as "category_name!", c.slug as "category_slug!",
-                  c.description as category_description, c.is_active as "category_is_active!",
-                  c.created_at as "category_created_at!", c.updated_at as "category_updated_at!"
-           FROM sub_categories sc
-           JOIN categories c ON c.id = sc.category_id
-           LEFT JOIN products p ON p.sub_category_id = sc.id
+                COUNT(DISTINCT p.id) as "products_count!",
+                c.id as "category_id!", c.name as "category_name!", c.slug as "category_slug!",
+                c.description as category_description, c.is_active as "category_is_active!",
+                c.is_featured as "category_is_featured!",
+                c.created_at as "category_created_at!", c.updated_at as "category_updated_at!"
+            FROM sub_categories sc
+            JOIN categories c ON c.id = sc.category_id
+            LEFT JOIN products p ON p.sub_category_id = sc.id
            WHERE sc.id = $1
            GROUP BY sc.id, c.id"#,
         uuid

@@ -32,10 +32,7 @@
                         <NuxtLink to="/about-us" class="hover:text-orange">About Us</NuxtLink>
                     </li>
                     <li>
-                        <NuxtLink to="/products" class="hover:text-orange">All Products</NuxtLink>
-                    </li>
-                    <li>
-                        <NuxtLink to="#" class="hover:text-orange">Solar Calculator</NuxtLink>
+                        <NuxtLink to="/track-your-order" class="hover:text-orange">Track your order</NuxtLink>
                     </li>
                     <li>
                         <NuxtLink to="/contact-us" class="hover:text-orange">Contact Us</NuxtLink>
@@ -84,9 +81,6 @@
                     </li>
                     <li>
                         <NuxtLink to="/privacy-policy" class="hover:text-orange">Privacy Policy</NuxtLink>
-                    </li>
-                    <li>
-                        <NuxtLink to="/track-your-order" class="hover:text-orange">Track Your Order</NuxtLink>
                     </li>
                 </ul>
             </div>

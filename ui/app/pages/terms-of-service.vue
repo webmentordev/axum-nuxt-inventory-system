@@ -8,7 +8,7 @@
 
 <script setup>
 definePageMeta({
-    layout: 'public'
+    layout: 'guest'
 });
 
 </script>

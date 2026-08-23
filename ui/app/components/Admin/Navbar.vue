@@ -16,6 +16,12 @@
                 <Icon name="mdi-light:view-dashboard" size="20" />
                 <strong class="ml-1">Dashboard</strong>
             </NuxtLink>
+            <NuxtLink to="/admin/users"
+                class="w-full flex items-center px-3 py-2 rounded-md text-sm font-semibold text-zinc-300 transition-colors hover:text-white hover:bg-dark-300"
+                active-class="!text-lime-main !bg-lime-bg !border !border-lime-main/30">
+                <Icon name="mdi:account-outline" size="20" />
+                <strong class="ml-1">Users</strong>
+            </NuxtLink>
             <NuxtLink to="/admin/products"
                 class="w-full flex items-center px-3 py-2 rounded-md text-sm font-semibold text-zinc-300 transition-colors hover:text-white hover:bg-dark-300"
                 active-class="!text-lime-main !bg-lime-bg !border !border-lime-main/30">

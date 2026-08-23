@@ -29,6 +29,7 @@
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Products</th>
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Sub-categories</th>
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Status</th>
+                        <th class="text-left px-4 py-3 font-semibold text-zinc-400">Featured</th>
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Created</th>
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Updated</th>
                         <th class="text-right px-4 py-3 font-semibold text-zinc-400 w-12"></th>
@@ -65,6 +66,13 @@
                                 {{ category.is_active ? 'Active' : 'Inactive' }}
                             </span>
                         </td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-1 rounded text-xs font-semibold" :class="category.is_featured
+                                ? 'bg-lime-bg text-lime-main'
+                                : 'bg-dark-300 text-zinc-400'">
+                                {{ category.is_featured ? 'Main' : 'Simple' }}
+                            </span>
+                        </td>
                         <td class="px-4 py-3 text-zinc-400 whitespace-nowrap">{{ formatDate(category.created_at) }}</td>
                         <td class="px-4 py-3 text-zinc-400 whitespace-nowrap">{{ category.created_at ==
                             category.updated_at ? '-' : formatDate(category.updated_at) }}</td>
@@ -79,6 +87,10 @@
                                 <button type="button" @click="handleEdit(category)"
                                     class="w-full px-3 py-2 text-sm text-zinc-300 hover:bg-dark-300 hover:text-white transition-colors text-left">
                                     Edit
+                                </button>
+                                <button type="button" @click="handleToggleFeatured(category)"
+                                    class="w-full px-3 py-2 text-sm text-zinc-300 hover:bg-dark-300 hover:text-white transition-colors text-left">
+                                    {{ category.is_featured ? 'Remove featured' : 'Make featured' }}
                                 </button>
                                 <button type="button" @click="handleToggleActive(category)"
                                     class="w-full px-3 py-2 text-sm text-zinc-300 hover:bg-dark-300 hover:text-white transition-colors text-left">
@@ -199,6 +211,31 @@ async function handleToggleActive(category) {
     } catch (e) {
         statusType.value = 'error';
         statusMessage.value = e.statusMessage || 'Failed to update category.';
+    } finally {
+        setTimeout(() => {
+            showStatus.value = false;
+        }, 5000);
+    }
+}
+
+async function handleToggleFeatured(category) {
+    closeMenu();
+    statusType.value = 'loading';
+    statusMessage.value = category.is_featured ? 'Removing from featured...' : 'Marking as featured...';
+    showStatus.value = true;
+
+    try {
+        await authFetch(`/api/admin/categories/${category.id}`, {
+            method: 'PATCH',
+            body: { is_featured: !category.is_featured }
+        });
+        category.is_featured = !category.is_featured;
+        category.updated_at = new Date().toISOString();
+        statusType.value = 'success';
+        statusMessage.value = category.is_featured ? 'Category marked as featured.' : 'Category removed from featured.';
+    } catch (e) {
+        statusType.value = 'error';
+        statusMessage.value = e.statusMessage || 'Failed to update featured status.';
     } finally {
         setTimeout(() => {
             showStatus.value = false;

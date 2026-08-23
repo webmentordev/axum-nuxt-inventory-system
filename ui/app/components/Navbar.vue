@@ -1,6 +1,6 @@
 <template>
     <nav class="border-b border-gray-300 bg-white sticky z-40 top-0 left-0 w-full">
-        <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
+        <div class="mx-auto flex max-w-7xl items-center justify-between p-4">
             <NuxtLink to="/" class="flex items-center">
                 <img src="/kaleem-solar-logo-t-2.png" width="120px">
             </NuxtLink>

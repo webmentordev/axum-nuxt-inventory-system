@@ -41,6 +41,7 @@ pub struct UserPublic {
     pub is_active: bool,
     pub last_login_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 impl From<User> for UserPublic {
@@ -53,6 +54,7 @@ impl From<User> for UserPublic {
             is_active: u.is_active,
             last_login_at: u.last_login_at,
             created_at: u.created_at,
+            updated_at: u.updated_at,
         }
     }
 }
@@ -230,11 +232,31 @@ pub async fn get_user(
     Ok(Json(UserPublic::from(user)))
 }
 
+async fn get_first_admin_id(state: &AppState) -> Result<Option<Uuid>, StatusCode> {
+    let id = sqlx::query_scalar!(
+        r#"SELECT id FROM users
+           WHERE is_admin = TRUE
+           ORDER BY created_at ASC
+           LIMIT 1"#
+    )
+    .fetch_optional(&state.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    Ok(id)
+}
+
 pub async fn update_user(
     State(state): State<AppState>,
     Path(uuid): Path<Uuid>,
     Json(payload): Json<UpdateUser>,
 ) -> Result<Json<UserPublic>, StatusCode> {
+    let first_admin_id = get_first_admin_id(&state).await?;
+
+    if first_admin_id == Some(uuid) && (payload.is_admin.is_some() || payload.is_active.is_some()) {
+        return Err(StatusCode::FORBIDDEN);
+    }
+
     let user = sqlx::query_as!(
         User,
         r#"UPDATE users
@@ -272,6 +294,13 @@ pub async fn delete_user(
     if claims.sub == uuid {
         return Err(StatusCode::FORBIDDEN);
     }
+
+    let first_admin_id = get_first_admin_id(&state).await?;
+
+    if first_admin_id == Some(uuid) {
+        return Err(StatusCode::FORBIDDEN);
+    }
+
     let result = sqlx::query!("DELETE FROM users WHERE id = $1", uuid)
         .execute(&state.db)
         .await
@@ -280,5 +309,6 @@ pub async fn delete_user(
     if result.rows_affected() == 0 {
         return Err(StatusCode::NOT_FOUND);
     }
+
     Ok(StatusCode::NO_CONTENT)
 }

@@ -17,6 +17,7 @@ pub struct Category {
     pub slug: String,
     pub description: Option<String>,
     pub is_active: bool,
+    pub is_featured: bool,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -43,6 +44,7 @@ pub struct CategoryWithDetails {
     pub slug: String,
     pub description: Option<String>,
     pub is_active: bool,
+    pub is_featured: bool,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub products_count: i64,
@@ -56,6 +58,7 @@ struct CategoryRow {
     slug: String,
     description: Option<String>,
     is_active: bool,
+    is_featured: bool,
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
     products_count: i64,
@@ -67,7 +70,7 @@ pub async fn get_categories(
 ) -> Result<Json<Vec<CategoryWithDetails>>, StatusCode> {
     let rows = sqlx::query_as!(
         CategoryRow,
-        r#"SELECT c.id, c.name, c.slug, c.description, c.is_active, c.created_at, c.updated_at,
+        r#"SELECT c.id, c.name, c.slug, c.description, c.is_active, c.is_featured, c.created_at, c.updated_at,
                   COUNT(DISTINCT p.id) as "products_count!",
                   COUNT(DISTINCT sc.id) as "sub_categories_count!"
            FROM categories c
@@ -109,6 +112,7 @@ pub async fn get_categories(
                 slug: r.slug,
                 description: r.description,
                 is_active: r.is_active,
+                is_featured: r.is_featured,
                 created_at: r.created_at,
                 updated_at: r.updated_at,
                 products_count: r.products_count,
@@ -127,7 +131,7 @@ pub async fn get_category(
 ) -> Result<Json<CategoryWithDetails>, StatusCode> {
     let row = sqlx::query_as!(
         CategoryRow,
-        r#"SELECT c.id, c.name, c.slug, c.description, c.is_active, c.created_at, c.updated_at,
+        r#"SELECT c.id, c.name, c.slug, c.description, c.is_active, c.is_featured, c.created_at, c.updated_at,
                   COUNT(DISTINCT p.id) as "products_count!",
                   COUNT(DISTINCT sc.id) as "sub_categories_count!"
            FROM categories c
@@ -159,6 +163,7 @@ pub async fn get_category(
         slug: row.slug,
         description: row.description,
         is_active: row.is_active,
+        is_featured: row.is_featured,
         created_at: row.created_at,
         updated_at: row.updated_at,
         products_count: row.products_count,
@@ -177,10 +182,10 @@ pub async fn create_category(
         Category,
         r#"INSERT INTO categories (name, slug, description)
            VALUES ($1, $2, $3)
-           RETURNING id, name, slug, description, is_active, created_at, updated_at"#,
+           RETURNING id, name, slug, description, is_active, is_featured, created_at, updated_at"#,
         payload.name,
         slug,
-        payload.description
+        payload.description,
     )
     .fetch_one(&state.db)
     .await
@@ -210,7 +215,7 @@ pub async fn update_category(
                is_active = COALESCE($4, is_active),
                updated_at = NOW()
            WHERE id = $5
-           RETURNING id, name, slug, description, is_active, created_at, updated_at"#,
+           RETURNING id, name, slug, description, is_active, is_featured, created_at, updated_at"#,
         payload.name,
         new_slug,
         payload.description,

@@ -14,6 +14,21 @@ CREATE TABLE images (
 );
 
 CREATE INDEX idx_images_product_id ON images (product_id);
+
 CREATE INDEX idx_images_category_id ON images (category_id);
+
 CREATE INDEX idx_images_sub_category_id ON images (sub_category_id);
+
 CREATE INDEX idx_images_brand_id ON images (brand_id);
+
+CREATE UNIQUE INDEX uq_images_category_id ON images (category_id)
+WHERE
+    category_id IS NOT NULL;
+
+CREATE UNIQUE INDEX uq_images_sub_category_id ON images (sub_category_id)
+WHERE
+    sub_category_id IS NOT NULL;
+
+CREATE UNIQUE INDEX uq_images_brand_id ON images (brand_id)
+WHERE
+    brand_id IS NOT NULL;

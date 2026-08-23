@@ -54,7 +54,7 @@
 <script setup>
 definePageMeta({
     middleware: 'guest',
-    layout: 'public'
+    layout: 'guest'
 });
 const { authFetch } = useAuthFetch();
 

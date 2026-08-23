@@ -1,17 +1,11 @@
 use axum::{
     Json,
-    extract::{Path, State},
+    extract::{Path, Query, State},
     http::StatusCode,
 };
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::AppState;
-
-#[derive(Debug, Serialize, sqlx::FromRow)]
-pub struct PublicCategoryListItem {
-    pub name: String,
-    pub slug: String,
-}
 
 #[derive(Debug, Serialize, sqlx::FromRow)]
 pub struct PublicCategoryDetail {
@@ -20,11 +14,41 @@ pub struct PublicCategoryDetail {
     pub description: Option<String>,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct CategoryQuery {
+    pub sub_categories: Option<bool>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct PublicSubCategoryMini {
+    pub name: String,
+    pub slug: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct PublicCategoryWithSub {
+    pub name: String,
+    pub slug: String,
+    pub sub_categories: Option<Vec<PublicSubCategoryMini>>,
+}
+
+struct CategoryRow {
+    name: String,
+    slug: String,
+}
+
+struct SubCategoryRow {
+    category_slug: String,
+    name: String,
+    slug: String,
+}
+
 pub async fn get_public_categories(
     State(state): State<AppState>,
-) -> Result<Json<Vec<PublicCategoryListItem>>, StatusCode> {
+    Query(params): Query<CategoryQuery>,
+) -> Result<Json<Vec<PublicCategoryWithSub>>, StatusCode> {
     let categories = sqlx::query_as!(
-        PublicCategoryListItem,
+        CategoryRow,
         r#"SELECT name, slug
            FROM categories
            WHERE is_active = TRUE
@@ -34,7 +58,51 @@ pub async fn get_public_categories(
     .await
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    Ok(Json(categories))
+    let include_sub = params.sub_categories.unwrap_or(false);
+
+    let sub_map: Vec<SubCategoryRow> = if include_sub {
+        sqlx::query_as!(
+            SubCategoryRow,
+            r#"SELECT c.slug as category_slug, sc.name, sc.slug
+               FROM sub_categories sc
+               JOIN categories c ON c.id = sc.category_id
+               WHERE sc.is_active = TRUE AND c.is_active = TRUE
+               ORDER BY sc.name ASC"#
+        )
+        .fetch_all(&state.db)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+    } else {
+        Vec::new()
+    };
+
+    let result = categories
+        .into_iter()
+        .map(|c| {
+            let sub_categories = if include_sub {
+                Some(
+                    sub_map
+                        .iter()
+                        .filter(|s| s.category_slug == c.slug)
+                        .map(|s| PublicSubCategoryMini {
+                            name: s.name.clone(),
+                            slug: s.slug.clone(),
+                        })
+                        .collect(),
+                )
+            } else {
+                None
+            };
+
+            PublicCategoryWithSub {
+                name: c.name,
+                slug: c.slug,
+                sub_categories,
+            }
+        })
+        .collect();
+
+    Ok(Json(result))
 }
 
 pub async fn get_public_category(

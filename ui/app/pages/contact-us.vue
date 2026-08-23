@@ -90,7 +90,7 @@
 
 <script setup>
 definePageMeta({
-    layout: 'public'
+    layout: 'guest'
 });
 const { publicFetch } = usePublicFetch();
 
