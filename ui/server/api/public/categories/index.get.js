@@ -1,8 +1,12 @@
 export default defineEventHandler(async (event) => {
     const apiUrl = useRuntimeConfig(event).apiUrl;
     const allHeaders = getRequestHeaders(event);
+    const query = getQuery(event);
     try {
-        const data = await $fetch(`${apiUrl}/api/public/categories?sub_categories=true`, { headers: allHeaders });
+        const data = await $fetch(`${apiUrl}/api/public/categories`, { headers: allHeaders, query: {
+            sub_categories: query.sub_categories,
+            is_featured: query.is_featured
+        } });
         return data;
     } catch (e) {
         throw createError({

@@ -33,6 +33,7 @@ pub struct UpdateCategory {
     pub name: Option<String>,
     pub description: Option<String>,
     pub is_active: Option<bool>,
+    pub is_featured: Option<bool>,
 }
 
 use crate::dashboard::images::{Image, WithFullUrl};
@@ -213,14 +214,16 @@ pub async fn update_category(
                slug = COALESCE($2, slug),
                description = COALESCE($3, description),
                is_active = COALESCE($4, is_active),
+               is_featured = COALESCE($5, is_featured),
                updated_at = NOW()
-           WHERE id = $5
+           WHERE id = $6
            RETURNING id, name, slug, description, is_active, is_featured, created_at, updated_at"#,
         payload.name,
         new_slug,
         payload.description,
         payload.is_active,
-        uuid
+        payload.is_featured,
+        uuid,
     )
     .fetch_optional(&state.db)
     .await

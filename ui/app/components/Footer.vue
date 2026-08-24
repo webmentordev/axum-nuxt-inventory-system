@@ -7,10 +7,15 @@
                     <img src="/kaleem-solar-logo-t-4.png" alt="kaleemSolar Multan Logo" width="140px">
                 </NuxtLink>
 
-                <p class="text-sm leading-7 text-slate-300">
+                <p class="text-sm leading-7 text-slate-300 mb-3">
                     Providing quality solar products and complete solar solutions for homes, businesses and industries
                     across Pakistan.
                 </p>
+
+                <ul class="text-sm">
+                    <li class="mb-1"><strong>Open:</strong> Mon - Sun, Friday Off</li>
+                    <li><strong>Hours:</strong> 10AM - 6PM</li>
+                </ul>
 
                 <div class="mt-6 flex gap-3">
                     <NuxtLink to="/" class="text-white" target="_blank">
@@ -18,6 +23,12 @@
                     </NuxtLink>
                     <NuxtLink to="/" class="text-white" target="_blank">
                         <Icon name="mynaui:instagram" size="27px" />
+                    </NuxtLink>
+                    <NuxtLink to="/" class="text-white" target="_blank">
+                        <Icon name="mynaui:youtube" size="30px" />
+                    </NuxtLink>
+                    <NuxtLink to="/" class="text-white" target="_blank">
+                        <Icon name="formkit:tiktok" size="27px" />
                     </NuxtLink>
                 </div>
             </div>
@@ -43,23 +54,9 @@
             <div>
                 <h3 class="mb-5 text-lg font-bold">CATEGORIES</h3>
                 <ul class="space-y-3 text-sm text-slate-300">
-                    <li>
-                        <NuxtLink to="#" class="hover:text-orange">Solar Panels</NuxtLink>
-                    </li>
-                    <li>
-                        <NuxtLink to="#" class="hover:text-orange">Inverters</NuxtLink>
-                    </li>
-                    <li>
-                        <NuxtLink to="#" class="hover:text-orange">Batteries</NuxtLink>
-                    </li>
-                    <li>
-                        <NuxtLink to="#" class="hover:text-orange">Solar Structures</NuxtLink>
-                    </li>
-                    <li>
-                        <NuxtLink to="#" class="hover:text-orange">Cables</NuxtLink>
-                    </li>
-                    <li>
-                        <NuxtLink to="#" class="hover:text-orange">Connectors</NuxtLink>
+                    <li v-for="(category, index) in categories" :key="index">
+                        <NuxtLink :to='`/categories/${category.slug}`' class="hover:text-orange">{{ category.name }}
+                        </NuxtLink>
                     </li>
                 </ul>
             </div>
@@ -98,3 +95,22 @@
         </div>
     </footer>
 </template>
+
+<script setup lang="js">
+const { publicFetch } = usePublicFetch();
+
+const categories = ref([]);
+
+try {
+    const data = await publicFetch('/api/public/categories?sub_categories=false&is_featured=true');
+    if (data) {
+        categories.value = data;
+    }
+} catch (e) {
+    throw createError({
+        status: e.statusCode || 500,
+        statusText: e.statusMessage || 'Something went wrong!',
+        fatal: true
+    });
+}
+</script>

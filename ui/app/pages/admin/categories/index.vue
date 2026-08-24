@@ -70,7 +70,7 @@
                             <span class="px-2 py-1 rounded text-xs font-semibold" :class="category.is_featured
                                 ? 'bg-lime-bg text-lime-main'
                                 : 'bg-dark-300 text-zinc-400'">
-                                {{ category.is_featured ? 'Main' : 'Simple' }}
+                                {{ category.is_featured ? 'Featured' : 'Simple' }}
                             </span>
                         </td>
                         <td class="px-4 py-3 text-zinc-400 whitespace-nowrap">{{ formatDate(category.created_at) }}</td>

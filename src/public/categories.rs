@@ -17,6 +17,7 @@ pub struct PublicCategoryDetail {
 #[derive(Debug, Deserialize)]
 pub struct CategoryQuery {
     pub sub_categories: Option<bool>,
+    pub is_featured: Option<bool>,
 }
 
 #[derive(Debug, Serialize)]
@@ -25,16 +26,10 @@ pub struct PublicSubCategoryMini {
     pub slug: String,
 }
 
-#[derive(Debug, Serialize)]
-pub struct PublicCategoryWithSub {
-    pub name: String,
-    pub slug: String,
-    pub sub_categories: Option<Vec<PublicSubCategoryMini>>,
-}
-
 struct CategoryRow {
     name: String,
     slug: String,
+    is_featured: bool,
 }
 
 struct SubCategoryRow {
@@ -43,20 +38,43 @@ struct SubCategoryRow {
     slug: String,
 }
 
+#[derive(Debug, Serialize)]
+pub struct PublicCategoryWithSub {
+    pub name: String,
+    pub slug: String,
+    pub is_featured: bool,
+    pub sub_categories: Option<Vec<PublicSubCategoryMini>>,
+}
+
 pub async fn get_public_categories(
     State(state): State<AppState>,
     Query(params): Query<CategoryQuery>,
 ) -> Result<Json<Vec<PublicCategoryWithSub>>, StatusCode> {
-    let categories = sqlx::query_as!(
-        CategoryRow,
-        r#"SELECT name, slug
-           FROM categories
-           WHERE is_active = TRUE
-           ORDER BY name ASC"#
-    )
-    .fetch_all(&state.db)
-    .await
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let only_featured = params.is_featured.unwrap_or(false);
+
+    let categories = if only_featured {
+        sqlx::query_as!(
+            CategoryRow,
+            r#"SELECT name, slug, is_featured
+               FROM categories
+               WHERE is_active = TRUE AND is_featured = TRUE
+               ORDER BY name ASC"#
+        )
+        .fetch_all(&state.db)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+    } else {
+        sqlx::query_as!(
+            CategoryRow,
+            r#"SELECT name, slug, is_featured
+               FROM categories
+               WHERE is_active = TRUE
+               ORDER BY name ASC"#
+        )
+        .fetch_all(&state.db)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+    };
 
     let include_sub = params.sub_categories.unwrap_or(false);
 
@@ -97,6 +115,7 @@ pub async fn get_public_categories(
             PublicCategoryWithSub {
                 name: c.name,
                 slug: c.slug,
+                is_featured: c.is_featured,
                 sub_categories,
             }
         })

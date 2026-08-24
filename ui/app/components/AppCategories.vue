@@ -54,7 +54,7 @@ const toggleExpand = (slug) => {
 const isExpanded = (slug) => expandedCategories.value.has(slug);
 
 try {
-    const data = await publicFetch('/api/public/categories');
+    const data = await publicFetch('/api/public/categories?sub_categories=true&is_featured=true');
     if (data) {
         categories.value = data;
     }
