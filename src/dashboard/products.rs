@@ -9,7 +9,10 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::dashboard::products_seo::ProductSeo;
-use crate::{AppState, utils::slugify};
+use crate::{
+    AppState,
+    utils::{generate_sku, slugify},
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct Product {
@@ -50,7 +53,6 @@ pub struct CreateProduct {
     pub sub_category_id: Uuid,
     pub brand_id: Uuid,
     pub name: String,
-    pub sku: String,
     pub brand: Option<String>,
     pub model: Option<String>,
     pub description: Option<String>,
@@ -72,7 +74,6 @@ pub struct UpdateProduct {
     pub sub_category_id: Option<Uuid>,
     pub brand_id: Option<Uuid>,
     pub name: Option<String>,
-    pub sku: Option<String>,
     pub brand: Option<String>,
     pub model: Option<String>,
     pub description: Option<String>,
@@ -281,7 +282,7 @@ pub async fn create_product(
         Some(payload.brand_id),
         payload.name,
         slug,
-        payload.sku,
+        generate_sku(&payload.name),
         payload.brand,
         payload.model,
         payload.description,
@@ -326,23 +327,22 @@ pub async fn update_product(
                brand_id = COALESCE($3, brand_id),
                name = COALESCE($4, name),
                slug = COALESCE($5, slug),
-               sku = COALESCE($6, sku),
-               brand = COALESCE($7, brand),
-               model = COALESCE($8, model),
-               description = COALESCE($9, description),
-               power_rating_watts = COALESCE($10, power_rating_watts),
-               voltage_rating = COALESCE($11, voltage_rating),
-               capacity_ah = COALESCE($12, capacity_ah),
-               warranty_months = COALESCE($13, warranty_months),
-               cost_price = COALESCE($14, cost_price),
-               selling_price = COALESCE($15, selling_price),
-               quantity_in_stock = COALESCE($16, quantity_in_stock),
-               reorder_level = COALESCE($17, reorder_level),
-               unit = COALESCE($18, unit),
-               image_url = COALESCE($19, image_url),
-               is_active = COALESCE($20, is_active),
+               brand = COALESCE($6, brand),
+               model = COALESCE($7, model),
+               description = COALESCE($8, description),
+               power_rating_watts = COALESCE($9, power_rating_watts),
+               voltage_rating = COALESCE($10, voltage_rating),
+               capacity_ah = COALESCE($11, capacity_ah),
+               warranty_months = COALESCE($12, warranty_months),
+               cost_price = COALESCE($13, cost_price),
+               selling_price = COALESCE($14, selling_price),
+               quantity_in_stock = COALESCE($15, quantity_in_stock),
+               reorder_level = COALESCE($16, reorder_level),
+               unit = COALESCE($17, unit),
+               image_url = COALESCE($18, image_url),
+               is_active = COALESCE($19, is_active),
                updated_at = NOW()
-           WHERE id = $21
+           WHERE id = $20
            RETURNING id, category_id, sub_category_id, brand_id, name, slug, sku, brand, model, description,
                      power_rating_watts, voltage_rating, capacity_ah, warranty_months,
                      cost_price, selling_price, quantity_in_stock, reorder_level, unit,
@@ -352,7 +352,6 @@ pub async fn update_product(
         payload.brand_id,
         payload.name,
         new_slug,
-        payload.sku,
         payload.brand,
         payload.model,
         payload.description,
@@ -385,18 +384,18 @@ pub async fn update_product(
     Ok(Json(product))
 }
 
-pub async fn delete_product(
-    State(state): State<AppState>,
-    Path(uuid): Path<Uuid>,
-) -> Result<StatusCode, StatusCode> {
-    let result = sqlx::query!("DELETE FROM products WHERE id = $1", uuid)
-        .execute(&state.db)
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+// pub async fn delete_product(
+//     State(state): State<AppState>,
+//     Path(uuid): Path<Uuid>,
+// ) -> Result<StatusCode, StatusCode> {
+//     let result = sqlx::query!("DELETE FROM products WHERE id = $1", uuid)
+//         .execute(&state.db)
+//         .await
+//         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    if result.rows_affected() == 0 {
-        return Err(StatusCode::NOT_FOUND);
-    }
+//     if result.rows_affected() == 0 {
+//         return Err(StatusCode::NOT_FOUND);
+//     }
 
-    Ok(StatusCode::NO_CONTENT)
-}
+//     Ok(StatusCode::NO_CONTENT)
+// }

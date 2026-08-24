@@ -192,6 +192,62 @@ pub async fn get_sub_category(
     Ok(Json(details))
 }
 
+pub async fn get_sub_categories_by_category(
+    State(state): State<AppState>,
+    Path(category_id): Path<Uuid>,
+) -> Result<Json<Vec<SubCategoryWithDetails>>, StatusCode> {
+    let rows = sqlx::query_as!(
+        SubCategoryRow,
+        r#"SELECT sc.id, sc.name, sc.slug, sc.description, sc.is_active, sc.created_at, sc.updated_at,
+                  COUNT(DISTINCT p.id) as "products_count!",
+                  c.id as "category_id!", c.name as "category_name!", c.slug as "category_slug!",
+                  c.description as category_description, c.is_active as "category_is_active!",
+                  c.is_featured as "category_is_featured!",
+                  c.created_at as "category_created_at!", c.updated_at as "category_updated_at!"
+           FROM sub_categories sc
+           JOIN categories c ON c.id = sc.category_id
+           LEFT JOIN products p ON p.sub_category_id = sc.id
+           WHERE sc.category_id = $1
+           GROUP BY sc.id, c.id
+           ORDER BY sc.created_at DESC"#,
+        category_id
+    )
+    .fetch_all(&state.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let ids: Vec<Uuid> = rows.iter().map(|r| r.id).collect();
+
+    let images = sqlx::query_as!(
+        Image,
+        r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, created_at
+           FROM images
+           WHERE sub_category_id = ANY($1)"#,
+        &ids
+    )
+    .fetch_all(&state.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let result = rows
+        .into_iter()
+        .map(|r| {
+            let sc_images = images
+                .iter()
+                .filter(|img| img.sub_category_id == Some(r.id))
+                .cloned()
+                .map(Image::with_full_url)
+                .collect();
+
+            let mut details = SubCategoryWithDetails::from(r);
+            details.images = sc_images;
+            details
+        })
+        .collect();
+
+    Ok(Json(result))
+}
+
 pub async fn create_sub_category(
     State(state): State<AppState>,
     Json(payload): Json<CreateSubCategory>,

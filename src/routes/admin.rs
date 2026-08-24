@@ -23,12 +23,7 @@ pub async fn init_admin_routes(state: AppState) -> Result<Router> {
     let product = Router::new()
         .route("/", get(get_products).post(create_product))
         .route("/list", get(get_products_list))
-        .route(
-            "/{uuid}",
-            get(get_product)
-                .patch(update_product)
-                .delete(delete_product),
-        );
+        .route("/{uuid}", get(get_product).patch(update_product));
     let categories = Router::new()
         .route("/", get(get_categories).post(create_category))
         .route(
@@ -39,6 +34,7 @@ pub async fn init_admin_routes(state: AppState) -> Result<Router> {
         );
     let sub_categories = Router::new()
         .route("/", get(get_sub_categories).post(create_sub_category))
+        .route("/by-category/{uuid}", get(get_sub_categories_by_category))
         .route(
             "/{uuid}",
             get(get_sub_category)

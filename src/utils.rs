@@ -43,3 +43,19 @@ pub fn slugify(name: &str, random: bool) -> String {
 
     base
 }
+
+pub fn generate_sku(name: &str) -> String {
+    let clean_name: String = name
+        .to_uppercase()
+        .chars()
+        .filter(|c| c.is_alphanumeric() || c.is_whitespace())
+        .collect();
+    let prefix: String = clean_name
+        .split_whitespace()
+        .take(2)
+        .map(|word| word.chars().take(2).collect::<String>())
+        .collect::<Vec<String>>()
+        .join("-");
+    let suffix: u32 = rand::random_range(100..=999);
+    format!("{}-{}", prefix, suffix)
+}

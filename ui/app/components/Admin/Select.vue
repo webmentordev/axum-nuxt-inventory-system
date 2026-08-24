@@ -40,6 +40,10 @@
 import { ref, computed, nextTick } from 'vue'
 import { onClickOutside } from '@vueuse/core'
 
+defineOptions({
+    inheritAttrs: false
+})
+
 const props = defineProps({
     modelValue: {
         type: [String, Number, null],
@@ -52,6 +56,10 @@ const props = defineProps({
     placeholder: {
         type: String,
         default: 'Select an option'
+    },
+    disabled: {
+        type: Boolean,
+        default: false
     }
 })
 
@@ -78,6 +86,7 @@ const filteredOptions = computed(() => {
 })
 
 function toggleOpen() {
+    if (props.disabled) return
     isOpen.value = !isOpen.value
     if (isOpen.value) {
         search.value = ''

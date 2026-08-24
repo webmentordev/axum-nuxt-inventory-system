@@ -1,15 +1,12 @@
 <template>
     <section class="w-full">
-        <div class="max-w-2xl m-auto p-3">
-            <Loading v-if="processing" message="Loading category..." />
-
-            <div v-else-if="category">
-                <h1 class="text-2xl font-bold text-gray-800">{{ category.name }}</h1>
-                <p v-if="category.description" class="text-gray-500 mt-2">{{ category.description }}</p>
-            </div>
-
-            <AlertsError v-if="errors.message" :message="errors.message" />
+        <Loading v-if="processing" message="Loading category..." />
+        <div v-else-if="category">
+            <h1 class="text-2xl font-bold text-gray-800">{{ category.name }}</h1>
+            <p v-if="category.description" class="text-gray-500 mt-2">{{ category.description }}</p>
         </div>
+
+        <AlertsError v-if="errors.message" :message="errors.message" />
     </section>
 </template>
 

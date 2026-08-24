@@ -24,6 +24,9 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     apiUrl: '',
+    public: {
+      currency: '',
+    },
     turnstile: {
       secretKey: '1x0000000000000000000000000000000AA',
     },

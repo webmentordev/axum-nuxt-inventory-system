@@ -42,6 +42,12 @@
                             to="/login" class="text-navy underline">Login here</NuxtLink>
                     </p>
 
+                    <p class="text-para-light inline-block text-sm ml-1 mt-3 pt-3 border-t border-gray-200">By
+                        continuing, you agree to our <NuxtLink to="/terms-of-service" class="text-navy underline">Terms
+                            of service</NuxtLink> & <NuxtLink to="/privacy-policy" class="text-navy underline">Privacy
+                            policy</NuxtLink>
+                    </p>
+
                     <AlertsSuccess v-if="message" :message="message" @close="message = ''" />
                     <Loading v-if="processing" message="Processing signup request..." />
                     <AlertsError v-if="errors.message" :message="errors.message" />
