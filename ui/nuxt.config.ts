@@ -26,6 +26,8 @@ export default defineNuxtConfig({
     apiUrl: '',
     public: {
       currency: '',
+      email: '',
+      phone: ''
     },
     turnstile: {
       secretKey: '1x0000000000000000000000000000000AA',

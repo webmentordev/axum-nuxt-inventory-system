@@ -11,7 +11,7 @@
             </NuxtLink>
         </div>
 
-        <div class="w-full border border-dark-300 rounded-lg overflow-hidden bg-dark-100">
+        <div class="w-full border border-dark-300 rounded-lg bg-dark-100">
             <table v-if="filteredProducts.length" class="w-full text-sm">
                 <thead class="bg-dark-200">
                     <tr>

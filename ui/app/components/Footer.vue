@@ -13,21 +13,22 @@
                 </p>
 
                 <ul class="text-sm">
-                    <li class="mb-1"><strong>Open:</strong> Mon - Sun, Friday Off</li>
-                    <li><strong>Hours:</strong> 10AM - 6PM</li>
+                    <li class="mb-1"><strong title="Kaleem solar business days">Open:</strong> Mon - Sun, Friday Closed
+                    </li>
+                    <li><strong title="Kaleem solar working hours">Hours:</strong> 10AM - 6PM</li>
                 </ul>
 
                 <div class="mt-6 flex gap-3">
-                    <NuxtLink to="/" class="text-white" target="_blank">
+                    <NuxtLink to="/" class="text-white" target="_blank" title="kaleem solar facebook page">
                         <Icon name="formkit:facebook" size="25px" />
                     </NuxtLink>
-                    <NuxtLink to="/" class="text-white" target="_blank">
+                    <NuxtLink to="/" class="text-white" target="_blank" title="kaleem solar instagram profile">
                         <Icon name="mynaui:instagram" size="27px" />
                     </NuxtLink>
-                    <NuxtLink to="/" class="text-white" target="_blank">
+                    <NuxtLink to="/" class="text-white" target="_blank" title="kaleem solar youtube channel">
                         <Icon name="mynaui:youtube" size="30px" />
                     </NuxtLink>
-                    <NuxtLink to="/" class="text-white" target="_blank">
+                    <NuxtLink to="/" class="text-white" target="_blank" title="kaleem solar tiktok">
                         <Icon name="formkit:tiktok" size="27px" />
                     </NuxtLink>
                 </div>
@@ -63,7 +64,7 @@
 
             <div>
                 <h3 class="mb-5 text-lg font-bold">HELP & SUPPORT</h3>
-                <ul class="space-y-3 text-sm text-slate-300">
+                <ul class="space-y-3 text-sm text-slate-300" title="Kaleem solar policies">
                     <li>
                         <NuxtLink to="/shipping-policy" class="hover:text-orange">Shipping Policy</NuxtLink>
                     </li>

@@ -59,7 +59,16 @@
                             class="mt-0.5">
                         <div>
                             <p class="text-sm font-semibold text-gray-800">Phone</p>
-                            <p class="text-sm text-gray-500">+92 300 1234567</p>
+                            <p class="text-sm text-gray-500">{{ config.phone }}</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start gap-3">
+                        <img src="https://api.iconify.design/material-symbols-light:mail-outline-sharp.svg?color=%23062B5B"
+                            width="20" class="mt-0.5">
+                        <div>
+                            <p class="text-sm font-semibold text-gray-800">Email address</p>
+                            <p class="text-sm text-gray-500">{{ config.email }}</p>
                         </div>
                     </div>
 
@@ -78,8 +87,8 @@
                             class="mt-0.5">
                         <div>
                             <p class="text-sm font-semibold text-gray-800">Open hours</p>
-                            <p class="text-sm text-gray-500">Mon – Sat: 9:00 AM – 8:00 PM</p>
-                            <p class="text-sm text-gray-500">Sunday: Closed</p>
+                            <p class="text-sm text-gray-500">Mon – Sun: 10:00 AM – 6:00 PM</p>
+                            <p class="text-sm text-gray-500">Friday: Closed</p>
                         </div>
                     </div>
                 </div>
@@ -93,6 +102,8 @@ definePageMeta({
     layout: 'guest'
 });
 const { publicFetch } = usePublicFetch();
+
+const config = useRuntimeConfig().public;
 
 const turnstile = ref();
 const name = ref("");

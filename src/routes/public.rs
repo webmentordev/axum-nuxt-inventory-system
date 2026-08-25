@@ -3,6 +3,7 @@ use crate::auth::*;
 use crate::dashboard::contacts::*;
 use crate::public::brands::*;
 use crate::public::categories::*;
+use crate::public::products::*;
 use crate::public::sub_categories::*;
 
 use anyhow::Result;
@@ -30,12 +31,17 @@ pub async fn init_public_route(state: AppState) -> Result<Router> {
         .route("/", get(get_public_brands))
         .route("/{slug}", get(get_public_brand));
 
+    let products = Router::new()
+        .route("/", get(get_public_products))
+        .route("/{slug}", get(get_public_product));
+
     let routes = Router::new()
         .nest("/users", users)
         .nest("/contacts", contacts)
         .nest("/categories", categories)
         .nest("/sub-categories", sub_categories)
         .nest("/brands", brands)
+        .nest("/products", products)
         .with_state(state);
 
     Ok(routes)
