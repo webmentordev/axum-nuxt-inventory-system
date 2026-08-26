@@ -13,6 +13,8 @@ use crate::{
     dashboard::images::{Image, WithFullUrl},
 };
 
+const SUGGESTED_PRODUCTS_LIMIT: i64 = 4;
+
 #[derive(Debug, Serialize, sqlx::FromRow)]
 pub struct PublicProductRow {
     pub id: Uuid,
@@ -58,6 +60,8 @@ pub struct PublicProduct {
     pub unit: String,
     pub image_url: String,
     pub images: Vec<Image>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub suggested_products: Option<Vec<PublicProduct>>,
 }
 
 struct BrandRow {
@@ -148,7 +152,51 @@ pub fn build_public_product(
         unit: p.unit,
         image_url: p.image_url,
         images: product_images,
+        suggested_products: None,
     }
+}
+
+pub async fn fetch_suggested_products(
+    state: &AppState,
+    exclude_id: Uuid,
+) -> Result<Vec<PublicProduct>, StatusCode> {
+    let rows = sqlx::query_as!(
+        PublicProductRow,
+        r#"SELECT id, name, slug, sku, brand_id, model, description, image_url as "image_url!",
+              power_rating_watts, voltage_rating, capacity_ah, warranty_months,
+              selling_price, quantity_in_stock, unit
+       FROM products
+       WHERE is_active = TRUE AND id != $1
+       ORDER BY random()
+       LIMIT $2"#,
+        exclude_id,
+        SUGGESTED_PRODUCTS_LIMIT
+    )
+    .fetch_all(&state.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let product_ids: Vec<Uuid> = rows.iter().map(|p| p.id).collect();
+
+    let images = sqlx::query_as!(
+        Image,
+        r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, created_at
+           FROM images
+           WHERE product_id = ANY($1)
+           ORDER BY created_at ASC"#,
+        &product_ids
+    )
+    .fetch_all(&state.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let brand_ids: Vec<Uuid> = rows.iter().filter_map(|p| p.brand_id).collect();
+    let brand_map = fetch_product_brands(state, &brand_ids).await?;
+
+    Ok(rows
+        .into_iter()
+        .map(|p| build_public_product(p, &images, &brand_map))
+        .collect())
 }
 
 pub async fn get_public_products(
@@ -225,5 +273,9 @@ pub async fn get_public_product(
     let brand_ids: Vec<Uuid> = p.brand_id.into_iter().collect();
     let brand_map = fetch_product_brands(&state, &brand_ids).await?;
 
-    Ok(Json(build_public_product(p, &images, &brand_map)))
+    let product_id = p.id;
+    let mut product = build_public_product(p, &images, &brand_map);
+    product.suggested_products = Some(fetch_suggested_products(&state, product_id).await?);
+
+    Ok(Json(product))
 }

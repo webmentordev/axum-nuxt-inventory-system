@@ -49,14 +49,10 @@
 </template>
 
 <script setup lang="js">
-const { publicFetch } = usePublicFetch();
 
-const categories = ref([]);
-const processing = ref(true);
+const { categories, processing, fetchCategories } = useCategories();
+
 const expandedCategories = ref(new Set());
-
-const brands = ref([]);
-const brandsProcessing = ref(true);
 
 const toggleExpand = (slug) => {
     if (expandedCategories.value.has(slug)) {
@@ -69,20 +65,13 @@ const toggleExpand = (slug) => {
 
 const isExpanded = (slug) => expandedCategories.value.has(slug);
 
-try {
-    const data = await publicFetch('/api/public/categories?sub_categories=true&is_featured=true');
-    if (data) {
-        categories.value = data;
-    }
-} catch (e) {
-    throw createError({
-        status: e.statusCode || 500,
-        statusText: e.statusMessage || 'Something went wrong!',
-        fatal: true
-    });
-} finally {
-    processing.value = false;
-}
+await fetchCategories();
+
+
+const { publicFetch } = usePublicFetch();
+const brands = ref([]);
+const brandsProcessing = ref(true);
+
 
 try {
     const data = await publicFetch('/api/public/brands');

@@ -31,6 +31,9 @@
                     <NuxtLink to="/" class="text-white" target="_blank" title="kaleem solar tiktok">
                         <Icon name="formkit:tiktok" size="27px" />
                     </NuxtLink>
+                    <NuxtLink to="/" class="text-white" target="_blank" title="kaleem solar twitter">
+                        <Icon name="formkit:twitter" size="27px" />
+                    </NuxtLink>
                 </div>
             </div>
 
@@ -66,19 +69,19 @@
                 <h3 class="mb-5 text-lg font-bold">HELP & SUPPORT</h3>
                 <ul class="space-y-3 text-sm text-slate-300" title="Kaleem solar policies">
                     <li>
-                        <NuxtLink to="/shipping-policy" class="hover:text-orange">Shipping Policy</NuxtLink>
+                        <NuxtLink to="/policies/shipping-policy" class="hover:text-orange">Shipping Policy</NuxtLink>
                     </li>
                     <li>
-                        <NuxtLink to="/warranty-policy" class="hover:text-orange">Warranty Policy</NuxtLink>
+                        <NuxtLink to="/policies/warranty-policy" class="hover:text-orange">Warranty Policy</NuxtLink>
                     </li>
                     <li>
-                        <NuxtLink to="/return-policy" class="hover:text-orange">Return/Refund Policy</NuxtLink>
+                        <NuxtLink to="/policies/return-policy" class="hover:text-orange">Return/Refund Policy</NuxtLink>
                     </li>
                     <li>
-                        <NuxtLink to="/terms-of-service" class="hover:text-orange">Terms of service</NuxtLink>
+                        <NuxtLink to="/policies/terms-of-service" class="hover:text-orange">Terms of service</NuxtLink>
                     </li>
                     <li>
-                        <NuxtLink to="/privacy-policy" class="hover:text-orange">Privacy Policy</NuxtLink>
+                        <NuxtLink to="/policies/privacy-policy" class="hover:text-orange">Privacy Policy</NuxtLink>
                     </li>
                 </ul>
             </div>
@@ -88,30 +91,17 @@
             <div
                 class="mx-auto flex max-w-7xl flex-col justify-between gap-3 px-4 py-5 text-xs text-slate-400 md:flex-row">
                 <p>© 2026 کلیم سولر. All Rights Reserved.</p>
-                <div class="flex gap-6">
-                    <NuxtLink to="/terms-of-service" class="hover:text-white">Terms of service</NuxtLink>
-                    <NuxtLink to="/privacy-policy" class="hover:text-white">Privacy Policy</NuxtLink>
-                </div>
+                <p class="flex gap-1">Built in <img
+                        src="https://api.iconify.design/selfhst:nuxt-light.svg?color=%23ffffff" width="17px"> & <img
+                        src="https://api.iconify.design/material-icon-theme:rust.svg" width="17px">
+                    | M Ahmer Tahir</p>
             </div>
         </div>
     </footer>
 </template>
 
 <script setup lang="js">
-const { publicFetch } = usePublicFetch();
+const { categories, fetchCategories } = useCategories();
 
-const categories = ref([]);
-
-try {
-    const data = await publicFetch('/api/public/categories?sub_categories=false&is_featured=true');
-    if (data) {
-        categories.value = data;
-    }
-} catch (e) {
-    throw createError({
-        status: e.statusCode || 500,
-        statusText: e.statusMessage || 'Something went wrong!',
-        fatal: true
-    });
-}
+await fetchCategories();
 </script>

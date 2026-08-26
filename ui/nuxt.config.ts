@@ -4,7 +4,7 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
   css: ['~/assets/css/main.css'],
-  modules: ['@nuxt/icon', '@vueuse/nuxt', '@nuxtjs/turnstile'],
+  modules: ['@nuxt/icon', '@vueuse/nuxt', '@nuxtjs/turnstile', '@nuxt/image'],
   vite: {
     plugins: [
       tailwindcss(),
@@ -36,7 +36,7 @@ export default defineNuxtConfig({
 
   app: {
     head: {
-      title: 'KaleemSolar Multan | A-Grade solar panels, inverters & accessories',
+      title: 'KaleemSolarPK Multan | A-Grade solar panels, inverters & accessories',
       charset: 'utf-16',
       viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
       htmlAttrs: {

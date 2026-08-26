@@ -1,7 +1,8 @@
 <template>
-    <NuxtLink :to='`/products/${product.slug}`' class="overflow-hidden flex flex-col relative bgfader"
+    <NuxtLink :to='`/products/${product.slug}`' class="overflow-hidden flex flex-col relative bgfader-hover"
         :title="product.name">
-        <img :src="product.image_url" :alt="product.name" class="w-full h-40 object-contain" loading="lazy" />
+        <NuxtImg :src="product.image_url" width="400" height="160" :alt='`${product.name} Image`'
+            class="w-full h-40 object-contain" loading="lazy" />
         <img v-if="product.brand?.images.length" :src="product.brand?.images[0].file_path" class="absolute top-1 left-1"
             loading="lazy" width="50px" />
         <div class="p-3 flex flex-col flex-1">
