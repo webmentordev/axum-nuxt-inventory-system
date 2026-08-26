@@ -101,7 +101,10 @@
 </template>
 
 <script setup lang="js">
-const { categories, fetchCategories } = useCategories();
+const { categories, processing, fetchCategories } = useCategories({
+    featured: true,
+    withSubCategories: false
+});
 
 await fetchCategories();
 </script>

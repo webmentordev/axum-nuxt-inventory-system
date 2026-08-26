@@ -25,12 +25,25 @@
                             <img :src="product.brand.images[0].file_path" width="90px">
                         </div>
                         <p v-if="product.brand" class="text-sm text-zinc-500">{{ product.brand.name }}</p>
-                        <h1 class="text-2xl font-bold text-zinc-900">{{ product.name }}</h1>
+                        <h1 class="text-2xl font-bold text-zinc-900 my-2">{{ product.name }}</h1>
                         <p v-if="product.model" class="text-sm text-zinc-500">Model: {{ product.model }}</p>
                     </div>
 
-                    <div class="flex items-baseline gap-3">
-                        <span class="text-2xl font-bold text-navy">Rs. {{ formatPrice(product.selling_price) }}</span>
+                    <div class="flex flex-col gap-1">
+                        <div class="flex items-baseline gap-3">
+                            <span class="text-2xl font-bold text-navy">Rs. {{ formatPrice(product.selling_price)
+                            }}</span>
+                            <span v-if="hasDiscount" class="text-base text-zinc-400 line-through">
+                                Rs. {{ formatPrice(product.compare_at_selling_price) }}
+                            </span>
+                            <span v-if="hasDiscount"
+                                class="text-xs font-semibold text-green-700 bg-green-100 px-2 py-0.5 rounded">
+                                {{ discountPercent }}% off
+                            </span>
+                        </div>
+                        <span v-if="isSolar && pricePerWatt" class="text-sm text-zinc-500">
+                            Rs. {{ formatPrice(pricePerWatt) }} / watt
+                        </span>
                     </div>
 
                     <p v-if="stockLabel" :class="stockClass" class="text-sm font-semibold">{{ stockLabel }}</p>
@@ -47,9 +60,24 @@
                         </dl>
                     </div>
 
+                    <div v-if="isSolar && solarSpecs.length" class="mt-2">
+                        <h2 class="text-sm font-semibold text-zinc-700 mb-2">Solar Panel Specifications</h2>
+                        <dl class="grid grid-cols-2 gap-y-2 text-sm">
+                            <template v-for="spec in solarSpecs" :key="spec.label">
+                                <dt class="text-zinc-500">{{ spec.label }}</dt>
+                                <dd class="text-zinc-700">{{ spec.value }}</dd>
+                            </template>
+                        </dl>
+                    </div>
+
                     <p v-if="product.warranty_months" class="text-sm text-zinc-500">
                         {{ product.warranty_months }} month warranty
                     </p>
+
+                    <div v-if="product.content" class="mt-2">
+                        <h2 class="text-sm font-semibold text-zinc-700 mb-2">Product Details</h2>
+                        <p class="text-zinc-700 leading-relaxed whitespace-pre-line">{{ product.content }}</p>
+                    </div>
 
                     <div class="flex items-center gap-3" v-if="product.in_stock">
                         <button type="button" :disabled="!product.in_stock" @click="addToCart"
@@ -101,12 +129,59 @@ try {
     processing.value = false;
 }
 
+const isSolar = computed(() => product.value?.product_type === 'solar');
+
+const hasDiscount = computed(() => {
+    if (!product.value) return false;
+    const compareAt = Number(product.value.compare_at_selling_price);
+    const selling = Number(product.value.selling_price);
+    return !Number.isNaN(compareAt) && compareAt > selling;
+});
+
+const discountPercent = computed(() => {
+    if (!hasDiscount.value) return 0;
+    const compareAt = Number(product.value.compare_at_selling_price);
+    const selling = Number(product.value.selling_price);
+    return Math.round(((compareAt - selling) / compareAt) * 100);
+});
+
+const pricePerWatt = computed(() => {
+    if (!product.value) return null;
+    const watts = Number(product.value.power_rating_watts);
+    const selling = Number(product.value.selling_price);
+    if (!watts || Number.isNaN(watts) || Number.isNaN(selling)) return null;
+    return selling / watts;
+});
+
 const specs = computed(() => {
     if (!product.value) return [];
     const list = [];
     if (product.value.power_rating_watts) list.push({ label: 'Power', value: `${product.value.power_rating_watts} W` });
     if (product.value.voltage_rating) list.push({ label: 'Voltage', value: `${product.value.voltage_rating} V` });
     if (product.value.capacity_ah) list.push({ label: 'Capacity', value: `${product.value.capacity_ah} Ah` });
+    return list;
+});
+
+const solarSpecs = computed(() => {
+    if (!product.value) return [];
+    const p = product.value;
+    const list = [];
+    if (p.panel_type) list.push({ label: 'Panel Type', value: p.panel_type });
+    if (p.cell_type) list.push({ label: 'Cell Type', value: p.cell_type });
+    if (p.number_of_cells) list.push({ label: 'Number of Cells', value: p.number_of_cells });
+    if (p.efficiency_percentage) list.push({ label: 'Efficiency', value: `${p.efficiency_percentage}%` });
+    if (p.max_system_voltage) list.push({ label: 'Max System Voltage', value: `${p.max_system_voltage} V` });
+    if (p.open_circuit_voltage) list.push({ label: 'Open Circuit Voltage', value: `${p.open_circuit_voltage} V` });
+    if (p.short_circuit_current) list.push({ label: 'Short Circuit Current', value: `${p.short_circuit_current} A` });
+    if (p.max_power_voltage) list.push({ label: 'Max Power Voltage', value: `${p.max_power_voltage} V` });
+    if (p.max_power_current) list.push({ label: 'Max Power Current', value: `${p.max_power_current} A` });
+    if (p.temperature_coefficient) list.push({ label: 'Temp. Coefficient', value: `${p.temperature_coefficient}%/°C` });
+    if (p.frame_material) list.push({ label: 'Frame Material', value: p.frame_material });
+    if (p.glass_type) list.push({ label: 'Glass Type', value: p.glass_type });
+    if (p.length_mm) list.push({ label: 'Length', value: `${p.length_mm} mm` });
+    if (p.width_mm) list.push({ label: 'Width', value: `${p.width_mm} mm` });
+    if (p.thickness_mm) list.push({ label: 'Thickness', value: `${p.thickness_mm} mm` });
+    if (p.weight_kg) list.push({ label: 'Weight', value: `${p.weight_kg} kg` });
     return list;
 });
 

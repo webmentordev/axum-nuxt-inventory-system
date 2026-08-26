@@ -1,15 +1,24 @@
-export const useCategories = () => {
+export const useCategories = ({ featured = false, withSubCategories = false } = {}) => {
   const { publicFetch } = usePublicFetch();
-  const categories = useState('categories', () => []);
-  const processing = useState('categoriesProcessing', () => true);
-  const fetched = useState('categoriesFetched', () => false);
+  const cacheKey = `categories:featured:${featured}:sub:${withSubCategories}`;
+
+  const categories = useState(cacheKey, () => []);
+  const processing = useState(`${cacheKey}:processing`, () => true);
+  const fetched = useState(`${cacheKey}:fetched`, () => false);
+
   const fetchCategories = async () => {
     if (fetched.value) {
       return categories.value;
     }
+
     processing.value = true;
     try {
-      const data = await publicFetch('/api/public/categories?sub_categories=true&is_featured=true');
+      const params = new URLSearchParams({
+        sub_categories: String(withSubCategories),
+        is_featured: String(featured)
+      });
+
+      const data = await publicFetch(`/api/public/categories?${params}`);
       if (data) {
         categories.value = data;
         fetched.value = true;
@@ -23,8 +32,10 @@ export const useCategories = () => {
     } finally {
       processing.value = false;
     }
+
     return categories.value;
   };
+
   return {
     categories,
     processing,

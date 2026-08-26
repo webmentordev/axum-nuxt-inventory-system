@@ -19,8 +19,10 @@
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Name</th>
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">SKU</th>
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Cost</th>
-                        <th class="text-left px-4 py-3 font-semibold text-zinc-400">Cost</th>
-                        <th class="text-left px-4 py-3 font-semibold text-zinc-400">Stock</th>
+                        <th class="text-left px-4 py-3 font-semibold text-zinc-400">Comp. Cost</th>
+                        <th class="text-left px-4 py-3 font-semibold text-zinc-400">Sell Cost</th>
+                        <th class="text-left px-4 py-3 font-semibold text-zinc-400">Sell/C Cost</th>
+                        <th class="text-left px-4 py-3 font-semibold text-zinc-400">Sock</th>
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Status</th>
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Created</th>
                         <th class="text-right px-4 py-3 font-semibold text-zinc-400 w-12"></th>
@@ -38,7 +40,9 @@
                         <td class="px-4 py-3 text-zinc-200 font-medium">{{ product.name }}</td>
                         <td class="px-4 py-3 text-zinc-400">{{ product.sku }}</td>
                         <td class="px-4 py-3 text-zinc-200">{{ currency }} {{ product.cost_price }}</td>
+                        <td class="px-4 py-3 text-zinc-200">{{ currency }} {{ product.compare_at_cost_price }}</td>
                         <td class="px-4 py-3 text-zinc-200">{{ currency }} {{ product.selling_price }}</td>
+                        <td class="px-4 py-3 text-zinc-200">{{ currency }} {{ product.compare_at_selling_price }}</td>
                         <td class="px-4 py-3 text-zinc-400">{{ product.quantity_in_stock }}</td>
                         <td class="px-4 py-3">
                             <span class="px-2 py-1 rounded text-xs font-semibold" :class="product.is_active

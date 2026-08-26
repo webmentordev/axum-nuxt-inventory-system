@@ -1,11 +1,11 @@
 <template>
     <section class="h-full w-full p-6">
-        <div class="max-w-4xl pb-6">
+        <div class="max-w-5xl pb-6">
             <h1 class="text-xl font-bold text-white">Create Product</h1>
             <p class="text-sm text-zinc-500 mt-1">Add a new product to the catalog.</p>
 
             <form @submit.prevent="handleSubmit" class="mt-6 flex flex-col gap-4" novalidate>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
                     <div>
                         <label class="block text-sm font-semibold text-zinc-300 mb-2">Category</label>
                         <AdminSelect v-model="categoryId" :options="categoryOptions"
@@ -29,9 +29,15 @@
                             :placeholder="brandsLoading ? 'Loading brands...' : 'Select a brand'" />
                         <p v-if="errors.brand_id" class="text-xs text-red-400 mt-1">{{ errors.brand_id }}</p>
                     </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-zinc-300 mb-2">Product Type</label>
+                        <AdminSelect v-model="productType" :options="productTypeOptions" placeholder="Select a type" />
+                        <p v-if="errors.product_type" class="text-xs text-red-400 mt-1">{{ errors.product_type }}</p>
+                    </div>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
                     <div>
                         <label class="block text-sm font-semibold text-zinc-300 mb-2">Name</label>
                         <AdminInput v-model="name" placeholder="e.g. 12V 100Ah Lithium Battery"
@@ -50,13 +56,24 @@
                         <AdminInput v-model="model" placeholder="Optional model number..." />
                         <p v-if="errors.model" class="text-xs text-red-400 mt-1">{{ errors.model }}</p>
                     </div>
-                </div>
 
+                    <div>
+                        <label class="block text-sm font-semibold text-zinc-300 mb-2">Unit</label>
+                        <AdminInput v-model="unit" placeholder="e.g. piece" />
+                        <p v-if="errors.unit" class="text-xs text-red-400 mt-1">{{ errors.unit }}</p>
+                    </div>
+                </div>
 
                 <div>
                     <label class="block text-sm font-semibold text-zinc-300 mb-2">Description</label>
                     <AdminTextarea v-model="description" placeholder="Optional description..." rows="4" />
                     <p v-if="errors.description" class="text-xs text-red-400 mt-1">{{ errors.description }}</p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-zinc-300 mb-2">Content</label>
+                    <AdminTextarea v-model="content" placeholder="Optional long-form content..." rows="6" />
+                    <p v-if="errors.content" class="text-xs text-red-400 mt-1">{{ errors.content }}</p>
                 </div>
 
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -88,7 +105,129 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div v-if="productType === 'solar'" class="flex flex-col gap-4">
+                    <h2 class="text-sm font-bold text-zinc-400 uppercase tracking-wide mt-2">Solar Panel Specs</h2>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-zinc-300 mb-2">Panel Type</label>
+                            <AdminInput v-model="panelType" placeholder="e.g. Monocrystalline" />
+                            <p v-if="errors.panel_type" class="text-xs text-red-400 mt-1">{{ errors.panel_type }}</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-zinc-300 mb-2">Cell Type</label>
+                            <AdminInput v-model="cellType" placeholder="e.g. PERC" />
+                            <p v-if="errors.cell_type" class="text-xs text-red-400 mt-1">{{ errors.cell_type }}</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-zinc-300 mb-2">Number of Cells</label>
+                            <AdminInput v-model="numberOfCells" type="number" step="1" placeholder="e.g. 144" />
+                            <p v-if="errors.number_of_cells" class="text-xs text-red-400 mt-1">{{
+                                errors.number_of_cells }}</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-zinc-300 mb-2">Efficiency (%)</label>
+                            <AdminInput v-model="efficiencyPercentage" type="number" step="0.01"
+                                placeholder="e.g. 21.5" />
+                            <p v-if="errors.efficiency_percentage" class="text-xs text-red-400 mt-1">{{
+                                errors.efficiency_percentage }}</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-zinc-300 mb-2">Max System Voltage</label>
+                            <AdminInput v-model="maxSystemVoltage" type="number" step="0.01" placeholder="e.g. 1500" />
+                            <p v-if="errors.max_system_voltage" class="text-xs text-red-400 mt-1">{{
+                                errors.max_system_voltage }}</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-zinc-300 mb-2">Open Circuit Voltage</label>
+                            <AdminInput v-model="openCircuitVoltage" type="number" step="0.01"
+                                placeholder="e.g. 49.5" />
+                            <p v-if="errors.open_circuit_voltage" class="text-xs text-red-400 mt-1">{{
+                                errors.open_circuit_voltage }}</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-zinc-300 mb-2">Short Circuit Current</label>
+                            <AdminInput v-model="shortCircuitCurrent" type="number" step="0.01"
+                                placeholder="e.g. 10.5" />
+                            <p v-if="errors.short_circuit_current" class="text-xs text-red-400 mt-1">{{
+                                errors.short_circuit_current }}</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-zinc-300 mb-2">Max Power Voltage</label>
+                            <AdminInput v-model="maxPowerVoltage" type="number" step="0.01" placeholder="e.g. 41.2" />
+                            <p v-if="errors.max_power_voltage" class="text-xs text-red-400 mt-1">{{
+                                errors.max_power_voltage }}</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-zinc-300 mb-2">Max Power Current</label>
+                            <AdminInput v-model="maxPowerCurrent" type="number" step="0.01" placeholder="e.g. 9.8" />
+                            <p v-if="errors.max_power_current" class="text-xs text-red-400 mt-1">{{
+                                errors.max_power_current }}</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-zinc-300 mb-2">Temp. Coefficient</label>
+                            <AdminInput v-model="temperatureCoefficient" type="number" step="0.001"
+                                placeholder="e.g. -0.35" />
+                            <p v-if="errors.temperature_coefficient" class="text-xs text-red-400 mt-1">{{
+                                errors.temperature_coefficient }}</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-zinc-300 mb-2">Frame Material</label>
+                            <AdminInput v-model="frameMaterial" placeholder="e.g. Anodized Aluminum" />
+                            <p v-if="errors.frame_material" class="text-xs text-red-400 mt-1">{{ errors.frame_material
+                                }}</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-zinc-300 mb-2">Glass Type</label>
+                            <AdminInput v-model="glassType" placeholder="e.g. Tempered" />
+                            <p v-if="errors.glass_type" class="text-xs text-red-400 mt-1">{{ errors.glass_type }}</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-zinc-300 mb-2">Length (mm)</label>
+                            <AdminInput v-model="lengthMm" type="number" step="0.01" placeholder="e.g. 2278" />
+                            <p v-if="errors.length_mm" class="text-xs text-red-400 mt-1">{{ errors.length_mm }}</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-zinc-300 mb-2">Width (mm)</label>
+                            <AdminInput v-model="widthMm" type="number" step="0.01" placeholder="e.g. 1134" />
+                            <p v-if="errors.width_mm" class="text-xs text-red-400 mt-1">{{ errors.width_mm }}</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-zinc-300 mb-2">Thickness (mm)</label>
+                            <AdminInput v-model="thicknessMm" type="number" step="0.01" placeholder="e.g. 35" />
+                            <p v-if="errors.thickness_mm" class="text-xs text-red-400 mt-1">{{ errors.thickness_mm }}
+                            </p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-zinc-300 mb-2">Weight (kg)</label>
+                            <AdminInput v-model="weightKg" type="number" step="0.01" placeholder="e.g. 27.5" />
+                            <p v-if="errors.weight_kg" class="text-xs text-red-400 mt-1">{{ errors.weight_kg }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
                     <div>
                         <label class="block text-sm font-semibold text-zinc-300 mb-2">Cost Price</label>
                         <AdminInput v-model="costPrice" type="number" step="0.01" placeholder="e.g. 15000" />
@@ -96,13 +235,27 @@
                     </div>
 
                     <div>
+                        <label class="block text-sm font-semibold text-zinc-300 mb-2">Compare At Cost Price</label>
+                        <AdminInput v-model="compareAtCostPrice" type="number" step="0.01" placeholder="Optional" />
+                        <p v-if="errors.compare_at_cost_price" class="text-xs text-red-400 mt-1">{{
+                            errors.compare_at_cost_price }}</p>
+                    </div>
+
+                    <div>
                         <label class="block text-sm font-semibold text-zinc-300 mb-2">Selling Price</label>
                         <AdminInput v-model="sellingPrice" type="number" step="0.01" placeholder="e.g. 19999" />
                         <p v-if="errors.selling_price" class="text-xs text-red-400 mt-1">{{ errors.selling_price }}</p>
                     </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-zinc-300 mb-2">Compare At Selling Price</label>
+                        <AdminInput v-model="compareAtSellingPrice" type="number" step="0.01" placeholder="Optional" />
+                        <p v-if="errors.compare_at_selling_price" class="text-xs text-red-400 mt-1">{{
+                            errors.compare_at_selling_price }}</p>
+                    </div>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
                     <div>
                         <label class="block text-sm font-semibold text-zinc-300 mb-2">Quantity in Stock</label>
                         <AdminInput v-model="quantityInStock" type="number" step="1" placeholder="0" />
@@ -116,17 +269,11 @@
                         <p v-if="errors.reorder_level" class="text-xs text-red-400 mt-1">{{ errors.reorder_level }}</p>
                     </div>
 
-                    <div>
-                        <label class="block text-sm font-semibold text-zinc-300 mb-2">Unit</label>
-                        <AdminInput v-model="unit" placeholder="e.g. piece" />
-                        <p v-if="errors.unit" class="text-xs text-red-400 mt-1">{{ errors.unit }}</p>
+                    <div class="sm:col-span-2">
+                        <label class="block text-sm font-semibold text-zinc-300 mb-2">Image URL</label>
+                        <AdminInput v-model="imageUrl" placeholder="https://..." />
+                        <p v-if="errors.image_url" class="text-xs text-red-400 mt-1">{{ errors.image_url }}</p>
                     </div>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-semibold text-zinc-300 mb-2">Image URL</label>
-                    <AdminInput v-model="imageUrl" placeholder="https://..." />
-                    <p v-if="errors.image_url" class="text-xs text-red-400 mt-1">{{ errors.image_url }}</p>
                 </div>
 
                 <label class="flex items-center gap-2 w-fit cursor-pointer select-none">
@@ -164,20 +311,41 @@ const brandsLoading = ref(true);
 const categoryId = ref(null);
 const subCategoryId = ref(null);
 const brandId = ref(null);
+const productType = ref('other');
 
 const name = ref('');
 const slug = ref('');
 const slugTouched = ref(false);
 const model = ref('');
 const description = ref('');
+const content = ref('');
 
 const powerRatingWatts = ref('');
 const voltageRating = ref('');
 const capacityAh = ref('');
 const warrantyMonths = ref('');
 
+const panelType = ref('');
+const cellType = ref('');
+const numberOfCells = ref('');
+const efficiencyPercentage = ref('');
+const maxSystemVoltage = ref('');
+const openCircuitVoltage = ref('');
+const shortCircuitCurrent = ref('');
+const maxPowerVoltage = ref('');
+const maxPowerCurrent = ref('');
+const temperatureCoefficient = ref('');
+const frameMaterial = ref('');
+const glassType = ref('');
+const lengthMm = ref('');
+const widthMm = ref('');
+const thicknessMm = ref('');
+const weightKg = ref('');
+
 const costPrice = ref('');
+const compareAtCostPrice = ref('');
 const sellingPrice = ref('');
+const compareAtSellingPrice = ref('');
 
 const quantityInStock = ref('0');
 const reorderLevel = ref('0');
@@ -191,6 +359,11 @@ const errors = ref({});
 const showStatus = ref(false);
 const statusType = ref('loading');
 const statusMessage = ref('');
+
+const productTypeOptions = [
+    { label: 'Other', value: 'other' },
+    { label: 'Solar Panel', value: 'solar' }
+];
 
 const categoryOptions = computed(() =>
     categories.value.map((category) => ({
@@ -238,6 +411,27 @@ watch(categoryId, async (newCategoryId) => {
     subCategories.value = [];
     if (!newCategoryId) return;
     await fetchSubCategories(newCategoryId);
+});
+
+watch(productType, (newType) => {
+    if (newType !== 'solar') {
+        panelType.value = '';
+        cellType.value = '';
+        numberOfCells.value = '';
+        efficiencyPercentage.value = '';
+        maxSystemVoltage.value = '';
+        openCircuitVoltage.value = '';
+        shortCircuitCurrent.value = '';
+        maxPowerVoltage.value = '';
+        maxPowerCurrent.value = '';
+        temperatureCoefficient.value = '';
+        frameMaterial.value = '';
+        glassType.value = '';
+        lengthMm.value = '';
+        widthMm.value = '';
+        thicknessMm.value = '';
+        weightKg.value = '';
+    }
 });
 
 async function fetchCategories() {
@@ -323,6 +517,14 @@ function validate() {
         errors.value.selling_price = 'Selling price is required and must be 0 or more.';
     }
 
+    if (compareAtCostPrice.value !== '' && Number(compareAtCostPrice.value) < 0) {
+        errors.value.compare_at_cost_price = 'Compare at cost price must be 0 or more.';
+    }
+
+    if (compareAtSellingPrice.value !== '' && Number(compareAtSellingPrice.value) < 0) {
+        errors.value.compare_at_selling_price = 'Compare at selling price must be 0 or more.';
+    }
+
     if (quantityInStock.value === '' || Number(quantityInStock.value) < 0) {
         errors.value.quantity_in_stock = 'Quantity must be 0 or more.';
     }
@@ -339,6 +541,13 @@ function validate() {
         errors.value.warranty_months = 'Warranty must be 0 or more.';
     }
 
+    if (
+        efficiencyPercentage.value !== '' &&
+        (Number(efficiencyPercentage.value) < 0 || Number(efficiencyPercentage.value) > 100)
+    ) {
+        errors.value.efficiency_percentage = 'Efficiency must be between 0 and 100.';
+    }
+
     return Object.keys(errors.value).length === 0;
 }
 
@@ -346,17 +555,37 @@ function resetForm() {
     categoryId.value = null;
     subCategoryId.value = null;
     brandId.value = null;
+    productType.value = 'other';
     name.value = '';
     slug.value = '';
     slugTouched.value = false;
     model.value = '';
     description.value = '';
+    content.value = '';
     powerRatingWatts.value = '';
     voltageRating.value = '';
     capacityAh.value = '';
     warrantyMonths.value = '';
+    panelType.value = '';
+    cellType.value = '';
+    numberOfCells.value = '';
+    efficiencyPercentage.value = '';
+    maxSystemVoltage.value = '';
+    openCircuitVoltage.value = '';
+    shortCircuitCurrent.value = '';
+    maxPowerVoltage.value = '';
+    maxPowerCurrent.value = '';
+    temperatureCoefficient.value = '';
+    frameMaterial.value = '';
+    glassType.value = '';
+    lengthMm.value = '';
+    widthMm.value = '';
+    thicknessMm.value = '';
+    weightKg.value = '';
     costPrice.value = '';
+    compareAtCostPrice.value = '';
     sellingPrice.value = '';
+    compareAtSellingPrice.value = '';
     quantityInStock.value = '0';
     reorderLevel.value = '0';
     unit.value = 'piece';
@@ -383,14 +612,35 @@ async function handleSubmit() {
                 slug: slug.value.trim(),
                 model: model.value.trim() || null,
                 description: description.value.trim() || null,
+                content: content.value.trim() || null,
+                product_type: productType.value,
 
                 power_rating_watts: toNumberOrNull(powerRatingWatts.value),
                 voltage_rating: toNumberOrNull(voltageRating.value),
                 capacity_ah: toNumberOrNull(capacityAh.value),
                 warranty_months: toNumberOrNull(warrantyMonths.value),
 
+                panel_type: panelType.value.trim() || null,
+                cell_type: cellType.value.trim() || null,
+                number_of_cells: toNumberOrNull(numberOfCells.value),
+                efficiency_percentage: toNumberOrNull(efficiencyPercentage.value),
+                max_system_voltage: toNumberOrNull(maxSystemVoltage.value),
+                open_circuit_voltage: toNumberOrNull(openCircuitVoltage.value),
+                short_circuit_current: toNumberOrNull(shortCircuitCurrent.value),
+                max_power_voltage: toNumberOrNull(maxPowerVoltage.value),
+                max_power_current: toNumberOrNull(maxPowerCurrent.value),
+                temperature_coefficient: toNumberOrNull(temperatureCoefficient.value),
+                frame_material: frameMaterial.value.trim() || null,
+                glass_type: glassType.value.trim() || null,
+                length_mm: toNumberOrNull(lengthMm.value),
+                width_mm: toNumberOrNull(widthMm.value),
+                thickness_mm: toNumberOrNull(thicknessMm.value),
+                weight_kg: toNumberOrNull(weightKg.value),
+
                 cost_price: toNumberOrNull(costPrice.value),
+                compare_at_cost_price: toNumberOrNull(compareAtCostPrice.value),
                 selling_price: toNumberOrNull(sellingPrice.value),
+                compare_at_selling_price: toNumberOrNull(compareAtSellingPrice.value),
 
                 quantity_in_stock: toNumberOrNull(quantityInStock.value) ?? 0,
                 reorder_level: toNumberOrNull(reorderLevel.value) ?? 0,

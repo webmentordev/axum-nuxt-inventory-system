@@ -6,6 +6,7 @@ use crate::dashboard::categories::*;
 use crate::dashboard::contacts::*;
 use crate::dashboard::images::*;
 use crate::dashboard::orders::*;
+use crate::dashboard::policies::*;
 use crate::dashboard::products::*;
 use crate::dashboard::products_seo::*;
 use crate::dashboard::stats::*;
@@ -16,7 +17,7 @@ use axum::middleware as axum_middleware;
 use anyhow::Result;
 use axum::{
     Router,
-    routing::{delete, get, post},
+    routing::{delete, get, patch, post},
 };
 
 pub async fn init_admin_routes(state: AppState) -> Result<Router> {
@@ -90,6 +91,10 @@ pub async fn init_admin_routes(state: AppState) -> Result<Router> {
                 .delete(delete_product_seo),
         );
 
+    let policies = Router::new()
+        .route("/", get(get_policies).post(create_policy))
+        .route("/{uuid}", patch(update_policy).delete(delete_policy));
+
     let routes = Router::new()
         .nest("/products", product)
         .nest("/categories", categories)
@@ -102,6 +107,7 @@ pub async fn init_admin_routes(state: AppState) -> Result<Router> {
         .nest("/brands", brands)
         .nest("/stats", stats)
         .nest("/seo", seo)
+        .nest("/policies", policies)
         .layer(axum_middleware::from_fn_with_state(
             state.clone(),
             require_admin,

@@ -4,6 +4,7 @@ pub mod categories;
 pub mod contacts;
 pub mod images;
 pub mod orders;
+pub mod policies;
 pub mod products;
 pub mod products_seo;
 pub mod stats;

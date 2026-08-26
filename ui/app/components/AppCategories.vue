@@ -49,8 +49,12 @@
 </template>
 
 <script setup lang="js">
+const { categories, processing, fetchCategories } = useCategories({
+    featured: false,
+    withSubCategories: true
+});
 
-const { categories, processing, fetchCategories } = useCategories();
+await fetchCategories();
 
 const expandedCategories = ref(new Set());
 
@@ -65,13 +69,9 @@ const toggleExpand = (slug) => {
 
 const isExpanded = (slug) => expandedCategories.value.has(slug);
 
-await fetchCategories();
-
-
 const { publicFetch } = usePublicFetch();
 const brands = ref([]);
 const brandsProcessing = ref(true);
-
 
 try {
     const data = await publicFetch('/api/public/brands');
