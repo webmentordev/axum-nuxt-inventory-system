@@ -24,3 +24,8 @@ body {
     font-family: "Plus Jakarta Sans", sans-serif;
     @apply bg-white text-slate-800 font-sans;
 }
+
+.bgfader {
+    @apply bg-gradient-to-t from-transparent via-transparent to-transparent transition-all duration-300;
+    @apply hover:from-gray-100 hover:via-gray-100/50 hover:to-transparent;
+}

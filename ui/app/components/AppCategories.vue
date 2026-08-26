@@ -31,6 +31,19 @@
                 </div>
             </div>
             <p v-if="!processing && categories.length == 0">No category exist.</p>
+
+            <Loading v-if="brandsProcessing" message="Loading brands..." />
+            <div v-else-if="brands.length" class="mt-4">
+                <div class="flex justify-between items-center mb-3 pb-3 border-b border-gray-300">
+                    <h3 class="font-bold uppercase">Brands</h3>
+                </div>
+                <div class="flex flex-col">
+                    <div v-for="brand in brands" :key="brand.slug" class="py-1">
+                        <NuxtLink :to="`/brands/${brand.slug}`">{{ brand.name }}</NuxtLink>
+                    </div>
+                </div>
+            </div>
+            <p v-if="!brandsProcessing && brands.length == 0">No brand exist.</p>
         </div>
     </section>
 </template>
@@ -41,6 +54,9 @@ const { publicFetch } = usePublicFetch();
 const categories = ref([]);
 const processing = ref(true);
 const expandedCategories = ref(new Set());
+
+const brands = ref([]);
+const brandsProcessing = ref(true);
 
 const toggleExpand = (slug) => {
     if (expandedCategories.value.has(slug)) {
@@ -66,5 +82,20 @@ try {
     });
 } finally {
     processing.value = false;
+}
+
+try {
+    const data = await publicFetch('/api/public/brands');
+    if (data) {
+        brands.value = data;
+    }
+} catch (e) {
+    throw createError({
+        status: e.statusCode || 500,
+        statusText: e.statusMessage || 'Something went wrong!',
+        fatal: true
+    });
+} finally {
+    brandsProcessing.value = false;
 }
 </script>
