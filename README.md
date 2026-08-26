@@ -13,3 +13,12 @@ cargo sqlx migrate revert
 - Info command
 cargo sqlx migrate info
 ```
+
+Policies reminder
+```
+├── privacy-policy.vue
+├── return-policy.vue
+├── shipping-policy.vue
+├── terms-of-service.vue
+└── warranty-policy.vue
+```

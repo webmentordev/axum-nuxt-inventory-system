@@ -70,7 +70,7 @@ pub async fn get_public_brand(
 
     let products = sqlx::query_as!(
         PublicProductRow,
-        r#"SELECT id, name, slug, sku, brand_id, model, description, image_url as "image_url!",
+        r#"SELECT id, name, slug, sku, brand_id, model, description, content, image_url as "image_url!",
                   power_rating_watts, voltage_rating, capacity_ah, warranty_months,
                   selling_price, quantity_in_stock, unit
            FROM products

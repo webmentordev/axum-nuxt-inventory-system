@@ -8,7 +8,7 @@
             <h1 class="text-xl font-bold text-zinc-900">Product not found</h1>
             <p class="text-sm text-zinc-500 mt-2">The product you're looking for doesn't exist or is no longer
                 available.</p>
-            <NuxtLink to="/" class="inline-block mt-4 text-lime-main hover:underline">Back to home</NuxtLink>
+            <NuxtLink to="/" class="inline-block mt-4 text-orange hover:underline">Back to home</NuxtLink>
         </div>
 
         <div class="w-full max-w-5xl mx-auto" v-else>
@@ -74,22 +74,24 @@
                         {{ product.warranty_months }} month warranty
                     </p>
 
-                    <div v-if="product.content" class="mt-2">
-                        <h2 class="text-sm font-semibold text-zinc-700 mb-2">Product Details</h2>
-                        <p class="text-zinc-700 leading-relaxed whitespace-pre-line">{{ product.content }}</p>
-                    </div>
-
                     <div class="flex items-center gap-3" v-if="product.in_stock">
                         <button type="button" :disabled="!product.in_stock" @click="addToCart"
-                            class="mt-4 px-4 py-2 rounded-md text-sm font-semibold border border-navy bg-navy text-white hover:bg-lime-hover hover:text-black hover:border-lime-hover transition-colors w-fit disabled:opacity-40 disabled:cursor-not-allowed">
+                            class="mt-4 px-4 py-2 rounded-md text-sm font-semibold border border-navy bg-navy text-white hover:bg-orange hover:text-black hover:border-orange transition-colors w-fit disabled:opacity-40 disabled:cursor-not-allowed">
                             {{ product.in_stock ? 'Add to Cart' : 'Out of Stock' }}
                         </button>
                         <button type="button" :disabled="!product.in_stock" @click="addToCart"
-                            class="mt-4 px-4 py-2 rounded-md text-sm font-semibold border border-navy bg-transparent text-navy hover:bg-lime-hover hover:border-lime-hover hover:text-black transition-colors w-fit disabled:opacity-40 disabled:cursor-not-allowed">
+                            class="mt-4 px-4 py-2 rounded-md text-sm font-semibold border border-navy bg-transparent text-navy hover:bg-orange hover:border-orange hover:text-black transition-colors w-fit disabled:opacity-40 disabled:cursor-not-allowed">
                             {{ product.in_stock ? 'Buy now' : 'Out of Stock' }}
                         </button>
                     </div>
                 </div>
+            </div>
+            <div v-if="product.content">
+                <h3 class="text-xl font-semibold mb-2" :title='`${product.name} details and specifications`'>Product
+                    description
+                </h3>
+                <article class="product prose prose-neutral max-w-none" v-html="product.content">
+                </article>
             </div>
             <div class="mt-6 border-t border-gray-200 py-4" v-if="suggested_products.length > 0">
                 <h1 class="text-2xl font-bold text-gray-800 py-2">Suggested products</h1>
@@ -210,3 +212,32 @@ useSeoMeta({
     description: () => product.value?.description || ''
 });
 </script>
+
+<style scoped>
+.product :deep(a) {
+    color: #2563eb;
+    text-decoration: underline;
+}
+
+.product :deep(h2) {
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.product :deep(p) {
+    margin-bottom: 1rem;
+    line-height: 1.7;
+}
+
+.product :deep(ul),
+.product :deep(ol) {
+    margin-bottom: 1rem;
+    padding-left: 1.5rem;
+}
+
+.product :deep(li) {
+    margin-bottom: 0.25rem;
+}
+</style>

@@ -24,6 +24,7 @@ pub struct PublicProductRow {
     pub brand_id: Option<Uuid>,
     pub model: Option<String>,
     pub description: Option<String>,
+    pub content: Option<String>,
     pub power_rating_watts: Option<Decimal>,
     pub voltage_rating: Option<Decimal>,
     pub capacity_ah: Option<Decimal>,
@@ -51,6 +52,7 @@ pub struct PublicProduct {
     pub brand: Option<PublicProductBrand>,
     pub model: Option<String>,
     pub description: Option<String>,
+    pub content: Option<String>,
     pub power_rating_watts: Option<Decimal>,
     pub voltage_rating: Option<Decimal>,
     pub capacity_ah: Option<Decimal>,
@@ -143,6 +145,7 @@ pub fn build_public_product(
         brand,
         model: p.model,
         description: p.description,
+        content: p.content,
         power_rating_watts: p.power_rating_watts,
         voltage_rating: p.voltage_rating,
         capacity_ah: p.capacity_ah,
@@ -162,7 +165,7 @@ pub async fn fetch_suggested_products(
 ) -> Result<Vec<PublicProduct>, StatusCode> {
     let rows = sqlx::query_as!(
         PublicProductRow,
-        r#"SELECT id, name, slug, sku, brand_id, model, description, image_url as "image_url!",
+        r#"SELECT id, name, slug, sku, brand_id, model, description, content, image_url as "image_url!",
               power_rating_watts, voltage_rating, capacity_ah, warranty_months,
               selling_price, quantity_in_stock, unit
        FROM products
@@ -204,7 +207,7 @@ pub async fn get_public_products(
 ) -> Result<Json<Vec<PublicProduct>>, StatusCode> {
     let products = sqlx::query_as!(
         PublicProductRow,
-        r#"SELECT id, name, slug, sku, brand_id, model, description, image_url as "image_url!",
+        r#"SELECT id, name, slug, sku, brand_id, model, description, content, image_url as "image_url!",
               power_rating_watts, voltage_rating, capacity_ah, warranty_months,
               selling_price, quantity_in_stock, unit
        FROM products
@@ -246,7 +249,7 @@ pub async fn get_public_product(
 ) -> Result<Json<PublicProduct>, StatusCode> {
     let p = sqlx::query_as!(
         PublicProductRow,
-        r#"SELECT id, name, slug, sku, brand_id, model, description, image_url as "image_url!",
+        r#"SELECT id, name, slug, sku, brand_id, model, description, content, image_url as "image_url!",
               power_rating_watts, voltage_rating, capacity_ah, warranty_months,
               selling_price, quantity_in_stock, unit
        FROM products
