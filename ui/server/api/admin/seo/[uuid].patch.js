@@ -7,11 +7,11 @@ export default defineEventHandler(async (event) => {
         throw createError({
             statusCode: 400,
             statusMessage: 'Bad Request',
-            data: { message: 'Brand id is required' }
+            data: { message: 'SEO id is required' }
         });
     }
     try {
-        const data = await $fetch(`${apiUrl}/api/admin/brands/${uuid}`, {
+        const data = await $fetch(`${apiUrl}/api/admin/seo/${uuid}`, {
             method: 'PATCH',
             headers: authHeader,
             body: body
@@ -21,8 +21,8 @@ export default defineEventHandler(async (event) => {
         throw createError({
             statusCode: e.response?.status || 500,
             statusMessage: e.response?.status === 404
-                ? 'Brand does not exist'
-                : (e.data?.message || 'Brand update failed')
+                ? 'SEO does not exist'
+                : (e.data?.message || 'SEO update failed')
         });
     }
 });

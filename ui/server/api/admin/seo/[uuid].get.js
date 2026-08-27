@@ -1,28 +1,23 @@
 export default defineEventHandler(async (event) => {
     const apiUrl = useRuntimeConfig(event).apiUrl;
     const uuid = getRouterParam(event, 'uuid');
-    const body = await readBody(event);
     const authHeader = getRequestHeaders(event);
     if (!uuid) {
         throw createError({
             statusCode: 400,
             statusMessage: 'Bad Request',
-            data: { message: 'Brand id is required' }
+            data: { message: 'SEO id is required' }
         });
     }
     try {
-        const data = await $fetch(`${apiUrl}/api/admin/brands/${uuid}`, {
-            method: 'PATCH',
-            headers: authHeader,
-            body: body
-        });
+        const data = await $fetch(`${apiUrl}/api/admin/seo/${uuid}`, {headers: authHeader});
         return data;
     } catch (e) {
         throw createError({
             statusCode: e.response?.status || 500,
             statusMessage: e.response?.status === 404
-                ? 'Brand does not exist'
-                : (e.data?.message || 'Brand update failed')
+                ? 'SEO does not exist'
+                : (e.data?.message || 'SEO fetch failed')
         });
     }
 });

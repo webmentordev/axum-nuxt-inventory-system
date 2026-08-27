@@ -7,17 +7,13 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::{
-    AppState,
-    dashboard::images::{Image, WithFullUrl},
-};
+use crate::AppState;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct ProductInfo {
     pub id: Uuid,
     pub name: String,
     pub slug: String,
-    pub image: Option<Image>,
 }
 
 #[derive(Debug, Clone, Serialize, sqlx::FromRow)]
@@ -94,56 +90,25 @@ pub struct UpdateProductSeo {
     pub focus_keyword: Option<String>,
 }
 
-async fn attach_product_info(
-    state: &AppState,
-    rows: Vec<ProductSeoRow>,
-) -> Result<Vec<ProductSeoWithProduct>, StatusCode> {
-    let product_ids: Vec<Uuid> = rows.iter().map(|r| r.product_id).collect();
-
-    let images = sqlx::query_as!(
-        Image,
-        r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, created_at
-           FROM images
-           WHERE product_id = ANY($1)
-           ORDER BY created_at ASC"#,
-        &product_ids
-    )
-    .fetch_all(&state.db)
-    .await
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    let result = rows
-        .into_iter()
-        .map(|r| {
-            let image = images
-                .iter()
-                .find(|img| img.product_id == Some(r.product_id))
-                .cloned()
-                .map(Image::with_full_url);
-
-            ProductSeoWithProduct {
-                id: r.id,
-                meta_title: r.meta_title,
-                meta_description: r.meta_description,
-                meta_keywords: r.meta_keywords,
-                og_title: r.og_title,
-                og_description: r.og_description,
-                og_image_url: r.og_image_url,
-                canonical_url: r.canonical_url,
-                focus_keyword: r.focus_keyword,
-                created_at: r.created_at,
-                updated_at: r.updated_at,
-                product: ProductInfo {
-                    id: r.product_id,
-                    name: r.product_name,
-                    slug: r.product_slug,
-                    image,
-                },
-            }
-        })
-        .collect();
-
-    Ok(result)
+fn to_response(r: ProductSeoRow) -> ProductSeoWithProduct {
+    ProductSeoWithProduct {
+        id: r.id,
+        meta_title: r.meta_title,
+        meta_description: r.meta_description,
+        meta_keywords: r.meta_keywords,
+        og_title: r.og_title,
+        og_description: r.og_description,
+        og_image_url: r.og_image_url,
+        canonical_url: r.canonical_url,
+        focus_keyword: r.focus_keyword,
+        created_at: r.created_at,
+        updated_at: r.updated_at,
+        product: ProductInfo {
+            id: r.product_id,
+            name: r.product_name,
+            slug: r.product_slug,
+        },
+    }
 }
 
 pub async fn get_products_seo(
@@ -163,7 +128,7 @@ pub async fn get_products_seo(
     .await
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    let result = attach_product_info(&state, rows).await?;
+    let result = rows.into_iter().map(to_response).collect();
 
     Ok(Json(result))
 }
@@ -208,13 +173,7 @@ pub async fn create_product_seo(
         _ => StatusCode::INTERNAL_SERVER_ERROR,
     })?;
 
-    let result = attach_product_info(&state, vec![row]).await?;
-    let seo = result
-        .into_iter()
-        .next()
-        .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    Ok((StatusCode::CREATED, Json(seo)))
+    Ok((StatusCode::CREATED, Json(to_response(row))))
 }
 
 pub async fn get_product_seo(
@@ -237,13 +196,7 @@ pub async fn get_product_seo(
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
     .ok_or(StatusCode::NOT_FOUND)?;
 
-    let result = attach_product_info(&state, vec![row]).await?;
-    let seo = result
-        .into_iter()
-        .next()
-        .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    Ok(Json(seo))
+    Ok(Json(to_response(row)))
 }
 
 pub async fn update_product_seo(
@@ -285,13 +238,7 @@ pub async fn update_product_seo(
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
     .ok_or(StatusCode::NOT_FOUND)?;
 
-    let result = attach_product_info(&state, vec![row]).await?;
-    let seo = result
-        .into_iter()
-        .next()
-        .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    Ok(Json(seo))
+    Ok(Json(to_response(row)))
 }
 
 pub async fn delete_product_seo(

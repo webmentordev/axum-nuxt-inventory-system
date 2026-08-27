@@ -29,17 +29,31 @@
                     </div>
 
                     <ul class="text-sm flex flex-col gap-1">
-                        <li><strong>Brand: </strong>{{ product.brand.name }}</li>
+                        <li><strong>SKU: </strong>{{ product.sku }}</li>
+                        <li><strong>Brand: </strong>
+                            <NuxtLink class="underline" :to='`/brands/${product.brand.slug}`' target="_blank">{{
+                                product.brand.name }}
+                            </NuxtLink>
+                        </li>
+                        <li><strong>Category: </strong>
+                            <NuxtLink class="underline" :to='`/categories/${product.category.slug}`' target="_blank">{{
+                                product.category.name }}
+                            </NuxtLink>
+                        </li>
+                        <li><strong>Tech Type: </strong>
+                            <NuxtLink class="underline" :to='`/sub-categories/${product.sub_category.slug}`'
+                                target="_blank">{{
+                                    product.sub_category.name
+                                }}</NuxtLink>
+                        </li>
                         <li v-if="stockLabel"><strong>Availability: </strong><span :class="stockClass">{{ stockLabel
-                        }}</span></li>
-                        <li><strong>Category: </strong>{{ product.category.name }}</li>
-                        <li><strong>Tech Type: </strong>{{ product.sub_category.name }}</li>
+                                }}</span></li>
                     </ul>
 
                     <div class="flex flex-col gap-1">
                         <div class="flex items-baseline gap-3">
                             <span class="text-2xl font-bold text-navy">Rs. {{ formatPrice(product.selling_price)
-                            }}</span>
+                                }}</span>
                             <span v-if="hasDiscount" class="text-base text-zinc-400 line-through">
                                 Rs. {{ formatPrice(product.compare_at_selling_price) }}
                             </span>

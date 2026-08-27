@@ -28,6 +28,12 @@
                 <Icon name="game-icons:cargo-ship" size="20" />
                 <strong class="ml-1">Products</strong>
             </NuxtLink>
+            <NuxtLink to="/admin/seo"
+                class="w-full flex items-center px-3 py-2 rounded-md text-sm font-semibold text-zinc-300 transition-colors hover:text-white hover:bg-dark-300"
+                active-class="!text-lime-main !bg-lime-bg !border !border-lime-main/30">
+                <Icon name="streamline-freehand:programming-search" size="20" />
+                <strong class="ml-1">Product SEO</strong>
+            </NuxtLink>
             <NuxtLink to="/admin/brands"
                 class="w-full flex items-center px-3 py-2 rounded-md text-sm font-semibold text-zinc-300 transition-colors hover:text-white hover:bg-dark-300"
                 active-class="!text-lime-main !bg-lime-bg !border !border-lime-main/30">
