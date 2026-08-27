@@ -34,3 +34,7 @@ body {
     @apply bg-gradient-to-t from-transparent via-transparent to-transparent transition-all duration-300;
     @apply from-gray-200 via-gray-100/50 to-transparent;
 }
+
+button {
+    @apply cursor-pointer;
+}

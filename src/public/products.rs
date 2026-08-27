@@ -22,6 +22,8 @@ pub struct PublicProductRow {
     pub slug: String,
     pub sku: String,
     pub brand_id: Option<Uuid>,
+    pub category_id: Uuid,
+    pub sub_category_id: Option<Uuid>,
     pub model: Option<String>,
     pub description: Option<String>,
     pub content: Option<String>,
@@ -50,6 +52,8 @@ pub struct PublicProduct {
     pub slug: String,
     pub sku: String,
     pub brand: Option<PublicProductBrand>,
+    pub category: Option<PublicProductCategoryMini>,
+    pub sub_category: Option<PublicProductCategoryMini>,
     pub model: Option<String>,
     pub description: Option<String>,
     pub content: Option<String>,
@@ -70,6 +74,17 @@ struct BrandRow {
     id: Uuid,
     name: String,
     slug: String,
+}
+
+struct CategoryMiniRow {
+    name: String,
+    slug: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct PublicProductCategoryMini {
+    pub name: String,
+    pub slug: String,
 }
 
 pub async fn fetch_product_brands(
@@ -143,6 +158,8 @@ pub fn build_public_product(
         slug: p.slug,
         sku: p.sku,
         brand,
+        category: None,
+        sub_category: None,
         model: p.model,
         description: p.description,
         content: p.content,
@@ -165,13 +182,13 @@ pub async fn fetch_suggested_products(
 ) -> Result<Vec<PublicProduct>, StatusCode> {
     let rows = sqlx::query_as!(
         PublicProductRow,
-        r#"SELECT id, name, slug, sku, brand_id, model, description, content, image_url as "image_url!",
-              power_rating_watts, voltage_rating, capacity_ah, warranty_months,
-              selling_price, quantity_in_stock, unit
-       FROM products
-       WHERE is_active = TRUE AND id != $1
-       ORDER BY random()
-       LIMIT $2"#,
+        r#"SELECT id, name, slug, sku, brand_id, category_id as "category_id!", sub_category_id, model, description, content, image_url as "image_url!",
+                  power_rating_watts, voltage_rating, capacity_ah, warranty_months,
+                  selling_price, quantity_in_stock, unit
+           FROM products
+           WHERE is_active = TRUE AND id != $1
+           ORDER BY random()
+           LIMIT $2"#,
         exclude_id,
         SUGGESTED_PRODUCTS_LIMIT
     )
@@ -207,12 +224,12 @@ pub async fn get_public_products(
 ) -> Result<Json<Vec<PublicProduct>>, StatusCode> {
     let products = sqlx::query_as!(
         PublicProductRow,
-        r#"SELECT id, name, slug, sku, brand_id, model, description, content, image_url as "image_url!",
-              power_rating_watts, voltage_rating, capacity_ah, warranty_months,
-              selling_price, quantity_in_stock, unit
-       FROM products
-       WHERE is_active = TRUE
-       ORDER BY created_at DESC"#
+        r#"SELECT id, name, slug, sku, brand_id, category_id as "category_id!", sub_category_id, model, description, content, image_url as "image_url!",
+                  power_rating_watts, voltage_rating, capacity_ah, warranty_months,
+                  selling_price, quantity_in_stock, unit
+           FROM products
+           WHERE is_active = TRUE
+           ORDER BY created_at DESC"#
     )
     .fetch_all(&state.db)
     .await
@@ -235,12 +252,94 @@ pub async fn get_public_products(
     let brand_ids: Vec<Uuid> = products.iter().filter_map(|p| p.brand_id).collect();
     let brand_map = fetch_product_brands(&state, &brand_ids).await?;
 
+    let category_ids: Vec<Uuid> = products.iter().map(|p| p.category_id).collect();
+    let sub_category_ids: Vec<Uuid> = products.iter().filter_map(|p| p.sub_category_id).collect();
+
+    let category_map = fetch_category_minis(&state, &category_ids).await?;
+    let sub_category_map = fetch_sub_category_minis(&state, &sub_category_ids).await?;
+
     let result = products
         .into_iter()
-        .map(|p| build_public_product(p, &images, &brand_map))
+        .map(|p| {
+            let category = category_map.get(&p.category_id).cloned();
+            let sub_category = p
+                .sub_category_id
+                .and_then(|id| sub_category_map.get(&id).cloned());
+
+            let mut product = build_public_product(p, &images, &brand_map);
+            product.category = category;
+            product.sub_category = sub_category;
+            product
+        })
         .collect();
 
     Ok(Json(result))
+}
+
+pub async fn fetch_category_minis(
+    state: &AppState,
+    ids: &[Uuid],
+) -> Result<HashMap<Uuid, PublicProductCategoryMini>, StatusCode> {
+    struct Row {
+        id: Uuid,
+        name: String,
+        slug: String,
+    }
+
+    let rows = sqlx::query_as!(
+        Row,
+        r#"SELECT id, name, slug FROM categories WHERE id = ANY($1)"#,
+        ids
+    )
+    .fetch_all(&state.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    Ok(rows
+        .into_iter()
+        .map(|r| {
+            (
+                r.id,
+                PublicProductCategoryMini {
+                    name: r.name,
+                    slug: r.slug,
+                },
+            )
+        })
+        .collect())
+}
+
+pub async fn fetch_sub_category_minis(
+    state: &AppState,
+    ids: &[Uuid],
+) -> Result<HashMap<Uuid, PublicProductCategoryMini>, StatusCode> {
+    struct Row {
+        id: Uuid,
+        name: String,
+        slug: String,
+    }
+
+    let rows = sqlx::query_as!(
+        Row,
+        r#"SELECT id, name, slug FROM sub_categories WHERE id = ANY($1)"#,
+        ids
+    )
+    .fetch_all(&state.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    Ok(rows
+        .into_iter()
+        .map(|r| {
+            (
+                r.id,
+                PublicProductCategoryMini {
+                    name: r.name,
+                    slug: r.slug,
+                },
+            )
+        })
+        .collect())
 }
 
 pub async fn get_public_product(
@@ -249,11 +348,11 @@ pub async fn get_public_product(
 ) -> Result<Json<PublicProduct>, StatusCode> {
     let p = sqlx::query_as!(
         PublicProductRow,
-        r#"SELECT id, name, slug, sku, brand_id, model, description, content, image_url as "image_url!",
-              power_rating_watts, voltage_rating, capacity_ah, warranty_months,
-              selling_price, quantity_in_stock, unit
-       FROM products
-       WHERE slug = $1 AND is_active = TRUE"#,
+        r#"SELECT id, name, slug, sku, brand_id, category_id as "category_id!", sub_category_id, model, description, content, image_url as "image_url!",
+                  power_rating_watts, voltage_rating, capacity_ah, warranty_months,
+                  selling_price, quantity_in_stock, unit
+           FROM products
+           WHERE slug = $1 AND is_active = TRUE"#,
         slug
     )
     .fetch_optional(&state.db)
@@ -276,8 +375,40 @@ pub async fn get_public_product(
     let brand_ids: Vec<Uuid> = p.brand_id.into_iter().collect();
     let brand_map = fetch_product_brands(&state, &brand_ids).await?;
 
+    let category = sqlx::query_as!(
+        CategoryMiniRow,
+        r#"SELECT name, slug FROM categories WHERE id = $1"#,
+        p.category_id
+    )
+    .fetch_optional(&state.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+    .map(|c| PublicProductCategoryMini {
+        name: c.name,
+        slug: c.slug,
+    });
+
+    let sub_category = if let Some(sub_category_id) = p.sub_category_id {
+        sqlx::query_as!(
+            CategoryMiniRow,
+            r#"SELECT name, slug FROM sub_categories WHERE id = $1"#,
+            sub_category_id
+        )
+        .fetch_optional(&state.db)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .map(|c| PublicProductCategoryMini {
+            name: c.name,
+            slug: c.slug,
+        })
+    } else {
+        None
+    };
+
     let product_id = p.id;
     let mut product = build_public_product(p, &images, &brand_map);
+    product.category = category;
+    product.sub_category = sub_category;
     product.suggested_products = Some(fetch_suggested_products(&state, product_id).await?);
 
     Ok(Json(product))

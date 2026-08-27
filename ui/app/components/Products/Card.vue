@@ -13,7 +13,7 @@
             </p>
             <div class="mt-auto pt-3 flex items-center justify-between">
                 <span class="font-bold text-lg">
-                    {{ config.currency }}{{ Number(product.selling_price).toFixed(2) }}
+                    {{ config.currency }}{{ formatPrice(Number(product.selling_price)) }}
                 </span>
                 <span class="text-xs px-2 py-1 rounded-full" :class="product.in_stock
                     ? 'bg-green-100 text-green-700'
@@ -37,4 +37,9 @@ defineProps({
         default: () => []
     }
 });
+function formatPrice(value) {
+    const n = Number(value);
+    if (Number.isNaN(n)) return value;
+    return n.toLocaleString('en-PK', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+}
 </script>

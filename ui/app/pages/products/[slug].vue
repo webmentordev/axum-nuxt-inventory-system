@@ -24,10 +24,17 @@
                         <div v-if="product.brand?.images.length > 0" class="text-sm text-zinc-500 mb-3">
                             <img :src="product.brand.images[0].file_path" width="90px">
                         </div>
-                        <p v-if="product.brand" class="text-sm text-zinc-500">{{ product.brand.name }}</p>
                         <h1 class="text-2xl font-bold text-zinc-900 my-2">{{ product.name }}</h1>
                         <p v-if="product.model" class="text-sm text-zinc-500">Model: {{ product.model }}</p>
                     </div>
+
+                    <ul class="text-sm flex flex-col gap-1">
+                        <li><strong>Brand: </strong>{{ product.brand.name }}</li>
+                        <li v-if="stockLabel"><strong>Availability: </strong><span :class="stockClass">{{ stockLabel
+                        }}</span></li>
+                        <li><strong>Category: </strong>{{ product.category.name }}</li>
+                        <li><strong>Tech Type: </strong>{{ product.sub_category.name }}</li>
+                    </ul>
 
                     <div class="flex flex-col gap-1">
                         <div class="flex items-baseline gap-3">
@@ -46,29 +53,7 @@
                         </span>
                     </div>
 
-                    <p v-if="stockLabel" :class="stockClass" class="text-sm font-semibold">{{ stockLabel }}</p>
-
                     <p v-if="product.description" class="text-zinc-700 leading-relaxed">{{ product.description }}</p>
-
-                    <div v-if="specs.length" class="mt-2">
-                        <h2 class="text-sm font-semibold text-zinc-700 mb-2">Specifications</h2>
-                        <dl class="grid grid-cols-2 gap-y-2 text-sm">
-                            <template v-for="spec in specs" :key="spec.label">
-                                <dt class="text-zinc-500">{{ spec.label }}</dt>
-                                <dd class="text-zinc-700">{{ spec.value }}</dd>
-                            </template>
-                        </dl>
-                    </div>
-
-                    <div v-if="isSolar && solarSpecs.length" class="mt-2">
-                        <h2 class="text-sm font-semibold text-zinc-700 mb-2">Solar Panel Specifications</h2>
-                        <dl class="grid grid-cols-2 gap-y-2 text-sm">
-                            <template v-for="spec in solarSpecs" :key="spec.label">
-                                <dt class="text-zinc-500">{{ spec.label }}</dt>
-                                <dd class="text-zinc-700">{{ spec.value }}</dd>
-                            </template>
-                        </dl>
-                    </div>
 
                     <p v-if="product.warranty_months" class="text-sm text-zinc-500">
                         {{ product.warranty_months }} month warranty
@@ -204,7 +189,7 @@ const stockClass = computed(() => {
 function formatPrice(value) {
     const n = Number(value);
     if (Number.isNaN(n)) return value;
-    return n.toLocaleString('en-PK', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+    return n.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 useSeoMeta({

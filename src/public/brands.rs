@@ -10,7 +10,8 @@ use crate::{
     AppState,
     dashboard::images::Image,
     public::products::{
-        PublicProduct, PublicProductRow, build_public_product, fetch_product_brands,
+        PublicProduct, PublicProductRow, build_public_product, fetch_category_minis,
+        fetch_product_brands, fetch_sub_category_minis,
     },
 };
 
@@ -70,7 +71,7 @@ pub async fn get_public_brand(
 
     let products = sqlx::query_as!(
         PublicProductRow,
-        r#"SELECT id, name, slug, sku, brand_id, model, description, content, image_url as "image_url!",
+        r#"SELECT id, name, slug, sku, brand_id, category_id as "category_id!", sub_category_id, model, description, content, image_url as "image_url!",
                   power_rating_watts, voltage_rating, capacity_ah, warranty_months,
                   selling_price, quantity_in_stock, unit
            FROM products
@@ -99,9 +100,24 @@ pub async fn get_public_brand(
     let brand_ids: Vec<Uuid> = products.iter().filter_map(|p| p.brand_id).collect();
     let brand_map = fetch_product_brands(&state, &brand_ids).await?;
 
+    let category_ids: Vec<Uuid> = products.iter().map(|p| p.category_id).collect();
+    let sub_category_ids: Vec<Uuid> = products.iter().filter_map(|p| p.sub_category_id).collect();
+
+    let category_map = fetch_category_minis(&state, &category_ids).await?;
+    let sub_category_map = fetch_sub_category_minis(&state, &sub_category_ids).await?;
+
     let products = products
         .into_iter()
-        .map(|p| build_public_product(p, &images, &brand_map))
+        .map(|p| {
+            let cat = category_map.get(&p.category_id).cloned();
+            let sub = p
+                .sub_category_id
+                .and_then(|id| sub_category_map.get(&id).cloned());
+            let mut product = build_public_product(p, &images, &brand_map);
+            product.category = cat;
+            product.sub_category = sub;
+            product
+        })
         .collect();
 
     Ok(Json(PublicBrandDetail {

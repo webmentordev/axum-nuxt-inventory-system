@@ -6,13 +6,18 @@
 
             <form @submit.prevent="handleSubmit" class="mt-6 flex flex-col gap-4" novalidate>
                 <div>
-                    <label class="block text-sm font-semibold text-zinc-300 mb-2">Attach to <span
-                            class="text-zinc-500 font-normal">(optional)</span></label>
-                    <AdminSelect v-model="targetType" :options="targetTypeOptions" placeholder="None"
+                    <label class="block text-sm font-semibold text-zinc-300 mb-2">Assignment</label>
+                    <AdminSelect v-model="assignMode" :options="assignModeOptions"
+                        @update:modelValue="handleAssignModeChange" />
+                </div>
+
+                <div v-if="assignMode === 'assign'">
+                    <label class="block text-sm font-semibold text-zinc-300 mb-2">Attach to</label>
+                    <AdminSelect v-model="targetType" :options="targetTypeOptions" placeholder="Select a type"
                         @update:modelValue="handleTargetTypeChange" />
                 </div>
 
-                <div v-if="targetType">
+                <div v-if="assignMode === 'assign' && targetType">
                     <label class="block text-sm font-semibold text-zinc-300 mb-2">{{ targetLabel }}</label>
                     <AdminSelect v-model="targetId" :options="targetOptions"
                         :placeholder="targetLoading ? `Loading ${targetLabel.toLowerCase()}...` : `Select a ${targetLabel.toLowerCase()}`" />
@@ -57,6 +62,11 @@ definePageMeta({
 });
 const { authFetch } = useAuthFetch();
 
+const assignModeOptions = [
+    { label: "Don't assign", value: 'none' },
+    { label: 'Assign', value: 'assign' }
+];
+
 const targetTypeOptions = [
     { label: 'Product', value: 'product_id' },
     { label: 'Category', value: 'category_id' },
@@ -64,6 +74,7 @@ const targetTypeOptions = [
     { label: 'Brand', value: 'brand_id' }
 ];
 
+const assignMode = ref('none');
 const targetType = ref(null);
 const targetId = ref(null);
 const targetOptionsMap = ref({});
@@ -91,6 +102,13 @@ const targetEndpoints = {
 };
 
 const targetOptions = computed(() => targetOptionsMap.value[targetType.value] || []);
+
+function handleAssignModeChange(value) {
+    if (value !== 'assign') {
+        targetType.value = null;
+        targetId.value = null;
+    }
+}
 
 async function handleTargetTypeChange(value) {
     targetId.value = null;
@@ -143,7 +161,7 @@ async function handleSubmit() {
         const formData = new FormData();
         formData.append('name', name.value.trim());
         formData.append('file', image.value);
-        if (targetType.value && targetId.value) {
+        if (assignMode.value === 'assign' && targetType.value && targetId.value) {
             formData.append(targetType.value, targetId.value);
         }
 
@@ -155,6 +173,7 @@ async function handleSubmit() {
         if (data) {
             statusType.value = 'success';
             statusMessage.value = 'Image uploaded.';
+            assignMode.value = 'none';
             targetType.value = null;
             targetId.value = null;
             name.value = '';
