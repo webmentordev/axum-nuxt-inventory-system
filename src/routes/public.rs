@@ -36,7 +36,9 @@ pub async fn init_public_route(state: AppState) -> Result<Router> {
         .route("/", get(get_public_products))
         .route("/{slug}", get(get_public_product));
 
-    let policies = Router::new().route("/{slug}", get(get_public_policy));
+    let policies = Router::new()
+        .route("/", get(get_public_policies))
+        .route("/{slug}", get(get_public_policy));
 
     let routes = Router::new()
         .nest("/users", users)

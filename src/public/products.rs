@@ -68,6 +68,8 @@ pub struct PublicProduct {
     pub images: Vec<Image>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub suggested_products: Option<Vec<PublicProduct>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub seo: Option<PublicProductSeo>,
 }
 
 struct BrandRow {
@@ -85,6 +87,18 @@ struct CategoryMiniRow {
 pub struct PublicProductCategoryMini {
     pub name: String,
     pub slug: String,
+}
+
+#[derive(Debug, Serialize, sqlx::FromRow)]
+pub struct PublicProductSeo {
+    pub meta_title: Option<String>,
+    pub meta_description: Option<String>,
+    pub meta_keywords: Option<String>,
+    pub og_title: Option<String>,
+    pub og_description: Option<String>,
+    pub og_image_url: Option<String>,
+    pub canonical_url: Option<String>,
+    pub focus_keyword: Option<String>,
 }
 
 pub async fn fetch_product_brands(
@@ -173,6 +187,7 @@ pub fn build_public_product(
         image_url: p.image_url,
         images: product_images,
         suggested_products: None,
+        seo: None,
     }
 }
 
@@ -360,6 +375,17 @@ pub async fn get_public_product(
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
     .ok_or(StatusCode::NOT_FOUND)?;
 
+    let seo = sqlx::query_as!(
+        PublicProductSeo,
+        r#"SELECT meta_title, meta_description, meta_keywords, og_title, og_description, og_image_url, canonical_url, focus_keyword
+           FROM products_seo
+           WHERE product_id = $1"#,
+        p.id
+    )
+    .fetch_optional(&state.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
     let images = sqlx::query_as!(
         Image,
         r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, created_at
@@ -410,6 +436,7 @@ pub async fn get_public_product(
     product.category = category;
     product.sub_category = sub_category;
     product.suggested_products = Some(fetch_suggested_products(&state, product_id).await?);
+    product.seo = seo;
 
     Ok(Json(product))
 }

@@ -67,7 +67,7 @@ try {
     processing.value = false;
 }
 
-const siteUrl = runtimeConfig.public?.siteUrl || '';
+const siteUrl = useRuntimeConfig().public?.siteUrl || '';
 const canonicalUrl = computed(() => `${siteUrl}/policies/${slug}`);
 
 useSeoMeta({
@@ -77,7 +77,7 @@ useSeoMeta({
     ogDescription: () => policy.value?.seo_description || undefined,
     ogUrl: () => canonicalUrl.value,
     ogType: 'article',
-    twitterCard: 'summary',
+    twitterCard: 'summary_large_image',
     twitterTitle: () => policy.value?.seo_title || policy.value?.name || 'Policy',
     twitterDescription: () => policy.value?.seo_description || undefined
 });

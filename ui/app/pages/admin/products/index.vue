@@ -39,10 +39,12 @@
                         </td>
                         <td class="px-4 py-3 text-zinc-200 font-medium">{{ product.name }}</td>
                         <td class="px-4 py-3 text-zinc-400">{{ product.sku }}</td>
-                        <td class="px-4 py-3 text-zinc-200">{{ currency }} {{ product.cost_price }}</td>
-                        <td class="px-4 py-3 text-zinc-200">{{ currency }} {{ product.compare_at_cost_price }}</td>
-                        <td class="px-4 py-3 text-zinc-200">{{ currency }} {{ product.selling_price }}</td>
-                        <td class="px-4 py-3 text-zinc-200">{{ currency }} {{ product.compare_at_selling_price }}</td>
+                        <td class="px-4 py-3 text-zinc-200">{{ currency }} {{ formatPrice(product.cost_price) }}</td>
+                        <td class="px-4 py-3 text-zinc-200">{{ currency }} {{ formatPrice(product.compare_at_cost_price)
+                        }}</td>
+                        <td class="px-4 py-3 text-zinc-200">{{ currency }} {{ formatPrice(product.selling_price) }}</td>
+                        <td class="px-4 py-3 text-zinc-200">{{ currency }} {{
+                            formatPrice(product.compare_at_selling_price) }}</td>
                         <td class="px-4 py-3 text-zinc-400">{{ product.quantity_in_stock }}</td>
                         <td class="px-4 py-3">
                             <span class="px-2 py-1 rounded text-xs font-semibold" :class="product.is_active
@@ -196,6 +198,12 @@ function formatDate(utcString) {
         hour: 'numeric',
         minute: '2-digit'
     });
+}
+
+function formatPrice(value) {
+    const n = Number(value);
+    if (Number.isNaN(n)) return value;
+    return n.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 await fetchProducts();

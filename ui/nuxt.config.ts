@@ -25,6 +25,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     apiUrl: '',
     public: {
+      siteUrl: '',
       currency: '',
       email: '',
       phone: ''

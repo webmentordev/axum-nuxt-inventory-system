@@ -68,20 +68,10 @@
             <div>
                 <h3 class="mb-5 text-lg font-bold">HELP & SUPPORT</h3>
                 <ul class="space-y-3 text-sm text-slate-300" title="Kaleem solar policies">
-                    <li>
-                        <NuxtLink to="/policies/shipping-policy" class="hover:text-orange">Shipping Policy</NuxtLink>
-                    </li>
-                    <li>
-                        <NuxtLink to="/policies/warranty-policy" class="hover:text-orange">Warranty Policy</NuxtLink>
-                    </li>
-                    <li>
-                        <NuxtLink to="/policies/return-policy" class="hover:text-orange">Return/Refund Policy</NuxtLink>
-                    </li>
-                    <li>
-                        <NuxtLink to="/policies/terms-of-service" class="hover:text-orange">Terms of service</NuxtLink>
-                    </li>
-                    <li>
-                        <NuxtLink to="/policies/privacy-policy" class="hover:text-orange">Privacy Policy</NuxtLink>
+                    <li v-for="policy in policies" :key="policy.slug">
+                        <NuxtLink :to="`/policies/${policy.slug}`" class="hover:text-orange">
+                            {{ policy.name }}
+                        </NuxtLink>
                     </li>
                 </ul>
             </div>
@@ -106,5 +96,7 @@ const { categories, processing, fetchCategories } = useCategories({
     withSubCategories: false
 });
 
-await fetchCategories();
+const { policies, processing: policiesProcessing, fetchPolicies } = usePolicies();
+
+await Promise.all([fetchCategories(), fetchPolicies()]);
 </script>

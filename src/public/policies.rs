@@ -3,9 +3,17 @@ use axum::{
     extract::{Path, State},
     http::StatusCode,
 };
+use serde::Serialize;
 
 use crate::AppState;
 use crate::dashboard::policies::Policy;
+
+#[derive(Serialize)]
+pub struct PolicyListItem {
+    pub name: String,
+    pub slug: String,
+    pub sort_order: i32,
+}
 
 pub async fn get_public_policy(
     State(state): State<AppState>,
@@ -25,4 +33,21 @@ pub async fn get_public_policy(
     .ok_or(StatusCode::NOT_FOUND)?;
 
     Ok(Json(policy))
+}
+
+pub async fn get_public_policies(
+    State(state): State<AppState>,
+) -> Result<Json<Vec<PolicyListItem>>, StatusCode> {
+    let policies = sqlx::query_as!(
+        PolicyListItem,
+        r#"SELECT name, slug, sort_order
+           FROM policies
+           WHERE is_active = TRUE
+           ORDER BY sort_order ASC"#
+    )
+    .fetch_all(&state.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    Ok(Json(policies))
 }

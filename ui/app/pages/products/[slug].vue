@@ -108,17 +108,51 @@ definePageMeta({
 const { publicFetch } = usePublicFetch();
 
 const product = ref(null);
+const seo = ref(null);
 const suggested_products = ref([]);
 const processing = ref(true);
 
 const route = useRoute();
 const slug = route.params.slug;
 
+const siteUrl = useRuntimeConfig().public?.siteUrl || '';
+const canonicalUrl = computed(() => `${siteUrl}/policies/${slug}`);
+
 try {
     const data = await publicFetch('/api/public/products/' + slug);
     if (data) {
         product.value = data;
         suggested_products.value = data.suggested_products;
+        seo.value = data.seo;
+        if (seo.value) {
+            useSeoMeta({
+                title: () => product.value?.name || 'Product',
+                description: () => seo.value?.meta_description || undefined,
+                keywords: () => seo.value?.meta_keywords || undefined,
+                ogTitle: () => seo.value?.og_title || seo.value?.meta_title || product.value?.name || 'Product',
+                ogDescription: () => seo.value?.og_description || seo.value?.meta_description || undefined,
+                ogImage: () => seo.value?.og_image_url || undefined,
+                ogUrl: () => canonicalUrl.value,
+                ogType: 'article',
+                twitterCard: 'summary_large_image',
+                twitterTitle: () => seo.value?.og_title || seo.value?.meta_title || product.value?.name || 'Product',
+                twitterDescription: () => seo.value?.og_description || seo.value?.meta_description || undefined
+            });
+
+            useHead({
+                meta: [
+                    { property: 'product:price:amount', content: () => product.value?.selling_price },
+                    { property: 'product:price:currency', content: 'PKR' },
+                    { property: 'og:availability', content: () => product.value?.in_stock ? 'instock' : 'oos' }
+                ],
+                link: [
+                    {
+                        rel: 'canonical',
+                        href: seo.value?.canonical_url || canonicalUrl.value
+                    }
+                ]
+            });
+        }
     }
 } catch (e) {
     throw createError({
@@ -205,11 +239,6 @@ function formatPrice(value) {
     if (Number.isNaN(n)) return value;
     return n.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
-
-useSeoMeta({
-    title: () => product.value?.name || 'Product',
-    description: () => product.value?.description || ''
-});
 </script>
 
 <style scoped>
