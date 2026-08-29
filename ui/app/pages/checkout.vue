@@ -68,8 +68,18 @@
                         class="border border-gray-300 rounded-md px-3 py-2 text-sm"></textarea>
                     <p v-if="errors.shipping_address" class="text-xs text-red-500">{{ errors.shipping_address }}</p>
 
+                    <input type="text" placeholder="Full name" disabled value="Multan (only)"
+                        class="border border-gray-300 rounded-md px-3 py-2 text-sm" />
+
                     <textarea v-model="form.notes" rows="2" placeholder="Order notes (optional)"
                         class="border border-gray-300 rounded-md px-3 py-2 text-sm"></textarea>
+                    <div class="flex flex-col">
+                        <h3 class="font-semibold">
+                            Important note:
+                        </h3>
+                        <p class="text-sm">Shipping is only available (for now) within Multan due to higher delivery
+                            costs.</p>
+                    </div>
                 </div>
             </div>
 
@@ -199,6 +209,7 @@ async function placeOrder() {
         if (data) {
             orderNumber.value = data.order_number;
             clearCart();
+            await navigateTo(`/order/success/${data.order_number}`)
         } else {
             throw createError({
                 status: e.statusCode || 500,

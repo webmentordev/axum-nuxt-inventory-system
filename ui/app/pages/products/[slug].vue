@@ -47,13 +47,13 @@
                                 }}</NuxtLink>
                         </li>
                         <li v-if="stockLabel"><strong>Availability: </strong><span :class="stockClass">{{ stockLabel
-                        }}</span></li>
+                                }}</span></li>
                     </ul>
 
                     <div class="flex flex-col gap-1">
                         <div class="flex items-baseline gap-3">
                             <span class="text-2xl font-bold text-navy">Rs. {{ formatPrice(product.selling_price)
-                            }}</span>
+                                }}</span>
                             <span v-if="hasDiscount" class="text-base text-zinc-400 line-through">
                                 Rs. {{ formatPrice(product.compare_at_selling_price) }}
                             </span>
@@ -235,9 +235,9 @@ const stockLabel = computed(() => {
 
 const stockClass = computed(() => {
     if (!product.value) return '';
-    if (product.value.quantity_in_stock <= 0) return 'text-red-400';
-    if (product.value.quantity_in_stock <= product.value.reorder_level) return 'text-yellow-600';
-    return 'text-green-600';
+    if (product.value.quantity_in_stock <= 0) return 'text-red-400 font-semibold';
+    if (product.value.quantity_in_stock <= product.value.reorder_level) return 'text-yellow-600 font-semibold';
+    return 'text-green-600 font-semibold';
 });
 
 function formatPrice(value) {

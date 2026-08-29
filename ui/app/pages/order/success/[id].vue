@@ -6,34 +6,18 @@
                     <img src="/kaleem-solar-logo-t-2.png" alt="Kaleem solat logo" width="190px">
                 </div>
 
-                <form v-if="!order" @submit.prevent="trackOrder" method="post">
-                    <div class="grid grid-cols-1 gap-3">
-                        <div class="flex flex-col">
-                            <Input v-model="orderNumber" type="text" placeholder="Order number" />
-                            <AlertsAlertError v-if="errors.orderNumber" error="Order number is required" />
-                        </div>
+                <Loading v-if="processing" message="Loading your order..." />
+
+                <AlertsError v-else-if="errors.message" :message="errors.message" />
+
+                <div v-else-if="order" class="flex flex-col gap-4">
+                    <div class="flex flex-col items-center text-center gap-2 mb-2">
+                        <img class="w-14 h-14"
+                            src="https://api.iconify.design/line-md:confirm-circle.svg?color=%2316a34a" width="56">
+                        <h1 class="text-xl font-semibold">Order placed successfully!</h1>
+                        <p class="text-sm text-para-light">Thank you for your order.</p>
                     </div>
-                    <button v-if="!processing" type="submit"
-                        class="bg-navy mt-4 text-white w-full py-3 rounded-xl flex items-center justify-center hover:bg-navy/90 group">
-                        <span class="mr-3">Track Order</span>
-                        <img class="mt-1 transition-all group-hover:transition-all group-hover:translate-x-4"
-                            src="https://api.iconify.design/line-md:arrow-right.svg?color=%23ffffff" width="15">
-                    </button>
 
-                    <p class="text-para-light inline-block text-sm ml-1 mt-3">Need help? <NuxtLink to="/contact-us"
-                            class="text-navy underline">Contact us</NuxtLink>
-                    </p>
-
-                    <Loading v-if="processing" message="Fetching order..." />
-                    <AlertsError v-if="errors.message" :message="errors.message" />
-
-                    <div class="my-3">
-                        <NuxtTurnstile ref="turnstile" v-model="ct_token" />
-                    </div>
-                </form>
-
-
-                <div v-else class="flex flex-col gap-4">
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-lg font-semibold">{{ order.order_number }}</p>
@@ -77,10 +61,10 @@
                         </div>
                     </div>
 
-                    <button @click="order = null"
+                    <NuxtLink to="/track-order"
                         class="bg-navy mt-2 text-white w-full py-3 rounded-xl flex items-center justify-center hover:bg-navy/90">
                         Track another order
-                    </button>
+                    </NuxtLink>
                 </div>
             </div>
         </div>
@@ -94,12 +78,11 @@ definePageMeta({
 const { publicFetch } = usePublicFetch();
 
 const config = useRuntimeConfig().public;
+const route = useRoute();
 
-const orderNumber = ref('')
 const processing = ref(false)
 const order = ref(null)
-const errors = reactive({ orderNumber: false, message: '' })
-const ct_token = ref("");
+const errors = reactive({ message: '' })
 
 const statusColors = {
     pending: 'bg-yellow-100 text-yellow-800',
@@ -123,36 +106,46 @@ const formatDate = (value) => new Date(value).toLocaleDateString('en-US', {
     year: 'numeric', month: 'short', day: 'numeric'
 })
 
-const trackOrder = async () => {
-    errors.orderNumber = false
+const fetchOrder = async () => {
+    const orderId = route.params.id
+
+    if (!orderId) {
+        throw createError({
+            status: 404,
+            statusText: "Order not found!",
+            fatal: true
+        });
+    }
+
+    processing.value = true
     errors.message = ''
 
-    if (!orderNumber.value) {
-        errors.orderNumber = true
-        return
-    }
-    processing.value = true
     try {
-        const data = await publicFetch('/api/public/orders/track', {
+        const data = await publicFetch('/api/public/orders/success', {
             method: 'POST',
             body: {
-                order_id: orderNumber.value,
-                ct_token: ct_token.value
+                order_id: orderId
             }
         });
         if (data) {
             order.value = data;
         } else {
             throw createError({
-                status: e.statusCode || 500,
-                statusText: e.statusMessage || 'Something went wrong!',
+                status: 404,
+                statusText: "Order not found!",
                 fatal: true
             });
         }
     } catch (e) {
-        errors.message = e?.data?.message || 'Something went wrong'
+        throw createError({
+            status: 404,
+            statusText: "Order not found!",
+            fatal: true
+        });
     } finally {
         processing.value = false
     }
 }
+
+onMounted(fetchOrder)
 </script>

@@ -47,7 +47,7 @@
                         <NuxtLink to="/about-us" class="hover:text-orange">About Us</NuxtLink>
                     </li>
                     <li>
-                        <NuxtLink to="/track-your-order" class="hover:text-orange">Track your order</NuxtLink>
+                        <NuxtLink to="/order/track" class="hover:text-orange">Track your order</NuxtLink>
                     </li>
                     <li>
                         <NuxtLink to="/contact-us" class="hover:text-orange">Contact Us</NuxtLink>

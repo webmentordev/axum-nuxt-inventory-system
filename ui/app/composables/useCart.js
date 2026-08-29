@@ -1,5 +1,28 @@
+function readCart() {
+    if (!import.meta.client) return [];
+    try {
+        const raw = localStorage.getItem('cartItems');
+        return raw ? JSON.parse(raw) : [];
+    } catch {
+        return [];
+    }
+}
+
+function writeCart(items) {
+    if (!import.meta.client) return;
+    localStorage.setItem('cartItems', JSON.stringify(items));
+}
+
 export function useCart() {
     const cartItems = useState('cartItems', () => []);
+
+    onMounted(() => {
+        cartItems.value = readCart();
+    });
+
+    watch(cartItems, (items) => {
+        writeCart(items);
+    }, { deep: true });
 
     const cartCount = computed(() =>
         cartItems.value.reduce((sum, item) => sum + item.quantity, 0)
