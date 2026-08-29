@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::AppState;
+use crate::utils::generate_order_number;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, sqlx::Type)]
 #[sqlx(type_name = "order_status", rename_all = "lowercase")]
@@ -91,11 +92,6 @@ pub struct OrderWithItems {
     #[serde(flatten)]
     pub order: Order,
     pub items: Vec<OrderItem>,
-}
-
-fn generate_order_number() -> String {
-    let number: u32 = rand::random_range(1_000_000..10_000_000);
-    number.to_string()
 }
 
 pub async fn get_orders(State(state): State<AppState>) -> Result<Json<Vec<Order>>, StatusCode> {

@@ -8,7 +8,7 @@
             <ProductsSearch />
 
             <div class="flex items-center gap-5 text-xl text-navy">
-                <button>🛒</button>
+                <NuxtLink to="/checkout">🛒</NuxtLink>
 
                 <div v-if="user" class="relative" ref="dropdownRef">
                     <button @click="dropdownOpen = !dropdownOpen"

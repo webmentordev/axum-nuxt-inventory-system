@@ -59,3 +59,8 @@ pub fn generate_sku(name: &str) -> String {
     let suffix: u32 = rand::random_range(100..=999);
     format!("{}-{}", prefix, suffix)
 }
+
+pub fn generate_order_number() -> String {
+    let number: u32 = rand::random_range(1_000_000..10_000_000);
+    number.to_string()
+}

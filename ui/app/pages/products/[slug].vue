@@ -47,13 +47,13 @@
                                 }}</NuxtLink>
                         </li>
                         <li v-if="stockLabel"><strong>Availability: </strong><span :class="stockClass">{{ stockLabel
-                                }}</span></li>
+                        }}</span></li>
                     </ul>
 
                     <div class="flex flex-col gap-1">
                         <div class="flex items-baseline gap-3">
                             <span class="text-2xl font-bold text-navy">Rs. {{ formatPrice(product.selling_price)
-                                }}</span>
+                            }}</span>
                             <span v-if="hasDiscount" class="text-base text-zinc-400 line-through">
                                 Rs. {{ formatPrice(product.compare_at_selling_price) }}
                             </span>
@@ -117,6 +117,12 @@ const slug = route.params.slug;
 
 const siteUrl = useRuntimeConfig().public?.siteUrl || '';
 const canonicalUrl = computed(() => `${siteUrl}/policies/${slug}`);
+
+const { addToCart: addProductToCart } = useCart();
+
+function addToCart() {
+    addProductToCart(product.value, 1);
+}
 
 try {
     const data = await publicFetch('/api/public/products/' + slug);

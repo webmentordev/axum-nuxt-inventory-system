@@ -3,6 +3,7 @@ use crate::auth::*;
 use crate::dashboard::contacts::*;
 use crate::public::brands::*;
 use crate::public::categories::*;
+use crate::public::orders::*;
 use crate::public::policies::*;
 use crate::public::products::*;
 use crate::public::sub_categories::*;
@@ -40,6 +41,10 @@ pub async fn init_public_route(state: AppState) -> Result<Router> {
         .route("/", get(get_public_policies))
         .route("/{slug}", get(get_public_policy));
 
+    let orders = Router::new()
+        .route("/", post(create_public_order))
+        .route("/track-order/{order_number}", get(track_public_order));
+
     let routes = Router::new()
         .nest("/users", users)
         .nest("/contacts", contacts)
@@ -48,6 +53,7 @@ pub async fn init_public_route(state: AppState) -> Result<Router> {
         .nest("/brands", brands)
         .nest("/products", products)
         .nest("/policies", policies)
+        .nest("/orders", orders)
         .with_state(state);
 
     Ok(routes)

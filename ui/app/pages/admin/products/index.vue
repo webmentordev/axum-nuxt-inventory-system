@@ -22,7 +22,7 @@
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Comp. Cost</th>
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Sell Cost</th>
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Sell/C Cost</th>
-                        <th class="text-left px-4 py-3 font-semibold text-zinc-400">Sock</th>
+                        <th class="text-left px-4 py-3 font-semibold text-zinc-400">Stock</th>
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Status</th>
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Created</th>
                         <th class="text-right px-4 py-3 font-semibold text-zinc-400 w-12"></th>
@@ -41,7 +41,7 @@
                         <td class="px-4 py-3 text-zinc-400">{{ product.sku }}</td>
                         <td class="px-4 py-3 text-zinc-200">{{ currency }} {{ formatPrice(product.cost_price) }}</td>
                         <td class="px-4 py-3 text-zinc-200">{{ currency }} {{ formatPrice(product.compare_at_cost_price)
-                        }}</td>
+                            }}</td>
                         <td class="px-4 py-3 text-zinc-200">{{ currency }} {{ formatPrice(product.selling_price) }}</td>
                         <td class="px-4 py-3 text-zinc-200">{{ currency }} {{
                             formatPrice(product.compare_at_selling_price) }}</td>
