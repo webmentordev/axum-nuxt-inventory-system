@@ -13,12 +13,11 @@
             </p>
             <div class="mt-auto pt-3 flex items-center justify-between">
                 <div class="font-bold text-lg">
-                    {{ config.currency }}{{ formatPrice(Number(product.selling_price)) }}
+                    {{ formatCurrency(Number(product.selling_price)) }}
                     <span class="text-sm text-gray-500" v-if="product.product_type == 'solar'">/{{
-                        formatPrice(Number(product.per_watt_price))
-                    }} W</span>
+                        product.per_watt_price }} W</span>
                 </div>
-                <span class="text-xs px-2 py-1 rounded-full" :class="product.in_stock
+                <span class="text-xs px-2 py-1 rounded-full absolute top-1 right-1" :class="product.in_stock
                     ? 'bg-green-100 text-green-700'
                     : 'bg-red-100 text-red-700'">
                     {{ product.in_stock ? 'In stock' : 'Out of stock' }}
@@ -33,16 +32,18 @@
     </NuxtLink>
 </template>
 <script setup lang="js">
-const config = useRuntimeConfig().public;
 defineProps({
     product: {
         type: Object,
         default: () => []
     }
 });
-function formatPrice(value) {
-    const n = Number(value);
-    if (Number.isNaN(n)) return value;
-    return n.toLocaleString('en-PK', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+
+function formatCurrency(amount) {
+    const currency = useRuntimeConfig().public.currency;
+    return new Intl.NumberFormat(undefined, {
+        style: 'currency',
+        currency: currency
+    }).format(Number(amount));
 }
 </script>

@@ -37,7 +37,7 @@
                                     <div class="flex-1 min-w-0">
                                         <p class="text-xs font-semibold text-zinc-900 truncate">{{ item.name }}</p>
                                         <p class="text-[11px] text-zinc-500">
-                                            {{ item.quantity }} x Rs. {{ formatPrice(item.unit_price) }}
+                                            {{ item.quantity }} x Rs. {{ formatCurrency(item.unit_price) }}
                                         </p>
                                     </div>
 
@@ -50,7 +50,7 @@
 
                             <div class="flex items-center justify-between px-4 pt-2 pb-1 font-semibold text-navy">
                                 <span>Subtotal</span>
-                                <span>Rs. {{ formatPrice(cartSubtotal) }}</span>
+                                <span>{{ formatCurrency(cartSubtotal) }}</span>
                             </div>
 
                             <NuxtLink to="/checkout" @click="cartDropdownOpen = false"
@@ -99,10 +99,12 @@ const cartSubtotal = computed(() =>
     cartItems.value.reduce((sum, item) => sum + (Number(item.unit_price) || 0) * item.quantity, 0)
 );
 
-function formatPrice(value) {
-    const n = Number(value);
-    if (Number.isNaN(n)) return value;
-    return n.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function formatCurrency(amount) {
+    const currency = useRuntimeConfig().public.currency;
+    return new Intl.NumberFormat(undefined, {
+        style: 'currency',
+        currency: currency
+    }).format(Number(amount));
 }
 
 const handleLogout = async () => {

@@ -25,6 +25,7 @@ pub async fn init_admin_routes(state: AppState) -> Result<Router> {
         .route("/", get(get_products).post(create_product))
         .route("/list", get(get_products_list))
         .route("/{uuid}", get(get_product).patch(update_product));
+
     let categories = Router::new()
         .route("/", get(get_categories).post(create_category))
         .route(
@@ -33,6 +34,7 @@ pub async fn init_admin_routes(state: AppState) -> Result<Router> {
                 .patch(update_category)
                 .delete(delete_category),
         );
+
     let sub_categories = Router::new()
         .route("/", get(get_sub_categories).post(create_sub_category))
         .route("/by-category/{uuid}", get(get_sub_categories_by_category))
@@ -42,18 +44,22 @@ pub async fn init_admin_routes(state: AppState) -> Result<Router> {
                 .patch(update_sub_category)
                 .delete(delete_sub_category),
         );
+
     let orders = Router::new()
         .route("/", get(get_orders).post(create_order))
         .route(
             "/{uuid}",
             get(get_order).patch(update_order).delete(delete_order),
-        );
+        )
+        .route("/{uuid}/items", get(get_order_items).post(add_order_items));
+
     let uploads = Router::new()
         .route("/", get(get_uploads).post(create_upload))
         .route(
             "/{uuid}",
             get(get_upload).patch(update_upload).delete(delete_upload),
         );
+
     let barcodes = Router::new()
         .route("/", get(get_barcodes).post(create_barcode))
         .route("/bulk", post(create_barcodes_bulk))

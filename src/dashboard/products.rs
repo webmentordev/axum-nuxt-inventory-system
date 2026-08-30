@@ -9,10 +9,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::dashboard::products_seo::ProductSeo;
-use crate::{
-    AppState,
-    utils::{generate_sku, slugify},
-};
+use crate::{AppState, utils::*};
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct Product {
@@ -199,6 +196,7 @@ pub struct ProductOption {
     pub name: String,
     pub slug: String,
     pub is_active: bool,
+    pub quantity_in_stock: i32,
 }
 
 pub async fn get_products_list(
@@ -206,7 +204,7 @@ pub async fn get_products_list(
 ) -> Result<Json<Vec<ProductOption>>, StatusCode> {
     let products = sqlx::query_as!(
         ProductOption,
-        r#"SELECT id, name, slug, is_active
+        r#"SELECT id, name, slug, is_active, quantity_in_stock
            FROM products
            ORDER BY name ASC"#
     )

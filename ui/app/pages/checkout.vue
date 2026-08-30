@@ -30,7 +30,7 @@
                         </div>
 
                         <div class="flex-1 min-w-0">
-                            <p class="text-sm font-semibold text-zinc-900 truncate">{{ item.name }}</p>
+                            <p class="text-sm font-semibold text-zinc-900 mb-1">{{ item.name }}</p>
                             <p class="text-xs text-zinc-500">SKU: {{ item.sku }}</p>
                         </div>
 
@@ -89,19 +89,19 @@
                 <div class="flex flex-col gap-2 text-sm">
                     <div class="flex justify-between">
                         <span class="text-zinc-500">Subtotal</span>
-                        <span>Rs. {{ formatPrice(subtotal) }}</span>
+                        <span>{{ formatCurrency(subtotal) }}</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-zinc-500">Shipping</span>
-                        <span>Rs. {{ formatPrice(shippingAmount) }}</span>
+                        <span>{{ formatCurrency(shippingAmount) }}</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-zinc-500">Tax</span>
-                        <span>Rs. {{ formatPrice(taxAmount) }}</span>
+                        <span>{{ formatCurrency(taxAmount) }}</span>
                     </div>
                     <div class="flex justify-between font-semibold text-base border-t border-gray-200 pt-2 mt-1">
                         <span>Total</span>
-                        <span class="text-navy">Rs. {{ formatPrice(totalAmount) }}</span>
+                        <span class="text-navy">{{ formatCurrency(totalAmount) }}</span>
                     </div>
                 </div>
                 <p v-if="submitError" class="text-xs text-red-500">{{ submitError }}</p>
@@ -162,11 +162,14 @@ const taxAmount = computed(() => subtotal.value * taxRate);
 const shippingAmount = computed(() => (subtotal.value > 0 ? flatShipping : 0));
 const totalAmount = computed(() => subtotal.value + taxAmount.value + shippingAmount.value);
 
-function formatPrice(value) {
-    const n = Number(value);
-    if (Number.isNaN(n)) return value;
-    return n.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function formatCurrency(amount) {
+    const currency = useRuntimeConfig().public.currency;
+    return new Intl.NumberFormat(undefined, {
+        style: 'currency',
+        currency: currency
+    }).format(Number(amount));
 }
+
 
 function validate() {
     errors.customer_name = form.customer_name.trim() ? '' : 'Name is required';

@@ -47,15 +47,15 @@
                                 }}</NuxtLink>
                         </li>
                         <li v-if="stockLabel"><strong>Availability: </strong><span :class="stockClass">{{ stockLabel
-                                }}</span></li>
+                        }}</span></li>
                     </ul>
 
                     <div class="flex flex-col gap-1">
                         <div class="flex items-baseline gap-3">
-                            <span class="text-2xl font-bold text-navy">Rs. {{ formatPrice(product.selling_price)
-                                }}</span>
+                            <span class="text-2xl font-bold text-navy">{{ formatCurrency(product.selling_price)
+                            }}</span>
                             <span v-if="hasDiscount" class="text-base text-zinc-400 line-through">
-                                Rs. {{ formatPrice(product.compare_at_selling_price) }}
+                                {{ formatCurrency(product.compare_at_selling_price) }}
                             </span>
                             <span v-if="hasDiscount"
                                 class="text-xs font-semibold text-green-700 bg-green-100 px-2 py-0.5 rounded">
@@ -63,7 +63,7 @@
                             </span>
                         </div>
                         <span v-if="displayPricePerWatt" class="text-sm text-zinc-500">
-                            Rs. {{ formatPrice(displayPricePerWatt) }} / watt
+                            {{ formatCurrency(displayPricePerWatt) }} / watt
                         </span>
                     </div>
 
@@ -228,11 +228,14 @@ const stockClass = computed(() => {
     return 'text-green-600 font-semibold';
 });
 
-function formatPrice(value) {
-    const n = Number(value);
-    if (Number.isNaN(n)) return value;
-    return n.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function formatCurrency(amount) {
+    const currency = useRuntimeConfig().public.currency;
+    return new Intl.NumberFormat(undefined, {
+        style: 'currency',
+        currency: currency
+    }).format(Number(amount));
 }
+
 </script>
 
 <style scoped>
