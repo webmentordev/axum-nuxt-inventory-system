@@ -39,7 +39,8 @@
                 </div>
 
                 <div>
-                    <label class="block text-sm font-semibold text-zinc-300 mb-2">Canonical URL</label>
+                    <label class="block text-sm font-semibold text-zinc-300 mb-2">Canonical URL (No https or
+                        domain)</label>
                     <AdminInput v-model="canonicalUrl" placeholder="https://..." />
                     <p class="text-lime-300 text-sm mt-1">{{ productUrl }}</p>
                 </div>

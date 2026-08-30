@@ -45,7 +45,8 @@
                 </div>
 
                 <div>
-                    <label class="block text-sm font-semibold text-zinc-300 mb-2">Canonical URL</label>
+                    <label class="block text-sm font-semibold text-zinc-300 mb-2">Canonical URL (No https or
+                        domain)</label>
                     <AdminInput v-model="canonicalUrl" placeholder="https://..." />
                 </div>
 
@@ -73,6 +74,7 @@ const { authFetch } = useAuthFetch();
 
 const productId = ref(null);
 const productOptions = ref([]);
+const productList = ref([]);
 const productLoading = ref(false);
 
 const metaTitle = ref('');
@@ -90,11 +92,21 @@ const showStatus = ref(false);
 const statusType = ref('loading');
 const statusMessage = ref('');
 
+watch(productId, (newId) => {
+    if (!newId) return;
+    const product = productList.value.find((p) => p.id === newId);
+    if (!product) return;
+
+    metaTitle.value = product.name;
+    canonicalUrl.value = `/products/${product.slug}`;
+});
+
 async function loadProducts() {
     productLoading.value = true;
     try {
         const data = await authFetch('/api/admin/products/list');
         if (data) {
+            productList.value = data;
             productOptions.value = data.map((item) => ({
                 label: item.name,
                 value: item.id

@@ -197,6 +197,7 @@ impl ProductWithSeo {
 pub struct ProductOption {
     pub id: Uuid,
     pub name: String,
+    pub slug: String,
     pub is_active: bool,
 }
 
@@ -205,7 +206,7 @@ pub async fn get_products_list(
 ) -> Result<Json<Vec<ProductOption>>, StatusCode> {
     let products = sqlx::query_as!(
         ProductOption,
-        r#"SELECT id, name, is_active
+        r#"SELECT id, name, slug, is_active
            FROM products
            ORDER BY name ASC"#
     )
