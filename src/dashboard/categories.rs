@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::AppState;
+use crate::dashboard::uploads::*;
 use crate::utils::slugify;
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
@@ -36,8 +37,6 @@ pub struct UpdateCategory {
     pub is_featured: Option<bool>,
 }
 
-use crate::dashboard::images::{Image, WithFullUrl};
-
 #[derive(Debug, Clone, Serialize)]
 pub struct CategoryWithDetails {
     pub id: Uuid,
@@ -50,7 +49,7 @@ pub struct CategoryWithDetails {
     pub updated_at: DateTime<Utc>,
     pub products_count: i64,
     pub sub_categories_count: i64,
-    pub images: Vec<Image>,
+    pub uploads: Vec<Upload>,
 }
 
 struct CategoryRow {
@@ -86,25 +85,25 @@ pub async fn get_categories(
 
     let ids: Vec<Uuid> = rows.iter().map(|r| r.id).collect();
 
-    let images = sqlx::query_as!(
-        Image,
-        r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, created_at
-           FROM images
-           WHERE category_id = ANY($1)"#,
-        &ids
-    )
-    .fetch_all(&state.db)
-    .await
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let uploads = sqlx::query_as!(
+    Upload,
+    r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, file_type, created_at
+       FROM uploads
+       WHERE category_id = ANY($1)"#,
+    &ids
+)
+.fetch_all(&state.db)
+.await
+.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     let categories = rows
         .into_iter()
         .map(|r| {
-            let category_images = images
+            let category_uploads = uploads
                 .iter()
-                .filter(|img| img.category_id == Some(r.id))
+                .filter(|u| u.category_id == Some(r.id))
                 .cloned()
-                .map(Image::with_full_url)
+                .map(Upload::with_full_url)
                 .collect();
 
             CategoryWithDetails {
@@ -118,7 +117,7 @@ pub async fn get_categories(
                 updated_at: r.updated_at,
                 products_count: r.products_count,
                 sub_categories_count: r.sub_categories_count,
-                images: category_images,
+                uploads: category_uploads,
             }
         })
         .collect();
@@ -147,17 +146,17 @@ pub async fn get_category(
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
     .ok_or(StatusCode::NOT_FOUND)?;
 
-    let images = sqlx::query_as!(
-        Image,
-        r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, created_at
-           FROM images
-           WHERE category_id = $1"#,
-        uuid
-    )
-    .fetch_all(&state.db)
-    .await
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    let images = images.into_iter().map(Image::with_full_url).collect();
+    let uploads = sqlx::query_as!(
+    Upload,
+    r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, file_type, created_at
+       FROM uploads
+       WHERE category_id = $1"#,
+    uuid
+)
+.fetch_all(&state.db)
+.await
+.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let uploads = uploads.into_iter().map(Upload::with_full_url).collect();
     Ok(Json(CategoryWithDetails {
         id: row.id,
         name: row.name,
@@ -169,7 +168,7 @@ pub async fn get_category(
         updated_at: row.updated_at,
         products_count: row.products_count,
         sub_categories_count: row.sub_categories_count,
-        images,
+        uploads,
     }))
 }
 

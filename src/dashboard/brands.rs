@@ -7,7 +7,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::dashboard::images::{Image, WithFullUrl};
+use crate::dashboard::uploads::*;
 use crate::{AppState, utils::slugify};
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
@@ -44,7 +44,7 @@ pub struct BrandWithDetails {
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub products_count: i64,
-    pub images: Vec<Image>,
+    pub uploads: Vec<Upload>,
 }
 
 struct BrandRow {
@@ -76,25 +76,25 @@ pub async fn get_brands(
 
     let ids: Vec<Uuid> = rows.iter().map(|r| r.id).collect();
 
-    let images = sqlx::query_as!(
-        Image,
-        r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, created_at
-           FROM images
-           WHERE brand_id = ANY($1)"#,
-        &ids
-    )
-    .fetch_all(&state.db)
-    .await
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let uploads = sqlx::query_as!(
+    Upload,
+    r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, file_type, created_at
+       FROM uploads
+       WHERE brand_id = ANY($1)"#,
+    &ids
+)
+.fetch_all(&state.db)
+.await
+.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     let brands = rows
         .into_iter()
         .map(|r| {
-            let brand_images = images
+            let brand_uploads = uploads
                 .iter()
-                .filter(|img| img.brand_id == Some(r.id))
+                .filter(|u| u.brand_id == Some(r.id))
                 .cloned()
-                .map(Image::with_full_url)
+                .map(Upload::with_full_url)
                 .collect();
 
             BrandWithDetails {
@@ -106,7 +106,7 @@ pub async fn get_brands(
                 created_at: r.created_at,
                 updated_at: r.updated_at,
                 products_count: r.products_count,
-                images: brand_images,
+                uploads: brand_uploads,
             }
         })
         .collect();
@@ -133,18 +133,18 @@ pub async fn get_brand(
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
     .ok_or(StatusCode::NOT_FOUND)?;
 
-    let images = sqlx::query_as!(
-        Image,
-        r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, created_at
-           FROM images
-           WHERE brand_id = $1"#,
-        uuid
-    )
-    .fetch_all(&state.db)
-    .await
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let uploads = sqlx::query_as!(
+    Upload,
+    r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, file_type, created_at
+       FROM uploads
+       WHERE brand_id = $1"#,
+    uuid
+)
+.fetch_all(&state.db)
+.await
+.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    let images = images.into_iter().map(Image::with_full_url).collect();
+    let uploads = uploads.into_iter().map(Upload::with_full_url).collect();
 
     Ok(Json(BrandWithDetails {
         id: row.id,
@@ -155,7 +155,7 @@ pub async fn get_brand(
         created_at: row.created_at,
         updated_at: row.updated_at,
         products_count: row.products_count,
-        images,
+        uploads,
     }))
 }
 

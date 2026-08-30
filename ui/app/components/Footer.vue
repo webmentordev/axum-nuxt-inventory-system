@@ -55,7 +55,7 @@
                 </ul>
             </div>
 
-            <div>
+            <div v-if="categories.length">
                 <h3 class="mb-5 text-lg font-bold">CATEGORIES</h3>
                 <ul class="space-y-3 text-sm text-slate-300">
                     <li v-for="(category, index) in categories" :key="index">
@@ -65,7 +65,7 @@
                 </ul>
             </div>
 
-            <div>
+            <div v-if="policies.length">
                 <h3 class="mb-5 text-lg font-bold">HELP & SUPPORT</h3>
                 <ul class="space-y-3 text-sm text-slate-300" title="Kaleem solar policies">
                     <li v-for="policy in policies" :key="policy.slug">

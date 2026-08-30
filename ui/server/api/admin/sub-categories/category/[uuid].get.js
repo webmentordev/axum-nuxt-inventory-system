@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
         });
     }
     try {
-        const data = await $fetch(`${apiUrl}/api/admin/sub-categories/${uuid}`, { headers: allHeaders });
+        const data = await $fetch(`${apiUrl}/api/admin/sub-categories/by-category/${uuid}`, { headers: allHeaders });
         return data;
     } catch (e) {
         console.log(e)

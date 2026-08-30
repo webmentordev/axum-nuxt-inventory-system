@@ -2,14 +2,14 @@
     <section class="h-full w-full p-6">
         <div class="flex items-center justify-between mb-6">
             <div>
-                <h1 class="text-xl font-bold text-white">Images</h1>
-                <p class="text-sm text-zinc-500 mt-1">{{ images.length }} total</p>
+                <h1 class="text-xl font-bold text-white">Uploads</h1>
+                <p class="text-sm text-zinc-500 mt-1">{{ uploads.length }} total</p>
             </div>
             <div class="flex items-center">
-                <AdminButton @click="fetchImages()" icon="tabler:refresh">Refresh</AdminButton>
-                <NuxtLink to="/admin/images/create"
+                <AdminButton @click="fetchUploads()" icon="tabler:refresh">Refresh</AdminButton>
+                <NuxtLink to="/admin/uploads/create"
                     class="px-4 py-2 rounded-md text-sm font-semibold bg-lime-main text-dark hover:bg-lime-hover transition-colors ml-2">
-                    Add image
+                    Add upload
                 </NuxtLink>
             </div>
         </div>
@@ -19,11 +19,12 @@
         </div>
 
         <div class="w-full border border-dark-300 rounded-lg overflow-visible bg-dark-100">
-            <table v-if="filteredImages.length" class="w-full text-sm">
+            <table v-if="filteredUploads.length" class="w-full text-sm">
                 <thead class="bg-dark-200">
                     <tr>
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Preview</th>
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Name</th>
+                        <th class="text-left px-4 py-3 font-semibold text-zinc-400">Type</th>
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Product</th>
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Category</th>
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Sub Category</th>
@@ -33,33 +34,38 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="image in filteredImages" :key="image.id"
+                    <tr v-for="upload in filteredUploads" :key="upload.id"
                         class="border-t border-dark-300 hover:bg-dark-200 transition-colors">
                         <td class="px-4 py-3">
-                            <NuxtLink :to="image.file_path" target="_blank">
-                                <img :src="image.file_path" :alt="image.name"
+                            <NuxtLink :to="upload.file_path" target="_blank">
+                                <img v-if="upload.file_type === 'image'" :src="upload.file_path" :alt="upload.name"
                                     class="w-9 h-9 rounded-lg object-cover border border-dark-300 bg-dark-300" />
+                                <div v-else
+                                    class="w-9 h-9 rounded-lg flex items-center justify-center border border-dark-300 bg-dark-300">
+                                    <Icon name="mdi:file-outline" size="18" class="text-zinc-400" />
+                                </div>
                             </NuxtLink>
                         </td>
-                        <td class="px-4 py-3 text-zinc-200 font-medium">{{ image.name }}</td>
-                        <td class="px-4 py-3 text-zinc-400">{{ image.product?.name || '—' }}</td>
-                        <td class="px-4 py-3 text-zinc-400">{{ image.category?.name || '—' }}</td>
-                        <td class="px-4 py-3 text-zinc-400">{{ image.sub_category?.name || '—' }}</td>
-                        <td class="px-4 py-3 text-zinc-400">{{ image.brand?.name || '—' }}</td>
-                        <td class="px-4 py-3 text-zinc-400 whitespace-nowrap">{{ formatDate(image.created_at) }}</td>
-                        <td class="px-4 py-3 text-right relative" :ref="(el) => setMenuRef(image.id, el)">
-                            <button type="button" @click="toggleMenu(image.id)"
+                        <td class="px-4 py-3 text-zinc-200 font-medium">{{ upload.name }}</td>
+                        <td class="px-4 py-3 text-zinc-400 capitalize">{{ upload.file_type }}</td>
+                        <td class="px-4 py-3 text-zinc-400">{{ upload.product?.name || '—' }}</td>
+                        <td class="px-4 py-3 text-zinc-400">{{ upload.category?.name || '—' }}</td>
+                        <td class="px-4 py-3 text-zinc-400">{{ upload.sub_category?.name || '—' }}</td>
+                        <td class="px-4 py-3 text-zinc-400">{{ upload.brand?.name || '—' }}</td>
+                        <td class="px-4 py-3 text-zinc-400 whitespace-nowrap">{{ formatDate(upload.created_at) }}</td>
+                        <td class="px-4 py-3 text-right relative" :ref="(el) => setMenuRef(upload.id, el)">
+                            <button type="button" @click="toggleMenu(upload.id)"
                                 class="p-1.5 rounded-md text-zinc-400 hover:text-white hover:bg-dark-300 transition-colors">
                                 <Icon name="mdi:dots-vertical" size="20" />
                             </button>
 
-                            <div v-if="openMenuId === image.id"
+                            <div v-if="openMenuId === upload.id"
                                 class="absolute right-4 top-full mt-1 w-40 rounded-lg border border-dark-300 bg-dark-200 shadow-lg z-40 overflow-hidden text-left">
-                                <button type="button" @click="handleEdit(image)"
+                                <button type="button" @click="handleEdit(upload)"
                                     class="w-full px-3 py-2 text-sm text-zinc-300 hover:bg-dark-300 hover:text-white transition-colors text-left">
                                     Edit
                                 </button>
-                                <button type="button" @click="handleDelete(image)"
+                                <button type="button" @click="handleDelete(upload)"
                                     class="w-full px-3 py-2 text-sm text-red-400 hover:bg-dark-300 hover:text-red-300 transition-colors text-left">
                                     Delete
                                 </button>
@@ -70,16 +76,16 @@
             </table>
 
             <div v-else class="flex flex-col items-center justify-center py-16 px-4">
-                <p class="text-zinc-300 font-semibold">{{ search ? 'No matching images' : 'No images' }}</p>
+                <p class="text-zinc-300 font-semibold">{{ search ? 'No matching uploads' : 'No uploads' }}</p>
                 <p class="text-zinc-500 text-sm mt-1">
-                    {{ search ? 'Try a different search term.' : 'Images you add will show up here.' }}
+                    {{ search ? 'Try a different search term.' : 'Uploads you add will show up here.' }}
                 </p>
             </div>
         </div>
 
         <AdminStatusCard v-model="showStatus" :type="statusType" :message="statusMessage" />
-        <AdminConfirmModal v-model="confirmOpen" title="Delete image"
-            :message="`Are you sure you want to delete ${imageToDelete?.name}? This cannot be undone.`"
+        <AdminConfirmModal v-model="confirmOpen" title="Delete upload"
+            :message="`Are you sure you want to delete ${uploadToDelete?.name}? This cannot be undone.`"
             @confirm="confirmDelete" />
     </section>
 </template>
@@ -90,7 +96,7 @@ definePageMeta({
 });
 const { authFetch } = useAuthFetch();
 
-const images = ref([]);
+const uploads = ref([]);
 const search = ref('');
 const errors = ref({});
 const openMenuId = ref(null);
@@ -101,20 +107,20 @@ const statusType = ref('loading');
 const statusMessage = ref('');
 
 const confirmOpen = ref(false);
-const imageToDelete = ref(null);
+const uploadToDelete = ref(null);
 
 const route = useRoute();
 search.value = route.query.search || '';
 
-const filteredImages = computed(() => {
-    if (!search.value.trim()) return images.value;
+const filteredUploads = computed(() => {
+    if (!search.value.trim()) return uploads.value;
     const query = search.value.trim().toLowerCase();
-    return images.value.filter((image) =>
-        image.name.toLowerCase().includes(query) ||
-        (image.product?.name || '').toLowerCase().includes(query) ||
-        (image.category?.name || '').toLowerCase().includes(query) ||
-        (image.sub_category?.name || '').toLowerCase().includes(query) ||
-        (image.brand?.name || '').toLowerCase().includes(query)
+    return uploads.value.filter((upload) =>
+        upload.name.toLowerCase().includes(query) ||
+        (upload.product?.name || '').toLowerCase().includes(query) ||
+        (upload.category?.name || '').toLowerCase().includes(query) ||
+        (upload.sub_category?.name || '').toLowerCase().includes(query) ||
+        (upload.brand?.name || '').toLowerCase().includes(query)
     );
 });
 
@@ -132,11 +138,11 @@ onClickOutside(activeMenuEl, () => {
     closeMenu();
 });
 
-async function fetchImages() {
+async function fetchUploads() {
     try {
-        const data = await authFetch('/api/admin/images');
+        const data = await authFetch('/api/admin/uploads');
         if (data) {
-            images.value = data;
+            uploads.value = data;
         }
     } catch (e) {
         errors.value.message = e.statusMessage || 'Something went wrong!';
@@ -151,37 +157,37 @@ function closeMenu() {
     openMenuId.value = null;
 }
 
-function handleEdit(image) {
+function handleEdit(upload) {
     closeMenu();
-    navigateTo(`/admin/images/${image.id}/edit`);
+    navigateTo(`/admin/uploads/${upload.id}/edit`);
 }
 
-function handleDelete(image) {
+function handleDelete(upload) {
     closeMenu();
-    imageToDelete.value = image;
+    uploadToDelete.value = upload;
     confirmOpen.value = true;
 }
 
 async function confirmDelete() {
-    const image = imageToDelete.value;
-    if (!image) return;
+    const upload = uploadToDelete.value;
+    if (!upload) return;
 
     statusType.value = 'loading';
-    statusMessage.value = 'Deleting image...';
+    statusMessage.value = 'Deleting upload...';
     showStatus.value = true;
 
     try {
-        await authFetch(`/api/admin/images/${image.id}`, {
+        await authFetch(`/api/admin/uploads/${upload.id}`, {
             method: 'DELETE'
         });
-        images.value = images.value.filter((i) => i.id !== image.id);
+        uploads.value = uploads.value.filter((u) => u.id !== upload.id);
         statusType.value = 'success';
-        statusMessage.value = 'Image deleted.';
+        statusMessage.value = 'Upload deleted.';
     } catch (e) {
         statusType.value = 'error';
-        statusMessage.value = e.statusMessage || 'Failed to delete image.';
+        statusMessage.value = e.statusMessage || 'Failed to delete upload.';
     } finally {
-        imageToDelete.value = null;
+        uploadToDelete.value = null;
         setTimeout(() => {
             showStatus.value = false;
         }, 5000);
@@ -198,5 +204,5 @@ function formatDate(utcString) {
     });
 }
 
-await fetchImages();
+await fetchUploads();
 </script>

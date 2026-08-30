@@ -58,11 +58,11 @@
                 <Icon name="material-symbols:policy-outline-rounded" size="20" />
                 <strong class="ml-1">Policies</strong>
             </NuxtLink>
-            <NuxtLink to="/admin/images"
+            <NuxtLink to="/admin/uploads"
                 class="w-full flex items-center px-3 py-2 rounded-md text-sm font-semibold text-zinc-300 transition-colors hover:text-white hover:bg-dark-300"
                 active-class="!text-lime-main !bg-lime-bg !border !border-lime-main/30">
                 <Icon name="tabler:image-generation" size="20" />
-                <strong class="ml-1">Images</strong>
+                <strong class="ml-1">Uploads</strong>
             </NuxtLink>
             <NuxtLink to="/admin/contacts"
                 class="w-full flex items-center px-3 py-2 rounded-md text-sm font-semibold text-zinc-300 transition-colors hover:text-white hover:bg-dark-300"

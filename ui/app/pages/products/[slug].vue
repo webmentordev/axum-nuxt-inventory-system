@@ -21,8 +21,8 @@
 
                 <div class="flex flex-col gap-4">
                     <div>
-                        <div v-if="product.brand?.images.length > 0" class="text-sm text-zinc-500 mb-3">
-                            <img :src="product.brand.images[0].file_path" width="90px">
+                        <div v-if="brandLogo" class="text-sm text-zinc-500 mb-3">
+                            <img :src="brandLogo" width="90px">
                         </div>
                         <h1 class="text-2xl font-bold text-zinc-900 my-2">{{ product.name }}</h1>
                         <p v-if="product.model" class="text-sm text-zinc-500">Model: {{ product.model }}</p>
@@ -30,17 +30,17 @@
 
                     <ul class="text-sm flex flex-col gap-1">
                         <li><strong>SKU: </strong>{{ product.sku }}</li>
-                        <li><strong>Brand: </strong>
+                        <li v-if="product.brand"><strong>Brand: </strong>
                             <NuxtLink class="underline" :to='`/brands/${product.brand.slug}`' target="_blank">{{
                                 product.brand.name }}
                             </NuxtLink>
                         </li>
-                        <li><strong>Category: </strong>
+                        <li v-if="product.category"><strong>Category: </strong>
                             <NuxtLink class="underline" :to='`/categories/${product.category.slug}`' target="_blank">{{
                                 product.category.name }}
                             </NuxtLink>
                         </li>
-                        <li><strong>Tech Type: </strong>
+                        <li v-if="product.sub_category"><strong>Tech Type: </strong>
                             <NuxtLink class="underline" :to='`/sub-categories/${product.sub_category.slug}`'
                                 target="_blank">{{
                                     product.sub_category.name
@@ -62,12 +62,18 @@
                                 {{ discountPercent }}% off
                             </span>
                         </div>
-                        <span v-if="isSolar && pricePerWatt" class="text-sm text-zinc-500">
-                            Rs. {{ formatPrice(pricePerWatt) }} / watt
+                        <span v-if="displayPricePerWatt" class="text-sm text-zinc-500">
+                            Rs. {{ formatPrice(displayPricePerWatt) }} / watt
                         </span>
                     </div>
 
                     <p v-if="product.description" class="text-zinc-700 leading-relaxed">{{ product.description }}</p>
+
+                    <ul v-if="specs.length" class="text-sm text-zinc-600 flex flex-col gap-1">
+                        <li v-for="spec in specs" :key="spec.label">
+                            <strong>{{ spec.label }}: </strong>{{ spec.value }}
+                        </li>
+                    </ul>
 
                     <p v-if="product.warranty_months" class="text-sm text-zinc-500">
                         {{ product.warranty_months }} month warranty
@@ -170,7 +176,11 @@ try {
     processing.value = false;
 }
 
-const isSolar = computed(() => product.value?.product_type === 'solar');
+const brandLogo = computed(() => {
+    const brandUploads = product.value?.brand?.uploads || [];
+    const logo = brandUploads.find((u) => u.file_type === 'image');
+    return logo?.file_path || null;
+});
 
 const hasDiscount = computed(() => {
     if (!product.value) return false;
@@ -186,43 +196,21 @@ const discountPercent = computed(() => {
     return Math.round(((compareAt - selling) / compareAt) * 100);
 });
 
-const pricePerWatt = computed(() => {
+const displayPricePerWatt = computed(() => {
     if (!product.value) return null;
-    const watts = Number(product.value.power_rating_watts);
-    const selling = Number(product.value.selling_price);
-    if (!watts || Number.isNaN(watts) || Number.isNaN(selling)) return null;
-    return selling / watts;
+
+    const perWatt = Number(product.value.per_watt_price);
+    return Number.isNaN(perWatt) || !product.value.per_watt_price ? null : perWatt;
 });
 
 const specs = computed(() => {
     if (!product.value) return [];
-    const list = [];
-    if (product.value.power_rating_watts) list.push({ label: 'Power', value: `${product.value.power_rating_watts} W` });
-    if (product.value.voltage_rating) list.push({ label: 'Voltage', value: `${product.value.voltage_rating} V` });
-    if (product.value.capacity_ah) list.push({ label: 'Capacity', value: `${product.value.capacity_ah} Ah` });
-    return list;
-});
-
-const solarSpecs = computed(() => {
-    if (!product.value) return [];
     const p = product.value;
     const list = [];
-    if (p.panel_type) list.push({ label: 'Panel Type', value: p.panel_type });
-    if (p.cell_type) list.push({ label: 'Cell Type', value: p.cell_type });
-    if (p.number_of_cells) list.push({ label: 'Number of Cells', value: p.number_of_cells });
-    if (p.efficiency_percentage) list.push({ label: 'Efficiency', value: `${p.efficiency_percentage}%` });
-    if (p.max_system_voltage) list.push({ label: 'Max System Voltage', value: `${p.max_system_voltage} V` });
-    if (p.open_circuit_voltage) list.push({ label: 'Open Circuit Voltage', value: `${p.open_circuit_voltage} V` });
-    if (p.short_circuit_current) list.push({ label: 'Short Circuit Current', value: `${p.short_circuit_current} A` });
-    if (p.max_power_voltage) list.push({ label: 'Max Power Voltage', value: `${p.max_power_voltage} V` });
-    if (p.max_power_current) list.push({ label: 'Max Power Current', value: `${p.max_power_current} A` });
-    if (p.temperature_coefficient) list.push({ label: 'Temp. Coefficient', value: `${p.temperature_coefficient}%/°C` });
-    if (p.frame_material) list.push({ label: 'Frame Material', value: p.frame_material });
-    if (p.glass_type) list.push({ label: 'Glass Type', value: p.glass_type });
-    if (p.length_mm) list.push({ label: 'Length', value: `${p.length_mm} mm` });
-    if (p.width_mm) list.push({ label: 'Width', value: `${p.width_mm} mm` });
-    if (p.thickness_mm) list.push({ label: 'Thickness', value: `${p.thickness_mm} mm` });
-    if (p.weight_kg) list.push({ label: 'Weight', value: `${p.weight_kg} kg` });
+    if (p.power_rating_watts) list.push({ label: 'Power', value: `${p.power_rating_watts} W` });
+    if (p.voltage_rating) list.push({ label: 'Voltage', value: `${p.voltage_rating} V` });
+    if (p.capacity_ah) list.push({ label: 'Capacity', value: `${p.capacity_ah} Ah` });
+    if (p.kilowatt_hour) list.push({ label: 'Kilowatt Hour', value: `${p.kilowatt_hour} kWh` });
     return list;
 });
 

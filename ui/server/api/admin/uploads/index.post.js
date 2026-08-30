@@ -16,7 +16,7 @@ export default defineEventHandler(async (event) => {
     }
 
     try {
-        const data = await $fetch(`${apiUrl}/api/admin/images`, {
+        const data = await $fetch(`${apiUrl}/api/admin/uploads`, {
             method: "POST",
             headers: {
                 ...(authHeader ? { Authorization: authHeader } : {})
@@ -27,7 +27,7 @@ export default defineEventHandler(async (event) => {
     } catch (e) {
         throw createError({
             statusCode: e.response?.status || 500,
-            statusMessage: e.data?.message || 'Image upload failed'
+            statusMessage: e.data?.message || 'File upload failed'
         });
     }
 });

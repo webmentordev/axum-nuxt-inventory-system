@@ -1,10 +1,15 @@
 <template>
     <section class="h-full w-full p-6">
         <div class="max-w-lg">
-            <h1 class="text-xl font-bold text-white">Upload Image</h1>
-            <p class="text-sm text-zinc-500 mt-1">Attach an image to a category, sub-category, or brand.</p>
+            <h1 class="text-xl font-bold text-white">Upload File</h1>
+            <p class="text-sm text-zinc-500 mt-1">Attach a file to a category, sub-category, or brand.</p>
 
             <form @submit.prevent="handleSubmit" class="mt-6 flex flex-col gap-4" novalidate>
+                <div>
+                    <label class="block text-sm font-semibold text-zinc-300 mb-2">File Type</label>
+                    <AdminSelect v-model="fileType" :options="fileTypeOptions" />
+                </div>
+
                 <div>
                     <label class="block text-sm font-semibold text-zinc-300 mb-2">Assignment</label>
                     <AdminSelect v-model="assignMode" :options="assignModeOptions"
@@ -30,7 +35,7 @@
                 </div>
 
                 <div>
-                    <label class="block text-sm font-semibold text-zinc-300 mb-2">Image</label>
+                    <label class="block text-sm font-semibold text-zinc-300 mb-2">File</label>
 
                     <label
                         class="flex flex-col items-center justify-center w-full border border-dashed border-dark-300 bg-dark-200 rounded-xl p-6 cursor-pointer hover:border-lime-main/50 transition-colors">
@@ -38,16 +43,16 @@
                             class="w-24 h-24 object-cover rounded-lg mb-3 border border-dark-300" />
                         <Icon v-else name="mdi-light:cloud-upload" size="32" class="text-zinc-500 mb-2" />
                         <span class="text-sm text-zinc-400">
-                            {{ image ? image.name : 'Click to select an image' }}
+                            {{ file ? file.name : 'Click to select a file' }}
                         </span>
-                        <input type="file" accept="image/*" class="hidden" @change="handleFileChange" />
+                        <input type="file" class="hidden" @change="handleFileChange" />
                     </label>
-                    <p v-if="errors.image" class="text-xs text-red-400 mt-1">{{ errors.image }}</p>
+                    <p v-if="errors.file" class="text-xs text-red-400 mt-1">{{ errors.file }}</p>
                 </div>
 
                 <button type="submit"
                     class="mt-2 px-4 py-2 rounded-md text-sm font-semibold bg-lime-main text-dark hover:bg-lime-hover transition-colors w-fit">
-                    Upload Image
+                    Upload File
                 </button>
             </form>
         </div>
@@ -62,6 +67,11 @@ definePageMeta({
 });
 const { authFetch } = useAuthFetch();
 
+const fileTypeOptions = [
+    { label: 'Image', value: 'image' },
+    { label: 'File', value: 'file' }
+];
+
 const assignModeOptions = [
     { label: "Don't assign", value: 'none' },
     { label: 'Assign', value: 'assign' }
@@ -74,6 +84,7 @@ const targetTypeOptions = [
     { label: 'Brand', value: 'brand_id' }
 ];
 
+const fileType = ref('image');
 const assignMode = ref('none');
 const targetType = ref(null);
 const targetId = ref(null);
@@ -81,7 +92,7 @@ const targetOptionsMap = ref({});
 const targetLoading = ref(false);
 
 const name = ref('');
-const image = ref(null);
+const file = ref(null);
 const previewUrl = ref('');
 const errors = ref({});
 
@@ -131,10 +142,14 @@ async function handleTargetTypeChange(value) {
 }
 
 function handleFileChange(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    image.value = file;
-    previewUrl.value = URL.createObjectURL(file);
+    const selected = event.target.files[0];
+    if (!selected) return;
+    file.value = selected;
+    if (fileType.value === 'image') {
+        previewUrl.value = URL.createObjectURL(selected);
+    } else {
+        previewUrl.value = '';
+    }
 }
 
 function validate() {
@@ -143,8 +158,8 @@ function validate() {
     if (!name.value.trim()) {
         errors.value.name = 'Name is required.';
     }
-    if (!image.value) {
-        errors.value.image = 'Please select an image.';
+    if (!file.value) {
+        errors.value.file = 'Please select a file.';
     }
 
     return Object.keys(errors.value).length === 0;
@@ -154,35 +169,37 @@ async function handleSubmit() {
     if (!validate()) return;
 
     statusType.value = 'loading';
-    statusMessage.value = 'Uploading image...';
+    statusMessage.value = 'Uploading file...';
     showStatus.value = true;
 
     try {
         const formData = new FormData();
         formData.append('name', name.value.trim());
-        formData.append('file', image.value);
+        formData.append('file_type', fileType.value);
+        formData.append('file', file.value);
         if (assignMode.value === 'assign' && targetType.value && targetId.value) {
             formData.append(targetType.value, targetId.value);
         }
 
-        const data = await authFetch('/api/admin/images', {
+        const data = await authFetch('/api/admin/uploads', {
             method: 'POST',
             body: formData
         });
 
         if (data) {
             statusType.value = 'success';
-            statusMessage.value = 'Image uploaded.';
+            statusMessage.value = 'File uploaded.';
             assignMode.value = 'none';
             targetType.value = null;
             targetId.value = null;
+            fileType.value = 'image';
             name.value = '';
-            image.value = null;
+            file.value = null;
             previewUrl.value = '';
         }
     } catch (e) {
         statusType.value = 'error';
-        statusMessage.value = e.statusMessage || 'Failed to upload image.';
+        statusMessage.value = e.statusMessage || 'Failed to upload file.';
     } finally {
         setTimeout(() => {
             showStatus.value = false;

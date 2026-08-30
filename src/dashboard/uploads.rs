@@ -12,10 +12,10 @@ use uuid::Uuid;
 use crate::AppState;
 use crate::utils::slugify;
 
-const UPLOAD_DIR: &str = "uploads/images";
+const UPLOAD_DIR: &str = "uploads/files";
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
-pub struct Image {
+pub struct Upload {
     pub id: Uuid,
     pub product_id: Option<Uuid>,
     pub category_id: Option<Uuid>,
@@ -23,6 +23,7 @@ pub struct Image {
     pub brand_id: Option<Uuid>,
     pub name: String,
     pub file_path: String,
+    pub file_type: String,
     pub created_at: DateTime<Utc>,
 }
 
@@ -30,7 +31,7 @@ pub trait WithFullUrl {
     fn with_full_url(self) -> Self;
 }
 
-impl WithFullUrl for Image {
+impl WithFullUrl for Upload {
     fn with_full_url(mut self) -> Self {
         let mut domain =
             std::env::var("DOMAIN").unwrap_or_else(|_| "http://127.0.0.1:7765".to_string());
@@ -68,7 +69,7 @@ pub struct MiniBrand {
 }
 
 #[derive(Debug, Clone, Serialize)]
-pub struct ImageWithDetails {
+pub struct UploadWithDetails {
     pub id: Uuid,
     pub product: Option<MiniProduct>,
     pub category: Option<MiniCategory>,
@@ -76,17 +77,18 @@ pub struct ImageWithDetails {
     pub brand: Option<MiniBrand>,
     pub name: String,
     pub file_path: String,
+    pub file_type: String,
     pub created_at: DateTime<Utc>,
 }
 
 async fn attach_details(
     state: &AppState,
-    images: Vec<Image>,
-) -> Result<Vec<ImageWithDetails>, StatusCode> {
-    let product_ids: Vec<Uuid> = images.iter().filter_map(|i| i.product_id).collect();
-    let category_ids: Vec<Uuid> = images.iter().filter_map(|i| i.category_id).collect();
-    let sub_category_ids: Vec<Uuid> = images.iter().filter_map(|i| i.sub_category_id).collect();
-    let brand_ids: Vec<Uuid> = images.iter().filter_map(|i| i.brand_id).collect();
+    uploads: Vec<Upload>,
+) -> Result<Vec<UploadWithDetails>, StatusCode> {
+    let product_ids: Vec<Uuid> = uploads.iter().filter_map(|i| i.product_id).collect();
+    let category_ids: Vec<Uuid> = uploads.iter().filter_map(|i| i.category_id).collect();
+    let sub_category_ids: Vec<Uuid> = uploads.iter().filter_map(|i| i.sub_category_id).collect();
+    let brand_ids: Vec<Uuid> = uploads.iter().filter_map(|i| i.brand_id).collect();
 
     let products = sqlx::query_as!(
         MiniProduct,
@@ -124,35 +126,36 @@ async fn attach_details(
     .await
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    let result = images
+    let result = uploads
         .into_iter()
-        .map(|img| {
-            let product = img
+        .map(|upload| {
+            let product = upload
                 .product_id
                 .and_then(|id| products.iter().find(|p| p.id == id))
                 .cloned();
-            let category = img
+            let category = upload
                 .category_id
                 .and_then(|id| categories.iter().find(|c| c.id == id))
                 .cloned();
-            let sub_category = img
+            let sub_category = upload
                 .sub_category_id
                 .and_then(|id| sub_categories.iter().find(|s| s.id == id))
                 .cloned();
-            let brand = img
+            let brand = upload
                 .brand_id
                 .and_then(|id| brands.iter().find(|b| b.id == id))
                 .cloned();
 
-            ImageWithDetails {
-                id: img.id,
+            UploadWithDetails {
+                id: upload.id,
                 product,
                 category,
                 sub_category,
                 brand,
-                name: img.name,
-                file_path: img.file_path,
-                created_at: img.created_at,
+                name: upload.name,
+                file_path: upload.file_path,
+                file_type: upload.file_type,
+                created_at: upload.created_at,
             }
         })
         .collect();
@@ -160,33 +163,33 @@ async fn attach_details(
     Ok(result)
 }
 
-pub async fn get_images(
+pub async fn get_uploads(
     State(state): State<AppState>,
-) -> Result<Json<Vec<ImageWithDetails>>, StatusCode> {
-    let images = sqlx::query_as!(
-        Image,
-        r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, created_at
-           FROM images
+) -> Result<Json<Vec<UploadWithDetails>>, StatusCode> {
+    let uploads = sqlx::query_as!(
+        Upload,
+        r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, file_type, created_at
+           FROM uploads
            ORDER BY created_at DESC"#
     )
     .fetch_all(&state.db)
     .await
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    let images: Vec<Image> = images.into_iter().map(Image::with_full_url).collect();
-    let result = attach_details(&state, images).await?;
+    let uploads: Vec<Upload> = uploads.into_iter().map(Upload::with_full_url).collect();
+    let result = attach_details(&state, uploads).await?;
 
     Ok(Json(result))
 }
 
-pub async fn get_image(
+pub async fn get_upload(
     State(state): State<AppState>,
     Path(uuid): Path<Uuid>,
-) -> Result<Json<ImageWithDetails>, StatusCode> {
-    let image = sqlx::query_as!(
-        Image,
-        r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, created_at
-           FROM images
+) -> Result<Json<UploadWithDetails>, StatusCode> {
+    let upload = sqlx::query_as!(
+        Upload,
+        r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, file_type, created_at
+           FROM uploads
            WHERE id = $1"#,
         uuid
     )
@@ -196,24 +199,25 @@ pub async fn get_image(
     .ok_or(StatusCode::NOT_FOUND)?
     .with_full_url();
 
-    let result = attach_details(&state, vec![image]).await?;
-    let image = result
+    let result = attach_details(&state, vec![upload]).await?;
+    let upload = result
         .into_iter()
         .next()
         .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    Ok(Json(image))
+    Ok(Json(upload))
 }
 
-pub async fn create_image(
+pub async fn create_upload(
     State(state): State<AppState>,
     mut multipart: Multipart,
-) -> Result<(StatusCode, Json<Image>), StatusCode> {
+) -> Result<(StatusCode, Json<Upload>), StatusCode> {
     let mut product_id: Option<Uuid> = None;
     let mut category_id: Option<Uuid> = None;
     let mut sub_category_id: Option<Uuid> = None;
     let mut brand_id: Option<Uuid> = None;
     let mut name: Option<String> = None;
+    let mut file_type: String = "image".to_string();
     let mut file_bytes: Option<Vec<u8>> = None;
     let mut extension = String::from("bin");
 
@@ -254,6 +258,12 @@ pub async fn create_image(
             "name" => {
                 name = Some(field.text().await.map_err(|_| StatusCode::BAD_REQUEST)?);
             }
+            "file_type" => {
+                let text = field.text().await.map_err(|_| StatusCode::BAD_REQUEST)?;
+                if !text.is_empty() {
+                    file_type = text;
+                }
+            }
             "file" => {
                 if let Some(filename) = field.file_name() {
                     if let Some(ext) = FsPath::new(filename).extension() {
@@ -284,17 +294,18 @@ pub async fn create_image(
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    let image = sqlx::query_as!(
-        Image,
-        r#"INSERT INTO images (product_id, category_id, sub_category_id, brand_id, name, file_path)
-           VALUES ($1, $2, $3, $4, $5, $6)
-           RETURNING id, product_id, category_id, sub_category_id, brand_id, name, file_path, created_at"#,
+    let upload = sqlx::query_as!(
+        Upload,
+        r#"INSERT INTO uploads (product_id, category_id, sub_category_id, brand_id, name, file_path, file_type)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)
+           RETURNING id, product_id, category_id, sub_category_id, brand_id, name, file_path, file_type, created_at"#,
         product_id,
         category_id,
         sub_category_id,
         brand_id,
         name,
-        file_path
+        file_path,
+        file_type
     )
     .fetch_one(&state.db)
     .await
@@ -311,19 +322,19 @@ pub async fn create_image(
         _ => StatusCode::INTERNAL_SERVER_ERROR,
     })?;
 
-    let image = image.with_full_url();
-    Ok((StatusCode::CREATED, Json(image)))
+    let upload = upload.with_full_url();
+    Ok((StatusCode::CREATED, Json(upload)))
 }
 
-pub async fn update_image(
+pub async fn update_upload(
     State(state): State<AppState>,
     Path(uuid): Path<Uuid>,
     mut multipart: Multipart,
-) -> Result<Json<Image>, StatusCode> {
+) -> Result<Json<Upload>, StatusCode> {
     let existing = sqlx::query_as!(
-        Image,
-        r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, created_at
-           FROM images
+        Upload,
+        r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, file_type, created_at
+           FROM uploads
            WHERE id = $1"#,
         uuid
     )
@@ -337,6 +348,7 @@ pub async fn update_image(
     let mut sub_category_id: Option<Uuid> = existing.sub_category_id;
     let mut brand_id: Option<Uuid> = existing.brand_id;
     let mut name: String = existing.name.clone();
+    let mut file_type: String = existing.file_type.clone();
     let mut new_file_bytes: Option<Vec<u8>> = None;
     let mut extension = String::from("bin");
 
@@ -383,6 +395,12 @@ pub async fn update_image(
             "name" => {
                 name = field.text().await.map_err(|_| StatusCode::BAD_REQUEST)?;
             }
+            "file_type" => {
+                let text = field.text().await.map_err(|_| StatusCode::BAD_REQUEST)?;
+                if !text.is_empty() {
+                    file_type = text;
+                }
+            }
             "file" => {
                 if let Some(filename) = field.file_name() {
                     if let Some(ext) = FsPath::new(filename).extension() {
@@ -418,23 +436,25 @@ pub async fn update_image(
         existing.file_path.clone()
     };
 
-    let image = sqlx::query_as!(
-        Image,
-        r#"UPDATE images
+    let upload = sqlx::query_as!(
+        Upload,
+        r#"UPDATE uploads
            SET product_id = $1,
                category_id = $2,
                sub_category_id = $3,
                brand_id = $4,
                name = $5,
-               file_path = $6
-           WHERE id = $7
-           RETURNING id, product_id, category_id, sub_category_id, brand_id, name, file_path, created_at"#,
+               file_path = $6,
+               file_type = $7
+           WHERE id = $8
+           RETURNING id, product_id, category_id, sub_category_id, brand_id, name, file_path, file_type, created_at"#,
         product_id,
         category_id,
         sub_category_id,
         brand_id,
         name,
         file_path,
+        file_type,
         uuid
     )
     .fetch_one(&state.db)
@@ -452,18 +472,18 @@ pub async fn update_image(
         _ => StatusCode::INTERNAL_SERVER_ERROR,
     })?;
 
-    let image = image.with_full_url();
-    Ok(Json(image))
+    let upload = upload.with_full_url();
+    Ok(Json(upload))
 }
 
-pub async fn delete_image(
+pub async fn delete_upload(
     State(state): State<AppState>,
     Path(uuid): Path<Uuid>,
 ) -> Result<StatusCode, StatusCode> {
-    let image = sqlx::query_as!(
-        Image,
-        r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, created_at
-           FROM images
+    let upload = sqlx::query_as!(
+        Upload,
+        r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, file_type, created_at
+           FROM uploads
            WHERE id = $1"#,
         uuid
     )
@@ -472,12 +492,12 @@ pub async fn delete_image(
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
     .ok_or(StatusCode::NOT_FOUND)?;
 
-    sqlx::query!("DELETE FROM images WHERE id = $1", uuid)
+    sqlx::query!("DELETE FROM uploads WHERE id = $1", uuid)
         .execute(&state.db)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    let _ = fs::remove_file(&image.file_path).await;
+    let _ = fs::remove_file(&upload.file_path).await;
 
     Ok(StatusCode::NO_CONTENT)
 }

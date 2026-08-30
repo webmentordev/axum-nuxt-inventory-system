@@ -16,26 +16,13 @@ CREATE TABLE products (
     voltage_rating NUMERIC(10, 2),
     capacity_ah NUMERIC(10, 2),
     warranty_months SMALLINT,
-    panel_type VARCHAR(50),
-    cell_type VARCHAR(50),
-    number_of_cells SMALLINT,
-    efficiency_percentage NUMERIC(5, 2),
-    max_system_voltage NUMERIC(10, 2),
-    open_circuit_voltage NUMERIC(10, 2),
-    short_circuit_current NUMERIC(10, 2),
-    max_power_voltage NUMERIC(10, 2),
-    max_power_current NUMERIC(10, 2),
-    temperature_coefficient NUMERIC(6, 3),
-    frame_material VARCHAR(50),
-    glass_type VARCHAR(50),
-    length_mm NUMERIC(10, 2),
-    width_mm NUMERIC(10, 2),
-    thickness_mm NUMERIC(10, 2),
-    weight_kg NUMERIC(10, 2),
     cost_price NUMERIC(12, 2) NOT NULL DEFAULT 0,
-    compare_at_cost_price NUMERIC(12, 2),
     selling_price NUMERIC(12, 2) NOT NULL DEFAULT 0,
     compare_at_selling_price NUMERIC(12, 2),
+    per_watt_price NUMERIC(12, 2),
+    shipping_cost NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    tax NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    kilowatt_hour NUMERIC(10, 2),
     quantity_in_stock INTEGER NOT NULL DEFAULT 0,
     reorder_level INTEGER NOT NULL DEFAULT 0,
     unit VARCHAR(20) NOT NULL DEFAULT 'piece',
@@ -49,24 +36,19 @@ CREATE TABLE products (
     CONSTRAINT ck_products_prices_non_negative CHECK (
         cost_price >= 0
         AND selling_price >= 0
-        AND (
-            compare_at_cost_price IS NULL
-            OR compare_at_cost_price >= 0
-        )
+        AND shipping_cost >= 0
+        AND tax >= 0
         AND (
             compare_at_selling_price IS NULL
             OR compare_at_selling_price >= 0
         )
+        AND (
+            per_watt_price IS NULL
+            OR per_watt_price >= 0
+        )
     ),
     CONSTRAINT ck_products_product_type CHECK (
         product_type IN ('solar', 'other')
-    ),
-    CONSTRAINT ck_products_efficiency_range CHECK (
-        efficiency_percentage IS NULL
-        OR (
-            efficiency_percentage >= 0
-            AND efficiency_percentage <= 100
-        )
     )
 );
 

@@ -4,13 +4,13 @@ use crate::dashboard::barcodes::*;
 use crate::dashboard::brands::*;
 use crate::dashboard::categories::*;
 use crate::dashboard::contacts::*;
-use crate::dashboard::images::*;
 use crate::dashboard::orders::*;
 use crate::dashboard::policies::*;
 use crate::dashboard::products::*;
 use crate::dashboard::products_seo::*;
 use crate::dashboard::stats::*;
 use crate::dashboard::sub_categories::*;
+use crate::dashboard::uploads::*;
 use crate::middleware::require_admin;
 use axum::middleware as axum_middleware;
 
@@ -48,11 +48,11 @@ pub async fn init_admin_routes(state: AppState) -> Result<Router> {
             "/{uuid}",
             get(get_order).patch(update_order).delete(delete_order),
         );
-    let images = Router::new()
-        .route("/", get(get_images).post(create_image))
+    let uploads = Router::new()
+        .route("/", get(get_uploads).post(create_upload))
         .route(
             "/{uuid}",
-            get(get_image).patch(update_image).delete(delete_image),
+            get(get_upload).patch(update_upload).delete(delete_upload),
         );
     let barcodes = Router::new()
         .route("/", get(get_barcodes).post(create_barcode))
@@ -100,7 +100,7 @@ pub async fn init_admin_routes(state: AppState) -> Result<Router> {
         .nest("/categories", categories)
         .nest("/sub-categories", sub_categories)
         .nest("/orders", orders)
-        .nest("/images", images)
+        .nest("/uploads", uploads)
         .nest("/barcodes", barcodes)
         .nest("/users", users)
         .nest("/contacts", contacts)

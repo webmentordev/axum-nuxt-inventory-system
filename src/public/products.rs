@@ -10,7 +10,7 @@ use uuid::Uuid;
 
 use crate::{
     AppState,
-    dashboard::images::{Image, WithFullUrl},
+    dashboard::uploads::{Upload, WithFullUrl},
 };
 
 const SUGGESTED_PRODUCTS_LIMIT: i64 = 4;
@@ -25,9 +25,11 @@ pub struct PublicProductRow {
     pub category_id: Uuid,
     pub sub_category_id: Option<Uuid>,
     pub model: Option<String>,
+    pub product_type: Option<String>,
     pub description: Option<String>,
     pub content: Option<String>,
     pub power_rating_watts: Option<Decimal>,
+    pub per_watt_price: Option<Decimal>,
     pub voltage_rating: Option<Decimal>,
     pub capacity_ah: Option<Decimal>,
     pub warranty_months: Option<i16>,
@@ -42,7 +44,7 @@ pub struct PublicProductBrand {
     pub id: Uuid,
     pub name: String,
     pub slug: String,
-    pub images: Vec<Image>,
+    pub uploads: Vec<Upload>,
 }
 
 #[derive(Debug, Serialize)]
@@ -55,9 +57,11 @@ pub struct PublicProduct {
     pub category: Option<PublicProductCategoryMini>,
     pub sub_category: Option<PublicProductCategoryMini>,
     pub model: Option<String>,
+    pub product_type: Option<String>,
     pub description: Option<String>,
     pub content: Option<String>,
     pub power_rating_watts: Option<Decimal>,
+    pub per_watt_price: Option<Decimal>,
     pub voltage_rating: Option<Decimal>,
     pub capacity_ah: Option<Decimal>,
     pub warranty_months: Option<i16>,
@@ -65,7 +69,7 @@ pub struct PublicProduct {
     pub in_stock: bool,
     pub unit: String,
     pub image_url: String,
-    pub images: Vec<Image>,
+    pub uploads: Vec<Upload>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub suggested_products: Option<Vec<PublicProduct>>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -116,10 +120,10 @@ pub async fn fetch_product_brands(
     .await
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    let images = sqlx::query_as!(
-        Image,
-        r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, created_at
-           FROM images
+    let uploads = sqlx::query_as!(
+        Upload,
+        r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, file_type, created_at
+           FROM uploads
            WHERE brand_id = ANY($1)"#,
         brand_ids
     )
@@ -130,11 +134,11 @@ pub async fn fetch_product_brands(
     let map = brands
         .into_iter()
         .map(|b| {
-            let brand_images = images
+            let brand_uploads = uploads
                 .iter()
-                .filter(|img| img.brand_id == Some(b.id))
+                .filter(|u| u.brand_id == Some(b.id))
                 .cloned()
-                .map(Image::with_full_url)
+                .map(Upload::with_full_url)
                 .collect();
 
             (
@@ -143,7 +147,7 @@ pub async fn fetch_product_brands(
                     id: b.id,
                     name: b.name,
                     slug: b.slug,
-                    images: brand_images,
+                    uploads: brand_uploads,
                 },
             )
         })
@@ -154,14 +158,14 @@ pub async fn fetch_product_brands(
 
 pub fn build_public_product(
     p: PublicProductRow,
-    images: &[Image],
+    uploads: &[Upload],
     brand_map: &HashMap<Uuid, PublicProductBrand>,
 ) -> PublicProduct {
-    let product_images = images
+    let product_uploads = uploads
         .iter()
-        .filter(|img| img.product_id == Some(p.id))
+        .filter(|u| u.product_id == Some(p.id))
         .cloned()
-        .map(Image::with_full_url)
+        .map(Upload::with_full_url)
         .collect();
 
     let brand = p.brand_id.and_then(|id| brand_map.get(&id)).cloned();
@@ -178,6 +182,8 @@ pub fn build_public_product(
         description: p.description,
         content: p.content,
         power_rating_watts: p.power_rating_watts,
+        product_type: p.product_type,
+        per_watt_price: p.per_watt_price,
         voltage_rating: p.voltage_rating,
         capacity_ah: p.capacity_ah,
         warranty_months: p.warranty_months,
@@ -185,7 +191,7 @@ pub fn build_public_product(
         in_stock: p.quantity_in_stock > 0,
         unit: p.unit,
         image_url: p.image_url,
-        images: product_images,
+        uploads: product_uploads,
         suggested_products: None,
         seo: None,
     }
@@ -197,8 +203,8 @@ pub async fn fetch_suggested_products(
 ) -> Result<Vec<PublicProduct>, StatusCode> {
     let rows = sqlx::query_as!(
         PublicProductRow,
-        r#"SELECT id, name, slug, sku, brand_id, category_id as "category_id!", sub_category_id, model, description, content, image_url as "image_url!",
-                  power_rating_watts, voltage_rating, capacity_ah, warranty_months,
+        r#"SELECT id, name, slug, sku, product_type, brand_id, category_id as "category_id!", sub_category_id, model, description, content, image_url as "image_url!",
+                  power_rating_watts, per_watt_price, voltage_rating, capacity_ah, warranty_months,
                   selling_price, quantity_in_stock, unit
            FROM products
            WHERE is_active = TRUE AND id != $1
@@ -213,10 +219,10 @@ pub async fn fetch_suggested_products(
 
     let product_ids: Vec<Uuid> = rows.iter().map(|p| p.id).collect();
 
-    let images = sqlx::query_as!(
-        Image,
-        r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, created_at
-           FROM images
+    let uploads = sqlx::query_as!(
+        Upload,
+        r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, file_type, created_at
+           FROM uploads
            WHERE product_id = ANY($1)
            ORDER BY created_at ASC"#,
         &product_ids
@@ -230,7 +236,7 @@ pub async fn fetch_suggested_products(
 
     Ok(rows
         .into_iter()
-        .map(|p| build_public_product(p, &images, &brand_map))
+        .map(|p| build_public_product(p, &uploads, &brand_map))
         .collect())
 }
 
@@ -239,8 +245,8 @@ pub async fn get_public_products(
 ) -> Result<Json<Vec<PublicProduct>>, StatusCode> {
     let products = sqlx::query_as!(
         PublicProductRow,
-        r#"SELECT id, name, slug, sku, brand_id, category_id as "category_id!", sub_category_id, model, description, content, image_url as "image_url!",
-                  power_rating_watts, voltage_rating, capacity_ah, warranty_months,
+        r#"SELECT id, name, slug, sku, product_type, brand_id, category_id as "category_id!", sub_category_id, model, description, content, image_url as "image_url!",
+                  power_rating_watts, per_watt_price, voltage_rating, capacity_ah, warranty_months,
                   selling_price, quantity_in_stock, unit
            FROM products
            WHERE is_active = TRUE
@@ -252,10 +258,10 @@ pub async fn get_public_products(
 
     let product_ids: Vec<Uuid> = products.iter().map(|p| p.id).collect();
 
-    let images = sqlx::query_as!(
-        Image,
-        r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, created_at
-           FROM images
+    let uploads = sqlx::query_as!(
+        Upload,
+        r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, file_type, created_at
+           FROM uploads
            WHERE product_id = ANY($1)
            ORDER BY created_at ASC"#,
         &product_ids
@@ -281,7 +287,7 @@ pub async fn get_public_products(
                 .sub_category_id
                 .and_then(|id| sub_category_map.get(&id).cloned());
 
-            let mut product = build_public_product(p, &images, &brand_map);
+            let mut product = build_public_product(p, &uploads, &brand_map);
             product.category = category;
             product.sub_category = sub_category;
             product
@@ -363,8 +369,8 @@ pub async fn get_public_product(
 ) -> Result<Json<PublicProduct>, StatusCode> {
     let p = sqlx::query_as!(
         PublicProductRow,
-        r#"SELECT id, name, slug, sku, brand_id, category_id as "category_id!", sub_category_id, model, description, content, image_url as "image_url!",
-                  power_rating_watts, voltage_rating, capacity_ah, warranty_months,
+        r#"SELECT id, name, slug, sku, product_type, brand_id, category_id as "category_id!", sub_category_id, model, description, content, image_url as "image_url!",
+                  power_rating_watts, per_watt_price, voltage_rating, capacity_ah, warranty_months,
                   selling_price, quantity_in_stock, unit
            FROM products
            WHERE slug = $1 AND is_active = TRUE"#,
@@ -386,10 +392,10 @@ pub async fn get_public_product(
     .await
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    let images = sqlx::query_as!(
-        Image,
-        r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, created_at
-           FROM images
+    let uploads = sqlx::query_as!(
+        Upload,
+        r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, file_type, created_at
+           FROM uploads
            WHERE product_id = $1
            ORDER BY created_at ASC"#,
         p.id
@@ -432,7 +438,7 @@ pub async fn get_public_product(
     };
 
     let product_id = p.id;
-    let mut product = build_public_product(p, &images, &brand_map);
+    let mut product = build_public_product(p, &uploads, &brand_map);
     product.category = category;
     product.sub_category = sub_category;
     product.suggested_products = Some(fetch_suggested_products(&state, product_id).await?);

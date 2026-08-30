@@ -5,7 +5,7 @@ use crate::AppState;
 
 #[derive(Debug, Serialize)]
 pub struct DashboardStats {
-    pub images_count: i64,
+    pub uploads_count: i64,
     pub products_count: i64,
     pub orders_count: i64,
     pub categories_count: i64,
@@ -20,7 +20,7 @@ pub struct DashboardStats {
 pub async fn get_dashboard_stats(
     State(state): State<AppState>,
 ) -> Result<Json<DashboardStats>, StatusCode> {
-    let images_count = sqlx::query_scalar!("SELECT COUNT(*) FROM images")
+    let uploads_count = sqlx::query_scalar!("SELECT COUNT(*) FROM uploads")
         .fetch_one(&state.db)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
@@ -81,7 +81,7 @@ pub async fn get_dashboard_stats(
         .unwrap_or(0);
 
     Ok(Json(DashboardStats {
-        images_count,
+        uploads_count,
         products_count,
         orders_count,
         categories_count,

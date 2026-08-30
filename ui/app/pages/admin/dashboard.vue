@@ -15,7 +15,7 @@
                 class="border border-dark-300 rounded-xl bg-dark-100 p-4 flex items-start justify-between hover:border-dark-strong transition-colors">
                 <div>
                     <p class="text-sm text-zinc-500">{{ card.label }}</p>
-                    <p class="text-2xl font-bold text-white mt-1">{{ card.value.toLocaleString() }}</p>
+                    <p class="text-2xl font-bold text-white mt-1">{{ card.value }}</p>
                 </div>
                 <div class="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-lime-bg">
                     <Icon :name="card.icon" size="20" class="text-lime-main" />

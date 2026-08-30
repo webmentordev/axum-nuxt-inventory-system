@@ -105,140 +105,38 @@
                     </div>
                 </div>
 
-                <div v-if="productType === 'solar'" class="flex flex-col gap-4">
-                    <h2 class="text-sm font-bold text-zinc-400 uppercase tracking-wide mt-2">Solar Panel Specs</h2>
-
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                        <div>
-                            <label class="block text-sm font-semibold text-zinc-300 mb-2">Panel Type</label>
-                            <AdminInput v-model="panelType" placeholder="e.g. Monocrystalline" />
-                            <p v-if="errors.panel_type" class="text-xs text-red-400 mt-1">{{ errors.panel_type }}</p>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-semibold text-zinc-300 mb-2">Cell Type</label>
-                            <AdminInput v-model="cellType" placeholder="e.g. PERC" />
-                            <p v-if="errors.cell_type" class="text-xs text-red-400 mt-1">{{ errors.cell_type }}</p>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-semibold text-zinc-300 mb-2">Number of Cells</label>
-                            <AdminInput v-model="numberOfCells" type="number" step="1" placeholder="e.g. 144" />
-                            <p v-if="errors.number_of_cells" class="text-xs text-red-400 mt-1">{{
-                                errors.number_of_cells }}</p>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-semibold text-zinc-300 mb-2">Efficiency (%)</label>
-                            <AdminInput v-model="efficiencyPercentage" type="number" step="0.01"
-                                placeholder="e.g. 21.5" />
-                            <p v-if="errors.efficiency_percentage" class="text-xs text-red-400 mt-1">{{
-                                errors.efficiency_percentage }}</p>
-                        </div>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-zinc-300 mb-2">Kilowatt Hour</label>
+                        <AdminInput v-model="kilowattHour" type="number" step="0.01" placeholder="e.g. 5" />
+                        <p v-if="errors.kilowatt_hour" class="text-xs text-red-400 mt-1">{{ errors.kilowatt_hour }}</p>
                     </div>
 
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                        <div>
-                            <label class="block text-sm font-semibold text-zinc-300 mb-2">Max System Voltage</label>
-                            <AdminInput v-model="maxSystemVoltage" type="number" step="0.01" placeholder="e.g. 1500" />
-                            <p v-if="errors.max_system_voltage" class="text-xs text-red-400 mt-1">{{
-                                errors.max_system_voltage }}</p>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-semibold text-zinc-300 mb-2">Open Circuit Voltage</label>
-                            <AdminInput v-model="openCircuitVoltage" type="number" step="0.01"
-                                placeholder="e.g. 49.5" />
-                            <p v-if="errors.open_circuit_voltage" class="text-xs text-red-400 mt-1">{{
-                                errors.open_circuit_voltage }}</p>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-semibold text-zinc-300 mb-2">Short Circuit Current</label>
-                            <AdminInput v-model="shortCircuitCurrent" type="number" step="0.01"
-                                placeholder="e.g. 10.5" />
-                            <p v-if="errors.short_circuit_current" class="text-xs text-red-400 mt-1">{{
-                                errors.short_circuit_current }}</p>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-semibold text-zinc-300 mb-2">Max Power Voltage</label>
-                            <AdminInput v-model="maxPowerVoltage" type="number" step="0.01" placeholder="e.g. 41.2" />
-                            <p v-if="errors.max_power_voltage" class="text-xs text-red-400 mt-1">{{
-                                errors.max_power_voltage }}</p>
-                        </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-zinc-300 mb-2">Per Watt Price</label>
+                        <AdminInput v-model="perWattPrice" type="number" step="0.01" placeholder="Optional" />
+                        <p v-if="errors.per_watt_price" class="text-xs text-red-400 mt-1">{{ errors.per_watt_price }}
+                        </p>
                     </div>
 
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                        <div>
-                            <label class="block text-sm font-semibold text-zinc-300 mb-2">Max Power Current</label>
-                            <AdminInput v-model="maxPowerCurrent" type="number" step="0.01" placeholder="e.g. 9.8" />
-                            <p v-if="errors.max_power_current" class="text-xs text-red-400 mt-1">{{
-                                errors.max_power_current }}</p>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-semibold text-zinc-300 mb-2">Temp. Coefficient</label>
-                            <AdminInput v-model="temperatureCoefficient" type="number" step="0.001"
-                                placeholder="e.g. -0.35" />
-                            <p v-if="errors.temperature_coefficient" class="text-xs text-red-400 mt-1">{{
-                                errors.temperature_coefficient }}</p>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-semibold text-zinc-300 mb-2">Frame Material</label>
-                            <AdminInput v-model="frameMaterial" placeholder="e.g. Anodized Aluminum" />
-                            <p v-if="errors.frame_material" class="text-xs text-red-400 mt-1">{{ errors.frame_material
-                                }}</p>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-semibold text-zinc-300 mb-2">Glass Type</label>
-                            <AdminInput v-model="glassType" placeholder="e.g. Tempered" />
-                            <p v-if="errors.glass_type" class="text-xs text-red-400 mt-1">{{ errors.glass_type }}</p>
-                        </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-zinc-300 mb-2">Shipping Cost</label>
+                        <AdminInput v-model="shippingCost" type="number" step="0.01" placeholder="0" />
+                        <p v-if="errors.shipping_cost" class="text-xs text-red-400 mt-1">{{ errors.shipping_cost }}</p>
                     </div>
 
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                        <div>
-                            <label class="block text-sm font-semibold text-zinc-300 mb-2">Length (mm)</label>
-                            <AdminInput v-model="lengthMm" type="number" step="0.01" placeholder="e.g. 2278" />
-                            <p v-if="errors.length_mm" class="text-xs text-red-400 mt-1">{{ errors.length_mm }}</p>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-semibold text-zinc-300 mb-2">Width (mm)</label>
-                            <AdminInput v-model="widthMm" type="number" step="0.01" placeholder="e.g. 1134" />
-                            <p v-if="errors.width_mm" class="text-xs text-red-400 mt-1">{{ errors.width_mm }}</p>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-semibold text-zinc-300 mb-2">Thickness (mm)</label>
-                            <AdminInput v-model="thicknessMm" type="number" step="0.01" placeholder="e.g. 35" />
-                            <p v-if="errors.thickness_mm" class="text-xs text-red-400 mt-1">{{ errors.thickness_mm }}
-                            </p>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-semibold text-zinc-300 mb-2">Weight (kg)</label>
-                            <AdminInput v-model="weightKg" type="number" step="0.01" placeholder="e.g. 27.5" />
-                            <p v-if="errors.weight_kg" class="text-xs text-red-400 mt-1">{{ errors.weight_kg }}</p>
-                        </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-zinc-300 mb-2">Tax</label>
+                        <AdminInput v-model="tax" type="number" step="0.01" placeholder="0" />
+                        <p v-if="errors.tax" class="text-xs text-red-400 mt-1">{{ errors.tax }}</p>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
                         <label class="block text-sm font-semibold text-zinc-300 mb-2">Cost Price</label>
                         <AdminInput v-model="costPrice" type="number" step="0.01" placeholder="e.g. 15000" />
                         <p v-if="errors.cost_price" class="text-xs text-red-400 mt-1">{{ errors.cost_price }}</p>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-semibold text-zinc-300 mb-2">Compare At Cost Price</label>
-                        <AdminInput v-model="compareAtCostPrice" type="number" step="0.01" placeholder="Optional" />
-                        <p v-if="errors.compare_at_cost_price" class="text-xs text-red-400 mt-1">{{
-                            errors.compare_at_cost_price }}</p>
                     </div>
 
                     <div>
@@ -327,27 +225,13 @@ const voltageRating = ref('');
 const capacityAh = ref('');
 const warrantyMonths = ref('');
 
-const panelType = ref('');
-const cellType = ref('');
-const numberOfCells = ref('');
-const efficiencyPercentage = ref('');
-const maxSystemVoltage = ref('');
-const openCircuitVoltage = ref('');
-const shortCircuitCurrent = ref('');
-const maxPowerVoltage = ref('');
-const maxPowerCurrent = ref('');
-const temperatureCoefficient = ref('');
-const frameMaterial = ref('');
-const glassType = ref('');
-const lengthMm = ref('');
-const widthMm = ref('');
-const thicknessMm = ref('');
-const weightKg = ref('');
-
 const costPrice = ref('');
-const compareAtCostPrice = ref('');
 const sellingPrice = ref('');
 const compareAtSellingPrice = ref('');
+const perWattPrice = ref('');
+const shippingCost = ref('0');
+const tax = ref('0');
+const kilowattHour = ref('');
 
 const quantityInStock = ref('0');
 const reorderLevel = ref('0');
@@ -419,27 +303,6 @@ watch(categoryId, async (newCategoryId, oldCategoryId) => {
     await fetchSubCategories(newCategoryId);
 });
 
-watch(productType, (newType) => {
-    if (newType !== 'solar') {
-        panelType.value = '';
-        cellType.value = '';
-        numberOfCells.value = '';
-        efficiencyPercentage.value = '';
-        maxSystemVoltage.value = '';
-        openCircuitVoltage.value = '';
-        shortCircuitCurrent.value = '';
-        maxPowerVoltage.value = '';
-        maxPowerCurrent.value = '';
-        temperatureCoefficient.value = '';
-        frameMaterial.value = '';
-        glassType.value = '';
-        lengthMm.value = '';
-        widthMm.value = '';
-        thicknessMm.value = '';
-        weightKg.value = '';
-    }
-});
-
 function toNumberOrNull(value) {
     if (value === '' || value === null || value === undefined) return null;
     const n = Number(value);
@@ -470,7 +333,7 @@ async function fetchCategories() {
 async function fetchSubCategories(categoryIdValue) {
     subCategoriesLoading.value = true;
     try {
-        const data = await authFetch('/api/admin/sub-categories/' + categoryIdValue);
+        const data = await authFetch('/api/admin/sub-categories/category/' + categoryIdValue);
         if (data) {
             subCategories.value = data;
         }
@@ -520,27 +383,13 @@ async function fetchProduct() {
             capacityAh.value = toInputValue(data.capacity_ah);
             warrantyMonths.value = toInputValue(data.warranty_months);
 
-            panelType.value = data.panel_type || '';
-            cellType.value = data.cell_type || '';
-            numberOfCells.value = toInputValue(data.number_of_cells);
-            efficiencyPercentage.value = toInputValue(data.efficiency_percentage);
-            maxSystemVoltage.value = toInputValue(data.max_system_voltage);
-            openCircuitVoltage.value = toInputValue(data.open_circuit_voltage);
-            shortCircuitCurrent.value = toInputValue(data.short_circuit_current);
-            maxPowerVoltage.value = toInputValue(data.max_power_voltage);
-            maxPowerCurrent.value = toInputValue(data.max_power_current);
-            temperatureCoefficient.value = toInputValue(data.temperature_coefficient);
-            frameMaterial.value = data.frame_material || '';
-            glassType.value = data.glass_type || '';
-            lengthMm.value = toInputValue(data.length_mm);
-            widthMm.value = toInputValue(data.width_mm);
-            thicknessMm.value = toInputValue(data.thickness_mm);
-            weightKg.value = toInputValue(data.weight_kg);
-
             costPrice.value = toInputValue(data.cost_price);
-            compareAtCostPrice.value = toInputValue(data.compare_at_cost_price);
             sellingPrice.value = toInputValue(data.selling_price);
             compareAtSellingPrice.value = toInputValue(data.compare_at_selling_price);
+            perWattPrice.value = toInputValue(data.per_watt_price);
+            shippingCost.value = toInputValue(data.shipping_cost ?? 0);
+            tax.value = toInputValue(data.tax ?? 0);
+            kilowattHour.value = toInputValue(data.kilowatt_hour);
 
             quantityInStock.value = toInputValue(data.quantity_in_stock ?? 0);
             reorderLevel.value = toInputValue(data.reorder_level ?? 0);
@@ -591,12 +440,20 @@ function validate() {
         errors.value.selling_price = 'Selling price is required and must be 0 or more.';
     }
 
-    if (compareAtCostPrice.value !== '' && Number(compareAtCostPrice.value) < 0) {
-        errors.value.compare_at_cost_price = 'Compare at cost price must be 0 or more.';
-    }
-
     if (compareAtSellingPrice.value !== '' && Number(compareAtSellingPrice.value) < 0) {
         errors.value.compare_at_selling_price = 'Compare at selling price must be 0 or more.';
+    }
+
+    if (perWattPrice.value !== '' && Number(perWattPrice.value) < 0) {
+        errors.value.per_watt_price = 'Per watt price must be 0 or more.';
+    }
+
+    if (shippingCost.value === '' || Number(shippingCost.value) < 0) {
+        errors.value.shipping_cost = 'Shipping cost must be 0 or more.';
+    }
+
+    if (tax.value === '' || Number(tax.value) < 0) {
+        errors.value.tax = 'Tax must be 0 or more.';
     }
 
     if (quantityInStock.value === '' || Number(quantityInStock.value) < 0) {
@@ -613,13 +470,6 @@ function validate() {
 
     if (warrantyMonths.value !== '' && Number(warrantyMonths.value) < 0) {
         errors.value.warranty_months = 'Warranty must be 0 or more.';
-    }
-
-    if (
-        efficiencyPercentage.value !== '' &&
-        (Number(efficiencyPercentage.value) < 0 || Number(efficiencyPercentage.value) > 100)
-    ) {
-        errors.value.efficiency_percentage = 'Efficiency must be between 0 and 100.';
     }
 
     return Object.keys(errors.value).length === 0;
@@ -652,27 +502,13 @@ async function handleSubmit() {
                 capacity_ah: toNumberOrNull(capacityAh.value),
                 warranty_months: toNumberOrNull(warrantyMonths.value),
 
-                panel_type: panelType.value.trim() || null,
-                cell_type: cellType.value.trim() || null,
-                number_of_cells: toNumberOrNull(numberOfCells.value),
-                efficiency_percentage: toNumberOrNull(efficiencyPercentage.value),
-                max_system_voltage: toNumberOrNull(maxSystemVoltage.value),
-                open_circuit_voltage: toNumberOrNull(openCircuitVoltage.value),
-                short_circuit_current: toNumberOrNull(shortCircuitCurrent.value),
-                max_power_voltage: toNumberOrNull(maxPowerVoltage.value),
-                max_power_current: toNumberOrNull(maxPowerCurrent.value),
-                temperature_coefficient: toNumberOrNull(temperatureCoefficient.value),
-                frame_material: frameMaterial.value.trim() || null,
-                glass_type: glassType.value.trim() || null,
-                length_mm: toNumberOrNull(lengthMm.value),
-                width_mm: toNumberOrNull(widthMm.value),
-                thickness_mm: toNumberOrNull(thicknessMm.value),
-                weight_kg: toNumberOrNull(weightKg.value),
-
                 cost_price: toNumberOrNull(costPrice.value),
-                compare_at_cost_price: toNumberOrNull(compareAtCostPrice.value),
                 selling_price: toNumberOrNull(sellingPrice.value),
                 compare_at_selling_price: toNumberOrNull(compareAtSellingPrice.value),
+                per_watt_price: toNumberOrNull(perWattPrice.value),
+                shipping_cost: toNumberOrNull(shippingCost.value) ?? 0,
+                tax: toNumberOrNull(tax.value) ?? 0,
+                kilowatt_hour: toNumberOrNull(kilowattHour.value),
 
                 quantity_in_stock: toNumberOrNull(quantityInStock.value) ?? 0,
                 reorder_level: toNumberOrNull(reorderLevel.value) ?? 0,

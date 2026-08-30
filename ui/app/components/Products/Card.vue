@@ -3,8 +3,8 @@
         :title="product.name">
         <NuxtImg :src="product.image_url" width="400" height="160" :alt='`${product.name} Image`'
             class="w-full h-40 object-contain" loading="lazy" />
-        <img v-if="product.brand?.images.length" :src="product.brand?.images[0].file_path" class="absolute top-1 left-1"
-            loading="lazy" width="50px" />
+        <img v-if="product.brand?.uploads.length" :src="product.brand?.uploads[0].file_path"
+            class="absolute top-1 left-1" loading="lazy" width="50px" />
         <div class="p-3 flex flex-col flex-1">
             <h2 class="font-semibold text-sm line-clamp-2">{{ product.name }}</h2>
             <p class="text-xs text-gray-500 mt-1">
@@ -12,9 +12,12 @@
                 <span v-if="product.model"> · {{ product.model }}</span>
             </p>
             <div class="mt-auto pt-3 flex items-center justify-between">
-                <span class="font-bold text-lg">
+                <div class="font-bold text-lg">
                     {{ config.currency }}{{ formatPrice(Number(product.selling_price)) }}
-                </span>
+                    <span class="text-sm text-gray-500" v-if="product.product_type == 'solar'">/{{
+                        formatPrice(Number(product.per_watt_price))
+                    }} W</span>
+                </div>
                 <span class="text-xs px-2 py-1 rounded-full" :class="product.in_stock
                     ? 'bg-green-100 text-green-700'
                     : 'bg-red-100 text-red-700'">

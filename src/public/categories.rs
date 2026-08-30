@@ -8,7 +8,7 @@ use uuid::Uuid;
 
 use crate::{
     AppState,
-    dashboard::images::Image,
+    dashboard::uploads::Upload,
     public::products::{
         PublicProduct, PublicProductRow, build_public_product, fetch_category_minis,
         fetch_product_brands, fetch_sub_category_minis,
@@ -158,8 +158,8 @@ pub async fn get_public_category(
 
     let products = sqlx::query_as!(
         PublicProductRow,
-        r#"SELECT id, name, slug, sku, brand_id, category_id as "category_id!", sub_category_id, model, description, content, image_url as "image_url!",
-                  power_rating_watts, voltage_rating, capacity_ah, warranty_months,
+        r#"SELECT id, name, slug, sku, product_type, brand_id, category_id as "category_id!", sub_category_id, model, description, content, image_url as "image_url!",
+                  power_rating_watts, per_watt_price, voltage_rating, capacity_ah, warranty_months,
                   selling_price, quantity_in_stock, unit
            FROM products
            WHERE category_id = $1 AND is_active = TRUE
@@ -172,10 +172,10 @@ pub async fn get_public_category(
 
     let product_ids: Vec<Uuid> = products.iter().map(|p| p.id).collect();
 
-    let images = sqlx::query_as!(
-        Image,
-        r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, created_at
-           FROM images
+    let uploads = sqlx::query_as!(
+        Upload,
+        r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, file_type, created_at
+           FROM uploads
            WHERE product_id = ANY($1)
            ORDER BY created_at ASC"#,
         &product_ids
@@ -200,7 +200,7 @@ pub async fn get_public_category(
             let sub = p
                 .sub_category_id
                 .and_then(|id| sub_category_map.get(&id).cloned());
-            let mut product = build_public_product(p, &images, &brand_map);
+            let mut product = build_public_product(p, &uploads, &brand_map);
             product.category = cat;
             product.sub_category = sub;
             product

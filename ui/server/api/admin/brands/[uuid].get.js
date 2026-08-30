@@ -1,22 +1,23 @@
 export default defineEventHandler(async (event) => {
     const apiUrl = useRuntimeConfig(event).apiUrl;
     const uuid = getRouterParam(event, 'uuid');
-    const allHeaders = getRequestHeaders(event);
+    const authHeader = getRequestHeaders(event);
     if (!uuid) {
         throw createError({
             statusCode: 400,
             statusMessage: 'Bad Request',
-            data: { message: "Sub category's category id is required" }
+            data: { message: 'Brand id is required' }
         });
     }
     try {
-        const data = await $fetch(`${apiUrl}/api/admin/sub-categories/${uuid}`, { headers: allHeaders });
+        const data = await $fetch(`${apiUrl}/api/admin/brands/${uuid}`, {headers: authHeader});
         return data;
     } catch (e) {
-        console.log(e)
         throw createError({
             statusCode: e.response?.status || 500,
-            statusMessage: e.data.message || "Sub category by category fetch failed"
+            statusMessage: e.response?.status === 404
+                ? 'Brand does not exist'
+                : (e.data?.message || 'Brand fetch failed')
         });
     }
 });

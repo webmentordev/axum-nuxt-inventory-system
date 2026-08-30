@@ -9,7 +9,7 @@ use uuid::Uuid;
 
 use crate::AppState;
 use crate::dashboard::categories::Category;
-use crate::dashboard::images::{Image, WithFullUrl};
+use crate::dashboard::uploads::{Upload, WithFullUrl};
 use crate::utils::slugify;
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
@@ -33,6 +33,7 @@ pub struct CreateSubCategory {
 
 #[derive(Debug, Deserialize)]
 pub struct UpdateSubCategory {
+    pub category_id: Option<Uuid>,
     pub name: Option<String>,
     pub description: Option<String>,
     pub is_active: Option<bool>,
@@ -49,7 +50,7 @@ pub struct SubCategoryWithDetails {
     pub updated_at: DateTime<Utc>,
     pub products_count: i64,
     pub category: Category,
-    pub images: Vec<Image>,
+    pub uploads: Vec<Upload>,
 }
 
 struct SubCategoryRow {
@@ -92,7 +93,7 @@ impl From<SubCategoryRow> for SubCategoryWithDetails {
                 created_at: r.category_created_at,
                 updated_at: r.category_updated_at,
             },
-            images: Vec::new(),
+            uploads: Vec::new(),
         }
     }
 }
@@ -120,10 +121,10 @@ pub async fn get_sub_categories(
 
     let ids: Vec<Uuid> = rows.iter().map(|r| r.id).collect();
 
-    let images = sqlx::query_as!(
-        Image,
-        r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, created_at
-           FROM images
+    let uploads = sqlx::query_as!(
+        Upload,
+        r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, file_type, created_at
+           FROM uploads
            WHERE sub_category_id = ANY($1)"#,
         &ids
     )
@@ -134,15 +135,15 @@ pub async fn get_sub_categories(
     let sub_categories = rows
         .into_iter()
         .map(|r| {
-            let sc_images = images
+            let sc_uploads = uploads
                 .iter()
-                .filter(|img| img.sub_category_id == Some(r.id))
+                .filter(|u| u.sub_category_id == Some(r.id))
                 .cloned()
-                .map(Image::with_full_url)
+                .map(Upload::with_full_url)
                 .collect();
 
             let mut details = SubCategoryWithDetails::from(r);
-            details.images = sc_images;
+            details.uploads = sc_uploads;
             details
         })
         .collect();
@@ -174,10 +175,10 @@ pub async fn get_sub_category(
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
     .ok_or(StatusCode::NOT_FOUND)?;
 
-    let images = sqlx::query_as!(
-        Image,
-        r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, created_at
-           FROM images
+    let uploads = sqlx::query_as!(
+        Upload,
+        r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, file_type, created_at
+           FROM uploads
            WHERE sub_category_id = $1"#,
         uuid
     )
@@ -186,8 +187,8 @@ pub async fn get_sub_category(
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     let mut details = SubCategoryWithDetails::from(row);
-    let images = images.into_iter().map(Image::with_full_url).collect();
-    details.images = images;
+    let uploads = uploads.into_iter().map(Upload::with_full_url).collect();
+    details.uploads = uploads;
 
     Ok(Json(details))
 }
@@ -218,10 +219,10 @@ pub async fn get_sub_categories_by_category(
 
     let ids: Vec<Uuid> = rows.iter().map(|r| r.id).collect();
 
-    let images = sqlx::query_as!(
-        Image,
-        r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, created_at
-           FROM images
+    let uploads = sqlx::query_as!(
+        Upload,
+        r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, file_type, created_at
+           FROM uploads
            WHERE sub_category_id = ANY($1)"#,
         &ids
     )
@@ -232,15 +233,15 @@ pub async fn get_sub_categories_by_category(
     let result = rows
         .into_iter()
         .map(|r| {
-            let sc_images = images
+            let sc_uploads = uploads
                 .iter()
-                .filter(|img| img.sub_category_id == Some(r.id))
+                .filter(|u| u.sub_category_id == Some(r.id))
                 .cloned()
-                .map(Image::with_full_url)
+                .map(Upload::with_full_url)
                 .collect();
 
             let mut details = SubCategoryWithDetails::from(r);
-            details.images = sc_images;
+            details.uploads = sc_uploads;
             details
         })
         .collect();
@@ -293,6 +294,7 @@ pub async fn update_sub_category(
                slug = COALESCE($2, slug),
                description = COALESCE($3, description),
                is_active = COALESCE($4, is_active),
+               category_id = COALESCE($6, category_id),
                updated_at = NOW()
            WHERE id = $5
            RETURNING id, category_id, name, slug, description, is_active, created_at, updated_at"#,
@@ -300,7 +302,8 @@ pub async fn update_sub_category(
         new_slug,
         payload.description,
         payload.is_active,
-        uuid
+        uuid,
+        payload.category_id,
     )
     .fetch_optional(&state.db)
     .await
