@@ -35,6 +35,7 @@ pub async fn init_public_route(state: AppState) -> Result<Router> {
 
     let products = Router::new()
         .route("/", get(get_public_products))
+        .route("/search", post(search_public_products))
         .route("/{slug}", get(get_public_product));
 
     let policies = Router::new()
