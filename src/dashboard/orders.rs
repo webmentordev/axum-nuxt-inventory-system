@@ -101,6 +101,7 @@ pub struct OrderWithItemCount {
     #[serde(flatten)]
     pub order: Order,
     pub total_items: i64,
+    pub total_quantity: i64,
 }
 
 #[derive(Debug, Serialize)]
@@ -136,7 +137,8 @@ pub async fn get_orders(
         r#"SELECT o.id, o.user_id, o.order_number, o.customer_name, o.customer_email, o.customer_phone,
                   o.shipping_address, o.status as "status: OrderStatus", o.subtotal, o.tax_amount,
                   o.shipping_amount, o.total_amount, o.notes, o.created_at, o.updated_at,
-                  COALESCE(SUM(oi.quantity), 0)::bigint as "total_items!"
+                  COUNT(oi.id)::bigint as "total_items!",
+                  COALESCE(SUM(oi.quantity), 0)::bigint as "total_quantity!"
            FROM orders o
            LEFT JOIN order_items oi ON oi.order_id = o.id
            GROUP BY o.id
@@ -167,6 +169,7 @@ pub async fn get_orders(
                 updated_at: r.updated_at,
             },
             total_items: r.total_items,
+            total_quantity: r.total_quantity,
         })
         .collect();
 

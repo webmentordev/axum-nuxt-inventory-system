@@ -24,6 +24,7 @@
                     <tr>
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Order #</th>
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Items</th>
+                        <th class="text-left px-4 py-3 font-semibold text-zinc-400">Quantity</th>
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Customer</th>
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Contact</th>
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Status</th>
@@ -38,6 +39,7 @@
                         class="border-t border-dark-300 hover:bg-dark-200 transition-colors">
                         <td class="px-4 py-3 text-zinc-200 font-medium">{{ order.order_number }}</td>
                         <td class="px-4 py-3 text-zinc-200 font-medium">{{ order.total_items }}</td>
+                        <td class="px-4 py-3 text-zinc-200 font-medium">{{ order.total_quantity }}</td>
                         <td class="px-4 py-3 text-zinc-200">{{ order.customer_name }}</td>
                         <td class="px-4 py-3 text-zinc-400">
                             <div>{{ order.customer_email || '—' }}</div>
@@ -65,10 +67,6 @@
                                     Edit
                                 </button>
                                 <button type="button" @click="handleViewItems(order)"
-                                    class="w-full px-3 py-2 text-sm text-zinc-300 hover:bg-dark-300 hover:text-white transition-colors text-left">
-                                    View items
-                                </button>
-                                <button type="button" @click="handleView(order)"
                                     class="w-full px-3 py-2 text-sm text-zinc-300 hover:bg-dark-300 hover:text-white transition-colors text-left">
                                     View order
                                 </button>
@@ -158,9 +156,12 @@ const filteredOrders = computed(() => {
     const query = search.value.trim().toLowerCase();
     return orders.value.filter((order) =>
         order.id.toLowerCase().includes(query) ||
+        order.user_id?.toLowerCase().includes(query) ||
         order.order_number.toLowerCase().includes(query) ||
         order.customer_name.toLowerCase().includes(query) ||
+        order.shipping_address?.toLowerCase().includes(query) ||
         order.status.toLowerCase().includes(query) ||
+        order.notes?.toLowerCase().includes(query) ||
         (order.customer_email || '').toLowerCase().includes(query) ||
         (order.customer_phone || '').toLowerCase().includes(query)
     );
@@ -207,11 +208,6 @@ function handleViewItems(order) {
 function handleAddItems(order) {
     closeMenu();
     navigateTo(`/admin/orders/${order.id}/items/create`);
-}
-
-function handleView(order) {
-    closeMenu();
-    navigateTo(`/admin/orders/${order.id}`);
 }
 
 function handleEdit(order) {
