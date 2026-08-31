@@ -21,13 +21,18 @@ pub enum OrderStatus {
     Shipped,
     Delivered,
     Cancelled,
+    Refunded,
     Walkin,
+    #[sqlx(rename = "walkin_completed")]
+    #[serde(rename = "walkin_completed")]
+    WalkinCompleted,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct Order {
     pub id: Uuid,
     pub order_number: String,
+    pub user_id: Option<Uuid>,
 
     pub customer_name: String,
     pub customer_email: Option<String>,
@@ -64,6 +69,7 @@ pub struct OrderItem {
 
 #[derive(Debug, Deserialize)]
 pub struct CreateOrder {
+    pub user_id: Option<Uuid>,
     pub customer_name: String,
     pub customer_email: Option<String>,
     pub customer_phone: Option<String>,
@@ -74,6 +80,7 @@ pub struct CreateOrder {
 
 #[derive(Debug, Deserialize)]
 pub struct UpdateOrder {
+    pub user_id: Option<Uuid>,
     pub customer_name: Option<String>,
     pub customer_email: Option<String>,
     pub customer_phone: Option<String>,
@@ -126,7 +133,7 @@ pub async fn get_orders(
     State(state): State<AppState>,
 ) -> Result<Json<Vec<OrderWithItemCount>>, StatusCode> {
     let rows = sqlx::query!(
-        r#"SELECT o.id, o.order_number, o.customer_name, o.customer_email, o.customer_phone,
+        r#"SELECT o.id, o.user_id, o.order_number, o.customer_name, o.customer_email, o.customer_phone,
                   o.shipping_address, o.status as "status: OrderStatus", o.subtotal, o.tax_amount,
                   o.shipping_amount, o.total_amount, o.notes, o.created_at, o.updated_at,
                   COALESCE(SUM(oi.quantity), 0)::bigint as "total_items!"
@@ -144,6 +151,7 @@ pub async fn get_orders(
         .map(|r| OrderWithItemCount {
             order: Order {
                 id: r.id,
+                user_id: r.user_id,
                 order_number: r.order_number,
                 customer_name: r.customer_name,
                 customer_email: r.customer_email,
@@ -171,7 +179,7 @@ pub async fn get_order_items(
 ) -> Result<Json<Vec<ItemWithOrder>>, StatusCode> {
     let order = sqlx::query_as!(
         Order,
-        r#"SELECT id, order_number, customer_name, customer_email, customer_phone,
+        r#"SELECT id, user_id, order_number, customer_name, customer_email, customer_phone,
                   shipping_address, status as "status: OrderStatus", subtotal, tax_amount,
                   shipping_amount, total_amount, notes, created_at, updated_at
            FROM orders
@@ -230,13 +238,14 @@ pub async fn create_order(
 
         let attempt = sqlx::query_as!(
             Order,
-            r#"INSERT INTO orders (order_number, customer_name, customer_email, customer_phone,
+            r#"INSERT INTO orders (order_number, user_id, customer_name, customer_email, customer_phone,
                                     shipping_address, notes, status, subtotal, tax_amount, shipping_amount, total_amount)
-               VALUES ($1, $2, $3, $4, $5, $6, $7, 0, 0, 0, 0)
-               RETURNING id, order_number, customer_name, customer_email, customer_phone,
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 0, 0, 0, 0)
+               RETURNING id, order_number, user_id, customer_name, customer_email, customer_phone,
                          shipping_address, status as "status: OrderStatus", subtotal, tax_amount,
                          shipping_amount, total_amount, notes, created_at, updated_at"#,
             order_number,
+            payload.user_id,
             payload.customer_name,
             payload.customer_email,
             payload.customer_phone,
@@ -270,7 +279,7 @@ pub async fn get_order(
 ) -> Result<Json<OrderWithItems>, StatusCode> {
     let order = sqlx::query_as!(
         Order,
-        r#"SELECT id, order_number, customer_name, customer_email, customer_phone,
+        r#"SELECT id, order_number, user_id, customer_name, customer_email, customer_phone,
                   shipping_address, status as "status: OrderStatus", subtotal, tax_amount,
                   shipping_amount, total_amount, notes, created_at, updated_at
            FROM orders
@@ -305,17 +314,19 @@ pub async fn update_order(
     let order = sqlx::query_as!(
         Order,
         r#"UPDATE orders
-           SET customer_name = COALESCE($1, customer_name),
-               customer_email = COALESCE($2, customer_email),
-               customer_phone = COALESCE($3, customer_phone),
-               shipping_address = COALESCE($4, shipping_address),
-               status = COALESCE($5, status),
-               notes = COALESCE($6, notes),
+           SET user_id = COALESCE($1, user_id),
+               customer_name = COALESCE($2, customer_name),
+               customer_email = COALESCE($3, customer_email),
+               customer_phone = COALESCE($4, customer_phone),
+               shipping_address = COALESCE($5, shipping_address),
+               status = COALESCE($6, status),
+               notes = COALESCE($7, notes),
                updated_at = NOW()
-           WHERE id = $7
-           RETURNING id, order_number, customer_name, customer_email, customer_phone,
+           WHERE id = $8
+           RETURNING id, order_number, user_id, customer_name, customer_email, customer_phone,
                      shipping_address, status as "status: OrderStatus", subtotal, tax_amount,
                      shipping_amount, total_amount, notes, created_at, updated_at"#,
+        payload.user_id,
         payload.customer_name,
         payload.customer_email,
         payload.customer_phone,
@@ -432,7 +443,7 @@ pub async fn add_order_items(
                total_amount = total_amount + $1,
                updated_at = NOW()
            WHERE id = $2
-           RETURNING id, order_number, customer_name, customer_email, customer_phone,
+           RETURNING id, user_id, order_number, customer_name, customer_email, customer_phone,
                      shipping_address, status as "status: OrderStatus", subtotal, tax_amount,
                      shipping_amount, total_amount, notes, created_at, updated_at"#,
         added_total,

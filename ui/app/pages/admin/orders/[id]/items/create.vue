@@ -17,13 +17,8 @@
                     class="grid grid-cols-[1fr_140px_40px] gap-3 items-start mb-4 last:mb-0">
                     <div>
                         <label class="block text-xs font-semibold text-zinc-400 mb-1.5">Product</label>
-                        <select v-model="row.product_id"
-                            class="w-full rounded-md bg-dark-200 border border-dark-300 px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-lime-main">
-                            <option value="" disabled>Select a product</option>
-                            <option v-for="product in activeProducts" :key="product.id" :value="product.id">
-                                {{ product.name }} — {{ product.quantity_in_stock }} in stock
-                            </option>
-                        </select>
+                        <AdminSelect v-model="row.product_id" :options="productOptions"
+                            :placeholder="productsLoading ? 'Loading products...' : 'Select a product'" />
                         <p v-if="row.error" class="text-xs text-red-400 mt-1">{{ row.error }}</p>
                     </div>
 
@@ -72,7 +67,8 @@ const route = useRoute();
 const orderUuid = route.params.id;
 
 const productList = ref([]);
-const rows = ref([{ key: crypto.randomUUID(), product_id: '', quantity: 1, error: '' }]);
+const productsLoading = ref(true);
+const rows = ref([{ key: crypto.randomUUID(), product_id: null, quantity: 1, error: '' }]);
 
 const submitting = ref(false);
 
@@ -82,7 +78,15 @@ const statusMessage = ref('');
 
 const activeProducts = computed(() => productList.value.filter((p) => p.is_active));
 
+const productOptions = computed(() =>
+    activeProducts.value.map((product) => ({
+        label: `${product.name} — ${product.quantity_in_stock} in stock`,
+        value: product.id
+    }))
+);
+
 async function fetchProducts() {
+    productsLoading.value = true;
     try {
         const data = await authFetch('/api/admin/products/list');
         if (data) {
@@ -90,11 +94,13 @@ async function fetchProducts() {
         }
     } catch (e) {
         productList.value = [];
+    } finally {
+        productsLoading.value = false;
     }
 }
 
 function addRow() {
-    rows.value.push({ key: crypto.randomUUID(), product_id: '', quantity: 1, error: '' });
+    rows.value.push({ key: crypto.randomUUID(), product_id: null, quantity: 1, error: '' });
 }
 
 function removeRow(index) {

@@ -6,6 +6,19 @@
 
             <form v-if="loaded" @submit.prevent="handleSubmit" class="mt-6 flex flex-col gap-4" novalidate>
                 <div>
+                    <label class="block text-sm font-semibold text-zinc-300 mb-2">Status</label>
+                    <AdminSelect v-model="status" :options="statusOptions" placeholder="Select a status" />
+                    <p v-if="errors.status" class="text-xs text-red-400 mt-1">{{ errors.status }}</p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-zinc-300 mb-2">Customer account</label>
+                    <AdminSelect v-model="userId" :options="userOptions"
+                        :placeholder="usersLoading ? 'Loading customers...' : 'No linked account'" />
+                    <p class="text-xs text-zinc-500 mt-1">Optional — link this order to a registered customer.</p>
+                </div>
+
+                <div>
                     <label class="block text-sm font-semibold text-zinc-300 mb-2">Customer name</label>
                     <AdminInput v-model="customerName" placeholder="e.g. John Doe" />
                     <p v-if="errors.customerName" class="text-xs text-red-400 mt-1">{{ errors.customerName }}</p>
@@ -24,20 +37,6 @@
                 <div>
                     <label class="block text-sm font-semibold text-zinc-300 mb-2">Shipping address</label>
                     <AdminTextarea v-model="shippingAddress" placeholder="Street, city, state, zip..." rows="3" />
-                </div>
-
-                <div>
-                    <label class="block text-sm font-semibold text-zinc-300 mb-2">Status</label>
-                    <select v-model="status"
-                        class="w-full rounded-md bg-dark-200 border border-dark-300 px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-lime-main">
-                        <option value="pending">Pending</option>
-                        <option value="confirmed">Confirmed</option>
-                        <option value="processing">Processing</option>
-                        <option value="shipped">Shipped</option>
-                        <option value="delivered">Delivered</option>
-                        <option value="cancelled">Cancelled</option>
-                        <option value="walkin">Walk-in</option>
-                    </select>
                 </div>
 
                 <div>
@@ -65,6 +64,10 @@ const route = useRoute();
 
 const orderUuid = route.params.id;
 
+const users = ref([]);
+const usersLoading = ref(true);
+
+const userId = ref(null);
 const customerName = ref('');
 const customerEmail = ref('');
 const customerPhone = ref('');
@@ -80,10 +83,43 @@ const showStatus = ref(false);
 const statusType = ref('loading');
 const statusMessage = ref('');
 
+const statusOptions = [
+    { label: 'Pending', value: 'pending' },
+    { label: 'Confirmed', value: 'confirmed' },
+    { label: 'Processing', value: 'processing' },
+    { label: 'Shipped', value: 'shipped' },
+    { label: 'Delivered', value: 'delivered' },
+    { label: 'Cancelled', value: 'cancelled' },
+    { label: 'Walk-in', value: 'walkin' },
+    { label: 'Walk-in Completed', value: 'walkin_completed' }
+];
+
+const userOptions = computed(() =>
+    users.value.map((user) => ({
+        label: user.is_active ? `${user.name} — ${user.email}` : `${user.name} — ${user.email} (Inactive)`,
+        value: user.id
+    }))
+);
+
+async function fetchUsers() {
+    usersLoading.value = true;
+    try {
+        const data = await authFetch('/api/admin/users');
+        if (data) {
+            users.value = data;
+        }
+    } catch (e) {
+        errors.value.message = e.statusMessage || 'Failed to load customers.';
+    } finally {
+        usersLoading.value = false;
+    }
+}
+
 async function fetchOrder() {
     try {
         const data = await authFetch(`/api/admin/orders/${orderUuid}`);
         if (data) {
+            userId.value = data.user_id || null;
             customerName.value = data.customer_name || '';
             customerEmail.value = data.customer_email || '';
             customerPhone.value = data.customer_phone || '';
@@ -120,6 +156,7 @@ async function handleSubmit() {
         await authFetch(`/api/admin/orders/${orderUuid}`, {
             method: 'PATCH',
             body: {
+                user_id: userId.value || null,
                 customer_name: customerName.value.trim(),
                 customer_email: customerEmail.value.trim() || null,
                 customer_phone: customerPhone.value.trim() || null,
@@ -146,5 +183,5 @@ async function handleSubmit() {
     }
 }
 
-await fetchOrder();
+await Promise.all([fetchUsers(), fetchOrder()]);
 </script>

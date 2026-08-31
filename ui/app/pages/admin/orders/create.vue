@@ -8,16 +8,15 @@
 
                 <div>
                     <label class="block text-sm font-semibold text-zinc-300 mb-2">Status</label>
-                    <select v-model="status"
-                        class="w-full rounded-md bg-dark-200 border border-dark-300 px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-lime-main">
-                        <option value="pending">Pending</option>
-                        <option value="confirmed">Confirmed</option>
-                        <option value="processing">Processing</option>
-                        <option value="shipped">Shipped</option>
-                        <option value="delivered">Delivered</option>
-                        <option value="cancelled">Cancelled</option>
-                        <option value="walkin">Walk-in</option>
-                    </select>
+                    <AdminSelect v-model="status" :options="statusOptions" placeholder="Select a status" />
+                    <p v-if="errors.status" class="text-xs text-red-400 mt-1">{{ errors.status }}</p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-zinc-300 mb-2">Customer account</label>
+                    <AdminSelect v-model="userId" :options="userOptions"
+                        :placeholder="usersLoading ? 'Loading customers...' : 'No linked account'" />
+                    <p class="text-xs text-zinc-500 mt-1">Optional — link this order to a registered customer.</p>
                 </div>
 
                 <div>
@@ -67,6 +66,10 @@ definePageMeta({
 });
 const { authFetch } = useAuthFetch();
 
+const users = ref([]);
+const usersLoading = ref(true);
+
+const userId = ref(null);
 const customerName = ref('');
 const customerEmail = ref('');
 const customerPhone = ref('');
@@ -80,6 +83,38 @@ const errors = ref({});
 const showStatus = ref(false);
 const statusType = ref('loading');
 const statusMessage = ref('');
+
+const statusOptions = [
+    { label: 'Pending', value: 'pending' },
+    { label: 'Confirmed', value: 'confirmed' },
+    { label: 'Processing', value: 'processing' },
+    { label: 'Shipped', value: 'shipped' },
+    { label: 'Delivered', value: 'delivered' },
+    { label: 'Cancelled', value: 'cancelled' },
+    { label: 'Walk-in', value: 'walkin' },
+    { label: 'Walk-in Completed', value: 'walkin_completed' }
+];
+
+const userOptions = computed(() =>
+    users.value.map((user) => ({
+        label: user.is_active ? `${user.name} — ${user.email}` : `${user.name} — ${user.email} (Inactive)`,
+        value: user.id
+    }))
+);
+
+async function fetchUsers() {
+    usersLoading.value = true;
+    try {
+        const data = await authFetch('/api/admin/users');
+        if (data) {
+            users.value = data;
+        }
+    } catch (e) {
+        errors.value.message = e.statusMessage || 'Failed to load customers.';
+    } finally {
+        usersLoading.value = false;
+    }
+}
 
 function validate() {
     errors.value = {};
@@ -100,6 +135,7 @@ async function handleSubmit() {
         const order = await authFetch('/api/admin/orders', {
             method: 'POST',
             body: {
+                user_id: userId.value || null,
                 customer_name: customerName.value.trim(),
                 customer_email: customerEmail.value.trim() || null,
                 customer_phone: customerPhone.value.trim() || null,
@@ -123,4 +159,6 @@ async function handleSubmit() {
         }, 5000);
     }
 }
+
+await fetchUsers();
 </script>

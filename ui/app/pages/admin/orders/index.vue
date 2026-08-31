@@ -130,15 +130,27 @@ const statusStyles = {
     shipped: 'bg-lime-bg text-lime-main',
     delivered: 'bg-lime-bg text-lime-main',
     cancelled: 'bg-red-950 text-red-400',
-    walkin: 'bg-dark-300 text-zinc-300'
+    walkin: 'bg-dark-300 text-zinc-300',
+    walkin_completed: 'bg-dark-300 text-lime-main',
 };
 
 function statusClass(status) {
     return statusStyles[status] || 'bg-dark-300 text-zinc-400';
 }
 
+const statusLabels = {
+    pending: 'Pending',
+    confirmed: 'Confirmed',
+    processing: 'Processing',
+    shipped: 'Shipped',
+    delivered: 'Delivered',
+    cancelled: 'Cancelled',
+    walkin: 'Walk-in',
+    walkin_completed: 'Walk-in Completed'
+};
+
 function statusLabel(status) {
-    return status.charAt(0).toUpperCase() + status.slice(1);
+    return statusLabels[status] || status;
 }
 
 const filteredOrders = computed(() => {

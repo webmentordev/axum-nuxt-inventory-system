@@ -52,6 +52,12 @@
                 <div class="flex flex-col gap-3 mt-4">
                     <h2 class="text-lg font-semibold text-zinc-900">Delivery details</h2>
 
+                    <p v-if="!user?.id"
+                        class="text-xs text-zinc-500 bg-gray-50 border border-gray-200 rounded-md px-3 py-2">
+                        Want to track your orders later? <NuxtLink to="/register" class="text-orange underline">Create
+                            an account</NuxtLink> to keep them in your dashboard.
+                    </p>
+
                     <input v-model="form.customer_name" type="text" placeholder="Full name"
                         class="border border-gray-300 rounded-md px-3 py-2 text-sm" />
                     <p v-if="errors.customer_name" class="text-xs text-red-500">{{ errors.customer_name }}</p>
@@ -128,6 +134,7 @@
 definePageMeta({
     layout: 'guest'
 });
+const { user } = useAuthUser();
 const { cartItems, updateQuantity, removeFromCart, clearCart } = useCart();
 const { publicFetch } = usePublicFetch();
 
@@ -193,6 +200,7 @@ async function placeOrder() {
     try {
         const payload = {
             ct_token: ct_token.value,
+            user_id: user.value?.id ? user.value.id : null,
             customer_name: form.customer_name.trim(),
             customer_email: form.customer_email.trim() || null,
             customer_phone: form.customer_phone.trim(),
@@ -215,8 +223,7 @@ async function placeOrder() {
             await navigateTo(`/order/success/${data.order_number}`)
         } else {
             throw createError({
-                status: e.statusCode || 500,
-                statusText: e.statusMessage || 'Something went wrong!',
+                statusText: 'Something went wrong!',
                 fatal: true
             });
         }

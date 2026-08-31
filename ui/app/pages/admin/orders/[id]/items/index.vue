@@ -9,8 +9,12 @@
                 <h1 class="text-xl font-bold text-white">Order items</h1>
                 <p class="text-sm text-zinc-500 mt-1">{{ items.length }} item{{ items.length === 1 ? '' : 's' }}</p>
             </div>
-            <div class="ml-auto">
+            <div class="ml-auto flex items-center">
                 <AdminButton @click="fetchItems()" icon="tabler:refresh">Refresh</AdminButton>
+                <NuxtLink :to='`/admin/orders/${route.params.id}/items/create`'
+                    class="px-4 py-2 rounded-md text-sm font-semibold bg-lime-main text-dark hover:bg-lime-hover transition-colors ml-2">
+                    Add new items
+                </NuxtLink>
             </div>
         </div>
 

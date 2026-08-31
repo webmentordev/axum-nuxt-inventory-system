@@ -20,6 +20,7 @@ pub struct CreatePublicOrderItem {
 
 #[derive(Debug, Deserialize)]
 pub struct CreatePublicOrder {
+    pub user_id: Option<Uuid>,
     pub customer_name: String,
     pub customer_email: Option<String>,
     pub customer_phone: String,
@@ -183,13 +184,14 @@ pub async fn create_public_order(
 
         let attempt = sqlx::query_as!(
             Order,
-            r#"INSERT INTO orders (order_number, customer_name, customer_email, customer_phone,
+            r#"INSERT INTO orders (order_number, user_id, customer_name, customer_email, customer_phone,
                                     shipping_address, notes, status, subtotal, tax_amount, shipping_amount, total_amount)
-               VALUES ($1, $2, $3, $4, $5, $6, 'pending', $7, $8, $9, $10)
-               RETURNING id, order_number, customer_name, customer_email, customer_phone,
+               VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', $8, $9, $10, $11)
+               RETURNING id, order_number, user_id, customer_name, customer_email, customer_phone,
                          shipping_address, status as "status: OrderStatus", subtotal, tax_amount,
                          shipping_amount, total_amount, notes, created_at, updated_at"#,
             order_number,
+            payload.user_id,
             payload.customer_name.trim(),
             payload.customer_email.as_deref().map(|s| s.trim()),
             payload.customer_phone.trim(),
@@ -258,7 +260,7 @@ pub async fn track_public_order(
 
     let order = sqlx::query_as!(
         Order,
-        r#"SELECT id, order_number, customer_name, customer_email, customer_phone,
+        r#"SELECT id, order_number, user_id, customer_name, customer_email, customer_phone,
                   shipping_address, status as "status: OrderStatus", subtotal, tax_amount,
                   shipping_amount, total_amount, notes, created_at, updated_at
            FROM orders
