@@ -67,6 +67,7 @@
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Quantity</th>
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Line total</th>
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Added</th>
+                        <th class="text-right px-4 py-3 font-semibold text-zinc-400 w-12"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -78,6 +79,24 @@
                         <td class="px-4 py-3 text-zinc-400">{{ item.quantity }}</td>
                         <td class="px-4 py-3 text-zinc-200">{{ formatCurrency(item.line_total) }}</td>
                         <td class="px-4 py-3 text-zinc-400 whitespace-nowrap">{{ formatDate(item.created_at) }}</td>
+                        <td class="px-4 py-3 text-right relative" :ref="(el) => setMenuRef(item.id, el)">
+                            <button type="button" @click="toggleMenu(item.id)"
+                                class="p-1.5 rounded-md text-zinc-400 hover:text-white hover:bg-dark-300 transition-colors">
+                                <Icon name="mdi:dots-vertical" size="20" />
+                            </button>
+
+                            <div v-if="openMenuId === item.id"
+                                class="absolute right-4 top-full mt-1 w-44 rounded-lg border border-dark-300 bg-dark-200 shadow-lg z-40 overflow-hidden text-left">
+                                <button type="button" @click="handleEdit(item)"
+                                    class="w-full px-3 py-2 text-sm text-zinc-300 hover:bg-dark-300 hover:text-white transition-colors text-left">
+                                    Edit
+                                </button>
+                                <button type="button" @click="handleDelete(item)"
+                                    class="w-full px-3 py-2 text-sm text-red-400 hover:bg-dark-300 hover:text-red-300 transition-colors text-left">
+                                    Delete
+                                </button>
+                            </div>
+                        </td>
                     </tr>
                 </tbody>
             </table>
@@ -87,6 +106,11 @@
                 <p class="text-zinc-500 text-sm mt-1">Items added to this order will show up here.</p>
             </div>
         </div>
+
+        <AdminStatusCard v-model="showStatus" :type="statusType" :message="statusMessage" />
+        <AdminConfirmModal v-model="confirmOpen" title="Delete item"
+            :message="`Are you sure you want to delete ${itemToDelete?.product_name}? This cannot be undone.`"
+            @confirm="confirmDelete" />
     </section>
 </template>
 
@@ -98,6 +122,15 @@ const { authFetch } = useAuthFetch();
 const route = useRoute();
 
 const items = ref([]);
+const openMenuId = ref(null);
+const menuRefs = ref({});
+
+const showStatus = ref(false);
+const statusType = ref('loading');
+const statusMessage = ref('');
+
+const confirmOpen = ref(false);
+const itemToDelete = ref(null);
 
 const order = computed(() => items.value.length ? items.value[0].order : null);
 
@@ -129,6 +162,65 @@ const statusLabels = {
 
 function statusLabel(status) {
     return statusLabels[status] || status;
+}
+
+function setMenuRef(id, el) {
+    if (el) {
+        menuRefs.value[id] = el;
+    } else {
+        delete menuRefs.value[id];
+    }
+}
+
+const activeMenuEl = computed(() => menuRefs.value[openMenuId.value] || null);
+
+onClickOutside(activeMenuEl, () => {
+    closeMenu();
+});
+
+function toggleMenu(id) {
+    openMenuId.value = openMenuId.value === id ? null : id;
+}
+
+function closeMenu() {
+    openMenuId.value = null;
+}
+
+function handleEdit(item) {
+    closeMenu();
+    navigateTo(`/admin/orders/${route.params.id}/items/${item.id}/edit`);
+}
+
+function handleDelete(item) {
+    closeMenu();
+    itemToDelete.value = item;
+    confirmOpen.value = true;
+}
+
+async function confirmDelete() {
+    const item = itemToDelete.value;
+    if (!item) return;
+
+    statusType.value = 'loading';
+    statusMessage.value = 'Deleting item...';
+    showStatus.value = true;
+
+    try {
+        await authFetch(`/api/admin/orders/${route.params.id}/items/${item.id}`, {
+            method: 'DELETE'
+        });
+        items.value = items.value.filter((i) => i.id !== item.id);
+        statusType.value = 'success';
+        statusMessage.value = 'Item deleted.';
+    } catch (e) {
+        statusType.value = 'error';
+        statusMessage.value = e.statusMessage || 'Failed to delete item.';
+    } finally {
+        itemToDelete.value = null;
+        setTimeout(() => {
+            showStatus.value = false;
+        }, 5000);
+    }
 }
 
 async function fetchItems() {

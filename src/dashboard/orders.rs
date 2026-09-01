@@ -130,6 +130,12 @@ pub struct AddOrderItems {
     pub items: Vec<AddOrderItem>,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct UpdateOrderItem {
+    pub product_id: Option<Uuid>,
+    pub quantity: Option<i32>,
+}
+
 pub async fn get_orders(
     State(state): State<AppState>,
 ) -> Result<Json<Vec<OrderWithItemCount>>, StatusCode> {
@@ -223,6 +229,51 @@ pub async fn get_order_items(
         .collect();
 
     Ok(Json(items_with_order))
+}
+
+pub async fn get_order_item(
+    State(state): State<AppState>,
+    Path((order_uuid, item_uuid)): Path<(Uuid, Uuid)>,
+) -> Result<Json<ItemWithOrder>, StatusCode> {
+    let order = sqlx::query_as!(
+        Order,
+        r#"SELECT id, user_id, order_number, customer_name, customer_email, customer_phone,
+                  shipping_address, status as "status: OrderStatus", subtotal, tax_amount,
+                  shipping_amount, total_amount, notes, created_at, updated_at
+           FROM orders
+           WHERE id = $1"#,
+        order_uuid
+    )
+    .fetch_optional(&state.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+    .ok_or(StatusCode::NOT_FOUND)?;
+
+    let item = sqlx::query_as!(
+        OrderItem,
+        r#"SELECT id, order_id, product_id, product_name, product_sku, unit_price, quantity, line_total, created_at
+           FROM order_items
+           WHERE id = $1 AND order_id = $2"#,
+        item_uuid,
+        order_uuid
+    )
+    .fetch_optional(&state.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+    .ok_or(StatusCode::NOT_FOUND)?;
+
+    Ok(Json(ItemWithOrder {
+        id: item.id,
+        order_id: item.order_id,
+        product_id: item.product_id,
+        product_name: item.product_name,
+        product_sku: item.product_sku,
+        unit_price: item.unit_price,
+        quantity: item.quantity,
+        line_total: item.line_total,
+        created_at: item.created_at,
+        order,
+    }))
 }
 
 pub async fn create_order(
@@ -467,4 +518,237 @@ pub async fn add_order_items(
             items: inserted_items,
         }),
     ))
+}
+
+pub async fn update_order_item(
+    State(state): State<AppState>,
+    Path((order_uuid, item_uuid)): Path<(Uuid, Uuid)>,
+    Json(payload): Json<UpdateOrderItem>,
+) -> Result<Json<OrderItem>, StatusCode> {
+    let mut tx = state
+        .db
+        .begin()
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    sqlx::query!("SELECT id FROM orders WHERE id = $1 FOR UPDATE", order_uuid)
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .ok_or(StatusCode::NOT_FOUND)?;
+
+    let existing = sqlx::query_as!(
+        OrderItem,
+        r#"SELECT id, order_id, product_id, product_name, product_sku, unit_price, quantity, line_total, created_at
+           FROM order_items
+           WHERE id = $1 AND order_id = $2
+           FOR UPDATE"#,
+        item_uuid,
+        order_uuid
+    )
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+    .ok_or(StatusCode::NOT_FOUND)?;
+
+    let new_quantity = payload.quantity.unwrap_or(existing.quantity);
+    if new_quantity <= 0 {
+        return Err(StatusCode::BAD_REQUEST);
+    }
+
+    let new_product_id = payload.product_id.unwrap_or(existing.product_id);
+
+    let (product_name, product_sku, unit_price) = if new_product_id != existing.product_id {
+        sqlx::query!(
+            "UPDATE products SET quantity_in_stock = quantity_in_stock + $1 WHERE id = $2",
+            existing.quantity,
+            existing.product_id
+        )
+        .execute(&mut *tx)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+        let product = sqlx::query!(
+            r#"SELECT name, sku, selling_price, quantity_in_stock
+               FROM products
+               WHERE id = $1
+               FOR UPDATE"#,
+            new_product_id
+        )
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .ok_or(StatusCode::BAD_REQUEST)?;
+
+        if product.quantity_in_stock < new_quantity {
+            return Err(StatusCode::CONFLICT);
+        }
+
+        sqlx::query!(
+            "UPDATE products SET quantity_in_stock = quantity_in_stock - $1 WHERE id = $2",
+            new_quantity,
+            new_product_id
+        )
+        .execute(&mut *tx)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+        (product.name, product.sku, product.selling_price)
+    } else {
+        let delta = new_quantity - existing.quantity;
+
+        if delta != 0 {
+            let product = sqlx::query!(
+                "SELECT quantity_in_stock FROM products WHERE id = $1 FOR UPDATE",
+                existing.product_id
+            )
+            .fetch_optional(&mut *tx)
+            .await
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+            .ok_or(StatusCode::BAD_REQUEST)?;
+
+            if delta > 0 && product.quantity_in_stock < delta {
+                return Err(StatusCode::CONFLICT);
+            }
+
+            sqlx::query!(
+                "UPDATE products SET quantity_in_stock = quantity_in_stock - $1 WHERE id = $2",
+                delta,
+                existing.product_id
+            )
+            .execute(&mut *tx)
+            .await
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        }
+
+        (
+            existing.product_name.clone(),
+            existing.product_sku.clone(),
+            existing.unit_price,
+        )
+    };
+
+    let new_line_total = unit_price * Decimal::from(new_quantity);
+    let amount_diff = new_line_total - existing.line_total;
+
+    let updated_item = sqlx::query_as!(
+        OrderItem,
+        r#"UPDATE order_items
+           SET product_id = $1,
+               product_name = $2,
+               product_sku = $3,
+               unit_price = $4,
+               quantity = $5,
+               line_total = $6
+           WHERE id = $7
+           RETURNING id, order_id, product_id, product_name, product_sku, unit_price, quantity, line_total, created_at"#,
+        new_product_id,
+        product_name,
+        product_sku,
+        unit_price,
+        new_quantity,
+        new_line_total,
+        item_uuid
+    )
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    sqlx::query!(
+        r#"UPDATE orders
+           SET subtotal = subtotal + $1,
+               total_amount = total_amount + $1,
+               updated_at = NOW()
+           WHERE id = $2"#,
+        amount_diff,
+        order_uuid
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    tx.commit()
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    Ok(Json(updated_item))
+}
+
+async fn remove_order_item_and_restock(
+    state: &AppState,
+    order_uuid: Uuid,
+    item_uuid: Uuid,
+) -> Result<StatusCode, StatusCode> {
+    let mut tx = state
+        .db
+        .begin()
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    sqlx::query!("SELECT id FROM orders WHERE id = $1 FOR UPDATE", order_uuid)
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .ok_or(StatusCode::NOT_FOUND)?;
+
+    let item = sqlx::query_as!(
+        OrderItem,
+        r#"SELECT id, order_id, product_id, product_name, product_sku, unit_price, quantity, line_total, created_at
+           FROM order_items
+           WHERE id = $1 AND order_id = $2
+           FOR UPDATE"#,
+        item_uuid,
+        order_uuid
+    )
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+    .ok_or(StatusCode::NOT_FOUND)?;
+
+    sqlx::query!("DELETE FROM order_items WHERE id = $1", item_uuid)
+        .execute(&mut *tx)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    sqlx::query!(
+        "UPDATE products SET quantity_in_stock = quantity_in_stock + $1 WHERE id = $2",
+        item.quantity,
+        item.product_id
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    sqlx::query!(
+        r#"UPDATE orders
+           SET subtotal = subtotal - $1,
+               total_amount = total_amount - $1,
+               updated_at = NOW()
+           WHERE id = $2"#,
+        item.line_total,
+        order_uuid
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    tx.commit()
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    Ok(StatusCode::NO_CONTENT)
+}
+
+pub async fn delete_order_item(
+    State(state): State<AppState>,
+    Path((order_uuid, item_uuid)): Path<(Uuid, Uuid)>,
+) -> Result<StatusCode, StatusCode> {
+    remove_order_item_and_restock(&state, order_uuid, item_uuid).await
+}
+
+pub async fn refund_order_item(
+    State(state): State<AppState>,
+    Path((order_uuid, item_uuid)): Path<(Uuid, Uuid)>,
+) -> Result<StatusCode, StatusCode> {
+    remove_order_item_and_restock(&state, order_uuid, item_uuid).await
 }

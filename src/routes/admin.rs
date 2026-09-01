@@ -48,10 +48,23 @@ pub async fn init_admin_routes(state: AppState) -> Result<Router> {
     let orders = Router::new()
         .route("/", get(get_orders).post(create_order))
         .route(
-            "/{uuid}",
+            "/{order_id}",
             get(get_order).patch(update_order).delete(delete_order),
         )
-        .route("/{uuid}/items", get(get_order_items).post(add_order_items));
+        .route(
+            "/{order_id}/items",
+            get(get_order_items).post(add_order_items),
+        )
+        .route(
+            "/{order_id}/items/{item_id}",
+            get(get_order_item)
+                .patch(update_order_item)
+                .delete(delete_order_item),
+        )
+        .route(
+            "/{order_id}/items/{item_id}/refund",
+            post(refund_order_item),
+        );
 
     let uploads = Router::new()
         .route("/", get(get_uploads).post(create_upload))

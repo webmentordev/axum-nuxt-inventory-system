@@ -68,7 +68,7 @@
                                 </button>
                                 <button type="button" @click="handleViewItems(order)"
                                     class="w-full px-3 py-2 text-sm text-zinc-300 hover:bg-dark-300 hover:text-white transition-colors text-left">
-                                    View order
+                                    View
                                 </button>
                                 <button type="button" @click="handleAddItems(order)"
                                     class="w-full px-3 py-2 text-sm text-zinc-300 hover:bg-dark-300 hover:text-white transition-colors text-left">
