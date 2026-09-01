@@ -1,5 +1,4 @@
 -- Add migration script here
--- Add migration script here
 CREATE TYPE order_status AS ENUM (
     'pending',
     'confirmed',
@@ -10,6 +9,13 @@ CREATE TYPE order_status AS ENUM (
     'refunded',
     'walkin',
     'walkin_completed'
+);
+
+CREATE TYPE order_item_status AS ENUM (
+    'sold',
+    'refunded',
+    'refunded_defective',
+    'defective'
 );
 
 CREATE TABLE orders (
@@ -49,12 +55,12 @@ CREATE TABLE order_items (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid (),
     order_id UUID NOT NULL REFERENCES orders (id) ON DELETE CASCADE,
     product_id UUID NOT NULL REFERENCES products (id) ON DELETE RESTRICT,
-    -- snapshot fields: preserve what was ordered even if the product later changes/is deleted
     product_name VARCHAR(150) NOT NULL,
     product_sku VARCHAR(50) NOT NULL,
     unit_price NUMERIC(12, 2) NOT NULL,
     quantity INTEGER NOT NULL,
     line_total NUMERIC(12, 2) NOT NULL,
+    status order_item_status NOT NULL DEFAULT 'sold',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT ck_order_items_quantity_positive CHECK (quantity > 0),
     CONSTRAINT ck_order_items_amounts_non_negative CHECK (
@@ -66,3 +72,5 @@ CREATE TABLE order_items (
 CREATE INDEX idx_order_items_order_id ON order_items (order_id);
 
 CREATE INDEX idx_order_items_product_id ON order_items (product_id);
+
+CREATE INDEX idx_order_items_status ON order_items (status);

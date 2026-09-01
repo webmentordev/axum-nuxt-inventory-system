@@ -19,8 +19,8 @@ export default defineEventHandler(async (event) => {
         });
     }
     try {
-        const data = await $fetch(`${apiUrl}/api/admin/orders/${orderUuid}/items/${itemUuid}/refund`, {
-            method: "POST",
+        const data = await $fetch(`${apiUrl}/api/admin/orders/${orderUuid}/items/${itemUuid}/status`, {
+            method: "PATCH",
             headers: allHeaders,
             body: body
         });
@@ -30,8 +30,8 @@ export default defineEventHandler(async (event) => {
         throw createError({
             statusCode: e.response?.status || 500,
             statusMessage: e.response?.status === 409
-                ? 'Order already exists'
-                : (e.data?.message || 'Order creation failed')
+                ? 'Order item status can not be changed'
+                : (e.data?.message || 'Order item status update failed')
         });
     }
 });

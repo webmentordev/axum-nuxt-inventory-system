@@ -28,6 +28,18 @@ pub enum OrderStatus {
     WalkinCompleted,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "order_item_status", rename_all = "lowercase")]
+#[serde(rename_all = "lowercase")]
+pub enum OrderItemStatus {
+    Sold,
+    Refunded,
+    #[sqlx(rename = "refunded_defective")]
+    #[serde(rename = "refunded_defective")]
+    RefundedDefective,
+    Defective,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct Order {
     pub id: Uuid,
@@ -63,6 +75,7 @@ pub struct OrderItem {
     pub unit_price: Decimal,
     pub quantity: i32,
     pub line_total: Decimal,
+    pub status: OrderItemStatus,
 
     pub created_at: DateTime<Utc>,
 }
@@ -114,6 +127,7 @@ pub struct ItemWithOrder {
     pub unit_price: Decimal,
     pub quantity: i32,
     pub line_total: Decimal,
+    pub status: OrderItemStatus,
     pub created_at: DateTime<Utc>,
 
     pub order: Order,
@@ -134,6 +148,11 @@ pub struct AddOrderItems {
 pub struct UpdateOrderItem {
     pub product_id: Option<Uuid>,
     pub quantity: Option<i32>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateOrderItemStatus {
+    pub status: OrderItemStatus,
 }
 
 pub async fn get_orders(
@@ -202,7 +221,8 @@ pub async fn get_order_items(
 
     let items = sqlx::query_as!(
         OrderItem,
-        r#"SELECT id, order_id, product_id, product_name, product_sku, unit_price, quantity, line_total, created_at
+        r#"SELECT id, order_id, product_id, product_name, product_sku, unit_price, quantity, line_total,
+                  status as "status: OrderItemStatus", created_at
            FROM order_items
            WHERE order_id = $1
            ORDER BY created_at ASC"#,
@@ -223,6 +243,7 @@ pub async fn get_order_items(
             unit_price: item.unit_price,
             quantity: item.quantity,
             line_total: item.line_total,
+            status: item.status,
             created_at: item.created_at,
             order: order.clone(),
         })
@@ -251,7 +272,8 @@ pub async fn get_order_item(
 
     let item = sqlx::query_as!(
         OrderItem,
-        r#"SELECT id, order_id, product_id, product_name, product_sku, unit_price, quantity, line_total, created_at
+        r#"SELECT id, order_id, product_id, product_name, product_sku, unit_price, quantity, line_total,
+                  status as "status: OrderItemStatus", created_at
            FROM order_items
            WHERE id = $1 AND order_id = $2"#,
         item_uuid,
@@ -271,6 +293,7 @@ pub async fn get_order_item(
         unit_price: item.unit_price,
         quantity: item.quantity,
         line_total: item.line_total,
+        status: item.status,
         created_at: item.created_at,
         order,
     }))
@@ -347,7 +370,8 @@ pub async fn get_order(
 
     let items = sqlx::query_as!(
         OrderItem,
-        r#"SELECT id, order_id, product_id, product_name, product_sku, unit_price, quantity, line_total, created_at
+        r#"SELECT id, order_id, product_id, product_name, product_sku, unit_price, quantity, line_total,
+                  status as "status: OrderItemStatus", created_at
            FROM order_items
            WHERE order_id = $1
            ORDER BY created_at ASC"#,
@@ -474,7 +498,8 @@ pub async fn add_order_items(
             OrderItem,
             r#"INSERT INTO order_items (order_id, product_id, product_name, product_sku, unit_price, quantity, line_total)
                VALUES ($1, $2, $3, $4, $5, $6, $7)
-               RETURNING id, order_id, product_id, product_name, product_sku, unit_price, quantity, line_total, created_at"#,
+               RETURNING id, order_id, product_id, product_name, product_sku, unit_price, quantity, line_total,
+                         status as "status: OrderItemStatus", created_at"#,
             uuid,
             item.product_id,
             product.name,
@@ -539,7 +564,8 @@ pub async fn update_order_item(
 
     let existing = sqlx::query_as!(
         OrderItem,
-        r#"SELECT id, order_id, product_id, product_name, product_sku, unit_price, quantity, line_total, created_at
+        r#"SELECT id, order_id, product_id, product_name, product_sku, unit_price, quantity, line_total,
+                  status as "status: OrderItemStatus", created_at
            FROM order_items
            WHERE id = $1 AND order_id = $2
            FOR UPDATE"#,
@@ -550,6 +576,10 @@ pub async fn update_order_item(
     .await
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
     .ok_or(StatusCode::NOT_FOUND)?;
+
+    if existing.status != OrderItemStatus::Sold {
+        return Err(StatusCode::CONFLICT);
+    }
 
     let new_quantity = payload.quantity.unwrap_or(existing.quantity);
     if new_quantity <= 0 {
@@ -641,7 +671,8 @@ pub async fn update_order_item(
                quantity = $5,
                line_total = $6
            WHERE id = $7
-           RETURNING id, order_id, product_id, product_name, product_sku, unit_price, quantity, line_total, created_at"#,
+           RETURNING id, order_id, product_id, product_name, product_sku, unit_price, quantity, line_total,
+                     status as "status: OrderItemStatus", created_at"#,
         new_product_id,
         product_name,
         product_sku,
@@ -693,7 +724,8 @@ async fn remove_order_item_and_restock(
 
     let item = sqlx::query_as!(
         OrderItem,
-        r#"SELECT id, order_id, product_id, product_name, product_sku, unit_price, quantity, line_total, created_at
+        r#"SELECT id, order_id, product_id, product_name, product_sku, unit_price, quantity, line_total,
+                  status as "status: OrderItemStatus", created_at
            FROM order_items
            WHERE id = $1 AND order_id = $2
            FOR UPDATE"#,
@@ -746,9 +778,88 @@ pub async fn delete_order_item(
     remove_order_item_and_restock(&state, order_uuid, item_uuid).await
 }
 
-pub async fn refund_order_item(
+pub async fn update_order_item_status(
     State(state): State<AppState>,
     Path((order_uuid, item_uuid)): Path<(Uuid, Uuid)>,
-) -> Result<StatusCode, StatusCode> {
-    remove_order_item_and_restock(&state, order_uuid, item_uuid).await
+    Json(payload): Json<UpdateOrderItemStatus>,
+) -> Result<Json<OrderItem>, StatusCode> {
+    let mut tx = state
+        .db
+        .begin()
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    sqlx::query!("SELECT id FROM orders WHERE id = $1 FOR UPDATE", order_uuid)
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .ok_or(StatusCode::NOT_FOUND)?;
+
+    let existing = sqlx::query_as!(
+        OrderItem,
+        r#"SELECT id, order_id, product_id, product_name, product_sku, unit_price, quantity, line_total,
+                  status as "status: OrderItemStatus", created_at
+           FROM order_items
+           WHERE id = $1 AND order_id = $2
+           FOR UPDATE"#,
+        item_uuid,
+        order_uuid
+    )
+    .fetch_optional(&mut *tx)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+    .ok_or(StatusCode::NOT_FOUND)?;
+
+    if existing.status != OrderItemStatus::Sold {
+        return Err(StatusCode::CONFLICT);
+    }
+
+    let updated_item = sqlx::query_as!(
+        OrderItem,
+        r#"UPDATE order_items
+           SET status = $1
+           WHERE id = $2
+           RETURNING id, order_id, product_id, product_name, product_sku, unit_price, quantity, line_total,
+                     status as "status: OrderItemStatus", created_at"#,
+        payload.status as OrderItemStatus,
+        item_uuid
+    )
+    .fetch_one(&mut *tx)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    if matches!(payload.status, OrderItemStatus::Refunded) {
+        sqlx::query!(
+            "UPDATE products SET quantity_in_stock = quantity_in_stock + $1 WHERE id = $2",
+            existing.quantity,
+            existing.product_id
+        )
+        .execute(&mut *tx)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    }
+
+    if matches!(
+        payload.status,
+        OrderItemStatus::Refunded | OrderItemStatus::RefundedDefective
+    ) {
+        sqlx::query!(
+            r#"UPDATE orders
+               SET subtotal = subtotal - $1,
+                   total_amount = total_amount - $1,
+                   updated_at = NOW()
+               WHERE id = $2"#,
+            existing.line_total,
+            order_uuid
+        )
+        .execute(&mut *tx)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    }
+
+    tx.commit()
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    Ok(Json(updated_item))
 }

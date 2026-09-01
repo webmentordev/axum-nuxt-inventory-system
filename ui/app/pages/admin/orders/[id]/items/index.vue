@@ -66,6 +66,7 @@
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Unit price</th>
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Quantity</th>
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Line total</th>
+                        <th class="text-left px-4 py-3 font-semibold text-zinc-400">Status</th>
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Added</th>
                         <th class="text-right px-4 py-3 font-semibold text-zinc-400 w-12"></th>
                     </tr>
@@ -78,6 +79,11 @@
                         <td class="px-4 py-3 text-zinc-400">{{ formatCurrency(item.unit_price) }}</td>
                         <td class="px-4 py-3 text-zinc-400">{{ item.quantity }}</td>
                         <td class="px-4 py-3 text-zinc-200">{{ formatCurrency(item.line_total) }}</td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-1 rounded text-xs font-semibold" :class="itemStatusClass(item.status)">
+                                {{ itemStatusLabel(item.status) }}
+                            </span>
+                        </td>
                         <td class="px-4 py-3 text-zinc-400 whitespace-nowrap">{{ formatDate(item.created_at) }}</td>
                         <td class="px-4 py-3 text-right relative" :ref="(el) => setMenuRef(item.id, el)">
                             <button type="button" @click="toggleMenu(item.id)"
@@ -162,6 +168,28 @@ const statusLabels = {
 
 function statusLabel(status) {
     return statusLabels[status] || status;
+}
+
+const itemStatusStyles = {
+    sold: 'bg-lime-bg text-lime-main',
+    refunded: 'bg-amber-950 text-amber-400',
+    refunded_defective: 'bg-red-950 text-red-400',
+    defective: 'bg-red-950 text-red-400'
+};
+
+function itemStatusClass(status) {
+    return itemStatusStyles[status] || 'bg-dark-300 text-zinc-400';
+}
+
+const itemStatusLabels = {
+    sold: 'Sold',
+    refunded: 'Refunded',
+    refunded_defective: 'Refunded (defective)',
+    defective: 'Defective'
+};
+
+function itemStatusLabel(status) {
+    return itemStatusLabels[status] || status;
 }
 
 function setMenuRef(id, el) {

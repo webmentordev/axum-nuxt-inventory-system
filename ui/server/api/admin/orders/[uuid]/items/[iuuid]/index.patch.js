@@ -29,9 +29,7 @@ export default defineEventHandler(async (event) => {
         console.log(e)
         throw createError({
             statusCode: e.response?.status || 500,
-            statusMessage: e.response?.status === 409
-                ? 'Order already exists'
-                : (e.data?.message || 'Order creation failed')
+            statusMessage: e.data?.message || 'Order item update failed'
         });
     }
 });

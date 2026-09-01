@@ -227,7 +227,8 @@ pub async fn create_public_order(
             OrderItem,
             r#"INSERT INTO order_items (order_id, product_id, product_name, product_sku, unit_price, quantity, line_total)
                VALUES ($1, $2, $3, $4, $5, $6, $7)
-               RETURNING id, order_id, product_id, product_name, product_sku, unit_price, quantity, line_total, created_at"#,
+               RETURNING id, order_id, product_id, product_name, product_sku, unit_price, quantity, line_total,
+                         status as "status: OrderItemStatus", created_at"#,
             order.id,
             product_id,
             product_name,
@@ -274,7 +275,8 @@ pub async fn track_public_order(
 
     let items = sqlx::query_as!(
         OrderItem,
-        r#"SELECT id, order_id, product_id, product_name, product_sku, unit_price, quantity, line_total, created_at
+        r#"SELECT id, order_id, product_id, product_name, product_sku, unit_price, quantity, line_total,
+                  status as "status: OrderItemStatus", created_at
            FROM order_items
            WHERE order_id = $1
            ORDER BY created_at ASC"#,

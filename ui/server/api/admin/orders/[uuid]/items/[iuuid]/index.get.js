@@ -24,8 +24,8 @@ export default defineEventHandler(async (event) => {
         throw createError({
             statusCode: e.response?.status || 500,
             statusMessage: e.response?.status === 404
-                ? 'Item does not exist'
-                : (e.data?.message || 'Item fetch failed')
+                ? 'Order item does not exist'
+                : (e.data?.message || 'Order item fetch failed')
         });
     }
 });

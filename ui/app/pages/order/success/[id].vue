@@ -61,7 +61,7 @@
                         </div>
                     </div>
 
-                    <NuxtLink to="/track-order"
+                    <NuxtLink to="/order/track"
                         class="bg-navy mt-2 text-white w-full py-3 rounded-xl flex items-center justify-center hover:bg-navy/90">
                         Track another order
                     </NuxtLink>
