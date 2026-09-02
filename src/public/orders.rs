@@ -259,6 +259,8 @@ pub async fn track_public_order(
         return Err(OrderError::MissingField("Order number"));
     }
 
+    let mut tx = state.db.begin().await.map_err(|_| OrderError::Internal)?;
+
     let order = sqlx::query_as!(
         Order,
         r#"SELECT id, order_number, user_id, customer_name, customer_email, customer_phone,
@@ -268,7 +270,7 @@ pub async fn track_public_order(
            WHERE order_number = $1"#,
         order_number
     )
-    .fetch_optional(&state.db)
+    .fetch_optional(&mut *tx)
     .await
     .map_err(|_| OrderError::Internal)?
     .ok_or(OrderError::OrderNotFound)?;
@@ -282,9 +284,11 @@ pub async fn track_public_order(
            ORDER BY created_at ASC"#,
         order.id
     )
-    .fetch_all(&state.db)
+    .fetch_all(&mut *tx)
     .await
     .map_err(|_| OrderError::Internal)?;
+
+    tx.commit().await.map_err(|_| OrderError::Internal)?;
 
     Ok(Json(OrderWithItems { order, items }))
 }
