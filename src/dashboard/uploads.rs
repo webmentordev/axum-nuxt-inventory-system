@@ -13,6 +13,7 @@ use crate::AppState;
 use crate::utils::slugify;
 
 const UPLOAD_DIR: &str = "uploads/files";
+const TMP_DIR: &str = "uploads/tmp";
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct Upload {
@@ -79,6 +80,13 @@ pub struct UploadWithDetails {
     pub file_path: String,
     pub file_type: String,
     pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct TmpUpload {
+    pub temp_name: String,
+    pub original_name: String,
+    pub size: u64,
 }
 
 async fn attach_details(
@@ -163,6 +171,78 @@ async fn attach_details(
     Ok(result)
 }
 
+fn sanitize_temp_name(temp_name: &str) -> Result<(), StatusCode> {
+    if temp_name.is_empty()
+        || temp_name.contains('/')
+        || temp_name.contains('\\')
+        || temp_name.contains("..")
+    {
+        return Err(StatusCode::BAD_REQUEST);
+    }
+    Ok(())
+}
+
+async fn move_tmp_to_final(temp_name: &str, final_name: &str) -> Result<String, StatusCode> {
+    sanitize_temp_name(temp_name)?;
+
+    let temp_path = format!("{TMP_DIR}/{temp_name}");
+    fs::create_dir_all(UPLOAD_DIR)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let final_path = format!("{UPLOAD_DIR}/{final_name}");
+    fs::rename(&temp_path, &final_path)
+        .await
+        .map_err(|_| StatusCode::BAD_REQUEST)?;
+
+    Ok(final_path)
+}
+
+pub async fn create_tmp_upload(mut multipart: Multipart) -> Result<Json<TmpUpload>, StatusCode> {
+    let mut file_bytes: Option<Vec<u8>> = None;
+    let mut original_name = String::from("file");
+    let mut extension = String::from("bin");
+
+    while let Some(field) = multipart
+        .next_field()
+        .await
+        .map_err(|_| StatusCode::BAD_REQUEST)?
+    {
+        if field.name().unwrap_or("") == "file" {
+            if let Some(filename) = field.file_name() {
+                original_name = filename.to_string();
+                if let Some(ext) = FsPath::new(filename).extension() {
+                    extension = ext.to_string_lossy().to_string();
+                }
+            }
+            let data = field.bytes().await.map_err(|_| StatusCode::BAD_REQUEST)?;
+            file_bytes = Some(data.to_vec());
+        }
+    }
+
+    let file_bytes = file_bytes.ok_or(StatusCode::BAD_REQUEST)?;
+
+    fs::create_dir_all(TMP_DIR)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let temp_name = format!("{}.{}", Uuid::new_v4(), extension);
+    let temp_path = format!("{TMP_DIR}/{temp_name}");
+
+    let mut file = fs::File::create(&temp_path)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    file.write_all(&file_bytes)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    Ok(Json(TmpUpload {
+        temp_name,
+        original_name,
+        size: file_bytes.len() as u64,
+    }))
+}
+
 pub async fn get_uploads(
     State(state): State<AppState>,
 ) -> Result<Json<Vec<UploadWithDetails>>, StatusCode> {
@@ -220,6 +300,7 @@ pub async fn create_upload(
     let mut file_type: String = "image".to_string();
     let mut file_bytes: Option<Vec<u8>> = None;
     let mut extension = String::from("bin");
+    let mut temp_name: Option<String> = None;
 
     while let Some(field) = multipart
         .next_field()
@@ -264,6 +345,12 @@ pub async fn create_upload(
                     file_type = text;
                 }
             }
+            "temp_name" => {
+                let text = field.text().await.map_err(|_| StatusCode::BAD_REQUEST)?;
+                if !text.is_empty() {
+                    temp_name = Some(text);
+                }
+            }
             "file" => {
                 if let Some(filename) = field.file_name() {
                     if let Some(ext) = FsPath::new(filename).extension() {
@@ -278,21 +365,32 @@ pub async fn create_upload(
     }
 
     let name = name.ok_or(StatusCode::BAD_REQUEST)?;
-    let file_bytes = file_bytes.ok_or(StatusCode::BAD_REQUEST)?;
 
     fs::create_dir_all(UPLOAD_DIR)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    let file_name = format!("{}.{}", slugify(&name, true), extension);
-    let file_path = format!("{UPLOAD_DIR}/{file_name}");
-
-    let mut file = fs::File::create(&file_path)
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    file.write_all(&file_bytes)
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let file_path = if let Some(temp_name) = temp_name {
+        sanitize_temp_name(&temp_name)?;
+        let ext = FsPath::new(&temp_name)
+            .extension()
+            .map(|e| e.to_string_lossy().to_string())
+            .unwrap_or_else(|| "bin".to_string());
+        let file_name = format!("{}.{}", slugify(&name, true), ext);
+        move_tmp_to_final(&temp_name, &file_name).await?
+    } else if let Some(bytes) = file_bytes {
+        let file_name = format!("{}.{}", slugify(&name, true), extension);
+        let path = format!("{UPLOAD_DIR}/{file_name}");
+        let mut file = fs::File::create(&path)
+            .await
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        file.write_all(&bytes)
+            .await
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        path
+    } else {
+        return Err(StatusCode::BAD_REQUEST);
+    };
 
     let upload = sqlx::query_as!(
         Upload,
@@ -351,6 +449,7 @@ pub async fn update_upload(
     let mut file_type: String = existing.file_type.clone();
     let mut new_file_bytes: Option<Vec<u8>> = None;
     let mut extension = String::from("bin");
+    let mut temp_name: Option<String> = None;
 
     while let Some(field) = multipart
         .next_field()
@@ -401,6 +500,12 @@ pub async fn update_upload(
                     file_type = text;
                 }
             }
+            "temp_name" => {
+                let text = field.text().await.map_err(|_| StatusCode::BAD_REQUEST)?;
+                if !text.is_empty() {
+                    temp_name = Some(text);
+                }
+            }
             "file" => {
                 if let Some(filename) = field.file_name() {
                     if let Some(ext) = FsPath::new(filename).extension() {
@@ -414,7 +519,17 @@ pub async fn update_upload(
         }
     }
 
-    let file_path = if let Some(bytes) = new_file_bytes {
+    let file_path = if let Some(temp_name) = temp_name {
+        sanitize_temp_name(&temp_name)?;
+        let ext = FsPath::new(&temp_name)
+            .extension()
+            .map(|e| e.to_string_lossy().to_string())
+            .unwrap_or_else(|| "bin".to_string());
+        let file_name = format!("{}.{}", Uuid::new_v4(), ext);
+        let new_path = move_tmp_to_final(&temp_name, &file_name).await?;
+        let _ = fs::remove_file(&existing.file_path).await;
+        new_path
+    } else if let Some(bytes) = new_file_bytes {
         fs::create_dir_all(UPLOAD_DIR)
             .await
             .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;

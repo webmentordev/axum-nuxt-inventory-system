@@ -47,12 +47,20 @@
                         </span>
                         <input type="file" class="hidden" @change="handleFileChange" />
                     </label>
+
+                    <div v-if="uploading" class="mt-2">
+                        <div class="w-full h-1.5 bg-dark-300 rounded-full overflow-hidden">
+                            <div class="h-full bg-lime-main transition-all" :style="{ width: uploadProgress + '%' }" />
+                        </div>
+                        <p class="text-xs text-zinc-500 mt-1">Uploading... {{ uploadProgress }}%</p>
+                    </div>
+
                     <p v-if="errors.file" class="text-xs text-red-400 mt-1">{{ errors.file }}</p>
                 </div>
 
-                <button type="submit"
-                    class="mt-2 px-4 py-2 rounded-md text-sm font-semibold bg-lime-main text-dark hover:bg-lime-hover transition-colors w-fit">
-                    Upload File
+                <button type="submit" :disabled="uploading"
+                    class="mt-2 px-4 py-2 rounded-md text-sm font-semibold bg-lime-main text-dark hover:bg-lime-hover transition-colors w-fit disabled:opacity-50 disabled:cursor-not-allowed">
+                    {{ uploading ? 'Uploading...' : 'Upload File' }}
                 </button>
             </form>
         </div>
@@ -93,8 +101,12 @@ const targetLoading = ref(false);
 
 const name = ref('');
 const file = ref(null);
+const tempName = ref(null);
 const previewUrl = ref('');
 const errors = ref({});
+
+const uploading = ref(false);
+const uploadProgress = ref(0);
 
 const showStatus = ref(false);
 const statusType = ref('loading');
@@ -141,14 +153,79 @@ async function handleTargetTypeChange(value) {
     }
 }
 
-function handleFileChange(event) {
+function uploadToTmp(selectedFile) {
+    return new Promise((resolve, reject) => {
+        const { getToken } = useAuthToken();
+        const token = getToken();
+        const xhr = new XMLHttpRequest();
+        const body = new FormData();
+        body.append('file', selectedFile);
+
+        xhr.upload.addEventListener('progress', (e) => {
+            if (e.lengthComputable) {
+                uploadProgress.value = Math.round((e.loaded / e.total) * 100);
+            }
+        });
+
+        xhr.addEventListener('load', () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                try {
+                    resolve(JSON.parse(xhr.responseText));
+                } catch (err) {
+                    reject(err);
+                }
+            } else {
+                let message = 'Upload failed';
+                try {
+                    message = JSON.parse(xhr.responseText)?.statusMessage || message;
+                } catch (_) { }
+                reject(new Error(message));
+
+                if (xhr.status === 401 || xhr.status === 403) {
+                    const { removeToken } = useAuthToken();
+                    const { removeUser } = useAuthUser();
+                    removeToken();
+                    removeUser();
+                    navigateTo('/login');
+                }
+            }
+        });
+
+        xhr.addEventListener('error', () => reject(new Error('Upload failed')));
+
+        xhr.open('POST', '/api/admin/uploads/tmp');
+        xhr.setRequestHeader('Authorization', token ? `Bearer ${token}` : '');
+        xhr.setRequestHeader('Accept', 'application/json');
+        xhr.send(body);
+    });
+}
+
+
+async function handleFileChange(event) {
     const selected = event.target.files[0];
     if (!selected) return;
+
     file.value = selected;
+    tempName.value = null;
+    uploadProgress.value = 0;
+    errors.value.file = '';
+
     if (fileType.value === 'image') {
         previewUrl.value = URL.createObjectURL(selected);
     } else {
         previewUrl.value = '';
+    }
+
+    uploading.value = true;
+    try {
+        const result = await uploadToTmp(selected);
+        tempName.value = result.temp_name;
+    } catch (e) {
+        errors.value.file = 'Failed to upload file.';
+        file.value = null;
+        previewUrl.value = '';
+    } finally {
+        uploading.value = false;
     }
 }
 
@@ -158,7 +235,7 @@ function validate() {
     if (!name.value.trim()) {
         errors.value.name = 'Name is required.';
     }
-    if (!file.value) {
+    if (!tempName.value) {
         errors.value.file = 'Please select a file.';
     }
 
@@ -166,17 +243,18 @@ function validate() {
 }
 
 async function handleSubmit() {
+    if (uploading.value) return;
     if (!validate()) return;
 
     statusType.value = 'loading';
-    statusMessage.value = 'Uploading file...';
+    statusMessage.value = 'Saving upload...';
     showStatus.value = true;
 
     try {
         const formData = new FormData();
         formData.append('name', name.value.trim());
         formData.append('file_type', fileType.value);
-        formData.append('file', file.value);
+        formData.append('temp_name', tempName.value);
         if (assignMode.value === 'assign' && targetType.value && targetId.value) {
             formData.append(targetType.value, targetId.value);
         }
@@ -195,7 +273,9 @@ async function handleSubmit() {
             fileType.value = 'image';
             name.value = '';
             file.value = null;
+            tempName.value = null;
             previewUrl.value = '';
+            uploadProgress.value = 0;
         }
     } catch (e) {
         statusType.value = 'error';

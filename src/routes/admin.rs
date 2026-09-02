@@ -12,6 +12,7 @@ use crate::dashboard::stats::*;
 use crate::dashboard::sub_categories::*;
 use crate::dashboard::uploads::*;
 use crate::middleware::require_admin;
+use axum::extract::DefaultBodyLimit;
 use axum::middleware as axum_middleware;
 
 use anyhow::Result;
@@ -71,6 +72,12 @@ pub async fn init_admin_routes(state: AppState) -> Result<Router> {
         .route(
             "/{uuid}",
             get(get_upload).patch(update_upload).delete(delete_upload),
+        )
+        .layer(DefaultBodyLimit::max(1024 * 1024 * 5))
+        .merge(
+            Router::new()
+                .route("/tmp", post(create_tmp_upload))
+                .layer(DefaultBodyLimit::max(1024 * 1024 * 10)),
         );
 
     let barcodes = Router::new()
