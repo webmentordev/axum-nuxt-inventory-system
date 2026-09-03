@@ -1,15 +1,17 @@
 use axum::{
-    Json,
+    Extension, Json,
     extract::{Path, State},
     http::StatusCode,
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use uuid::Uuid;
 
 use crate::AppState;
+use crate::auth::Claims;
 use crate::dashboard::uploads::*;
-use crate::utils::slugify;
+use crate::utils::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct Category {
@@ -174,6 +176,7 @@ pub async fn get_category(
 
 pub async fn create_category(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     Json(payload): Json<CreateCategory>,
 ) -> Result<(StatusCode, Json<Category>), StatusCode> {
     let slug = slugify(&payload.name, false);
@@ -196,11 +199,23 @@ pub async fn create_category(
         _ => StatusCode::INTERNAL_SERVER_ERROR,
     })?;
 
+    log_audit(
+        &state.db,
+        Some(claims.sub),
+        "create",
+        "category",
+        Some(category.id),
+        "created",
+        Some(json!({ "name": category.name, "slug": category.slug })),
+    )
+    .await;
+
     Ok((StatusCode::CREATED, Json(category)))
 }
 
 pub async fn update_category(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     Path(uuid): Path<Uuid>,
     Json(payload): Json<UpdateCategory>,
 ) -> Result<Json<Category>, StatusCode> {
@@ -234,11 +249,28 @@ pub async fn update_category(
     })?
     .ok_or(StatusCode::NOT_FOUND)?;
 
+    log_audit(
+        &state.db,
+        Some(claims.sub),
+        "update",
+        "category",
+        Some(category.id),
+        "updated",
+        Some(json!({
+            "name": category.name,
+            "slug": category.slug,
+            "is_active": category.is_active,
+            "is_featured": category.is_featured
+        })),
+    )
+    .await;
+
     Ok(Json(category))
 }
 
 pub async fn delete_category(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     Path(uuid): Path<Uuid>,
 ) -> Result<StatusCode, StatusCode> {
     let result = sqlx::query!("DELETE FROM categories WHERE id = $1", uuid)
@@ -249,6 +281,17 @@ pub async fn delete_category(
     if result.rows_affected() == 0 {
         return Err(StatusCode::NOT_FOUND);
     }
+
+    log_audit(
+        &state.db,
+        Some(claims.sub),
+        "delete",
+        "category",
+        Some(uuid),
+        "deleted",
+        None,
+    )
+    .await;
 
     Ok(StatusCode::NO_CONTENT)
 }

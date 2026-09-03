@@ -1,5 +1,5 @@
 use axum::{
-    Json,
+    Extension, Json,
     extract::{Path, State},
     http::StatusCode,
 };
@@ -8,6 +8,8 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::AppState;
+use crate::auth::Claims;
+use crate::utils::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct Contact {
@@ -64,6 +66,7 @@ pub async fn get_contacts(State(state): State<AppState>) -> Result<Json<Vec<Cont
 
 pub async fn delete_contact(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     Path(uuid): Path<Uuid>,
 ) -> Result<StatusCode, StatusCode> {
     let result = sqlx::query!("DELETE FROM contacts WHERE id = $1", uuid)
@@ -74,6 +77,17 @@ pub async fn delete_contact(
     if result.rows_affected() == 0 {
         return Err(StatusCode::NOT_FOUND);
     }
+
+    log_audit(
+        &state.db,
+        Some(claims.sub),
+        "delete",
+        "contact",
+        Some(uuid),
+        "deleted",
+        None,
+    )
+    .await;
 
     Ok(StatusCode::NO_CONTENT)
 }

@@ -1,13 +1,15 @@
 use axum::{
-    Json,
+    Extension, Json,
     extract::{Path, State},
     http::StatusCode,
 };
 use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use uuid::Uuid;
 
+use crate::auth::Claims;
 use crate::dashboard::products_seo::ProductSeo;
 use crate::{AppState, utils::*};
 
@@ -300,6 +302,7 @@ pub async fn get_product(
 
 pub async fn create_product(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     Json(payload): Json<CreateProduct>,
 ) -> Result<(StatusCode, Json<Product>), StatusCode> {
     let quantity_in_stock = payload.quantity_in_stock.unwrap_or(0);
@@ -374,11 +377,23 @@ pub async fn create_product(
         _ => StatusCode::INTERNAL_SERVER_ERROR,
     })?;
 
+    log_audit(
+        &state.db,
+        Some(claims.sub),
+        "create",
+        "product",
+        Some(product.id),
+        "created",
+        Some(json!({ "name": product.name, "slug": product.slug, "sku": product.sku })),
+    )
+    .await;
+
     Ok((StatusCode::CREATED, Json(product)))
 }
 
 pub async fn update_product(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     Path(uuid): Path<Uuid>,
     Json(payload): Json<UpdateProduct>,
 ) -> Result<Json<Product>, StatusCode> {
@@ -462,6 +477,17 @@ pub async fn update_product(
         _ => StatusCode::INTERNAL_SERVER_ERROR,
     })?
     .ok_or(StatusCode::NOT_FOUND)?;
+
+    log_audit(
+        &state.db,
+        Some(claims.sub),
+        "update",
+        "product",
+        Some(product.id),
+        "updated",
+        Some(json!({ "name": product.name, "slug": product.slug, "is_active": product.is_active })),
+    )
+    .await;
 
     Ok(Json(product))
 }

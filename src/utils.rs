@@ -1,3 +1,5 @@
+use uuid::Uuid;
+
 pub fn slugify(name: &str, random: bool) -> String {
     let normalized: String = name
         .chars()
@@ -63,4 +65,27 @@ pub fn generate_sku(name: &str) -> String {
 pub fn generate_order_number() -> String {
     let number: u32 = rand::random_range(1_000_000..10_000_000);
     number.to_string()
+}
+
+pub async fn log_audit(
+    db: &sqlx::PgPool,
+    user_id: Option<Uuid>,
+    action: &str,
+    entity_type: &str,
+    entity_id: Option<Uuid>,
+    status: &str,
+    details: Option<serde_json::Value>,
+) {
+    let _ = sqlx::query!(
+        r#"INSERT INTO audit_logs (user_id, action, entity_type, entity_id, status, details)
+           VALUES ($1, $2, $3, $4, $5, $6)"#,
+        user_id,
+        action,
+        entity_type,
+        entity_id,
+        status,
+        details
+    )
+    .execute(db)
+    .await;
 }

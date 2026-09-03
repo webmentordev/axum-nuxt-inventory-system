@@ -1,13 +1,16 @@
 use axum::{
-    Json,
+    Extension, Json,
     extract::{Path, State},
     http::StatusCode,
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use uuid::Uuid;
 
 use crate::AppState;
+use crate::auth::Claims;
+use crate::utils::*;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct ProductInfo {
@@ -133,8 +136,32 @@ pub async fn get_products_seo(
     Ok(Json(result))
 }
 
+pub async fn get_product_seo(
+    State(state): State<AppState>,
+    Path(uuid): Path<Uuid>,
+) -> Result<Json<ProductSeoWithProduct>, StatusCode> {
+    let row = sqlx::query_as!(
+        ProductSeoRow,
+        r#"SELECT ps.id, ps.product_id, ps.meta_title, ps.meta_description, ps.meta_keywords,
+                  ps.og_title, ps.og_description, ps.og_image_url, ps.canonical_url, ps.focus_keyword,
+                  ps.created_at, ps.updated_at,
+                  p.name as product_name, p.slug as product_slug
+           FROM products_seo ps
+           JOIN products p ON p.id = ps.product_id
+           WHERE ps.id = $1"#,
+        uuid
+    )
+    .fetch_optional(&state.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+    .ok_or(StatusCode::NOT_FOUND)?;
+
+    Ok(Json(to_response(row)))
+}
+
 pub async fn create_product_seo(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     Json(payload): Json<CreateProductSeo>,
 ) -> Result<(StatusCode, Json<ProductSeoWithProduct>), StatusCode> {
     let row = sqlx::query_as!(
@@ -173,34 +200,23 @@ pub async fn create_product_seo(
         _ => StatusCode::INTERNAL_SERVER_ERROR,
     })?;
 
-    Ok((StatusCode::CREATED, Json(to_response(row))))
-}
-
-pub async fn get_product_seo(
-    State(state): State<AppState>,
-    Path(uuid): Path<Uuid>,
-) -> Result<Json<ProductSeoWithProduct>, StatusCode> {
-    let row = sqlx::query_as!(
-        ProductSeoRow,
-        r#"SELECT ps.id, ps.product_id, ps.meta_title, ps.meta_description, ps.meta_keywords,
-                  ps.og_title, ps.og_description, ps.og_image_url, ps.canonical_url, ps.focus_keyword,
-                  ps.created_at, ps.updated_at,
-                  p.name as product_name, p.slug as product_slug
-           FROM products_seo ps
-           JOIN products p ON p.id = ps.product_id
-           WHERE ps.id = $1"#,
-        uuid
+    log_audit(
+        &state.db,
+        Some(claims.sub),
+        "create",
+        "product_seo",
+        Some(row.id),
+        "created",
+        Some(json!({ "product_id": row.product_id, "meta_title": row.meta_title })),
     )
-    .fetch_optional(&state.db)
-    .await
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-    .ok_or(StatusCode::NOT_FOUND)?;
+    .await;
 
-    Ok(Json(to_response(row)))
+    Ok((StatusCode::CREATED, Json(to_response(row))))
 }
 
 pub async fn update_product_seo(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     Path(uuid): Path<Uuid>,
     Json(payload): Json<UpdateProductSeo>,
 ) -> Result<Json<ProductSeoWithProduct>, StatusCode> {
@@ -238,11 +254,23 @@ pub async fn update_product_seo(
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
     .ok_or(StatusCode::NOT_FOUND)?;
 
+    log_audit(
+        &state.db,
+        Some(claims.sub),
+        "update",
+        "product_seo",
+        Some(row.id),
+        "updated",
+        Some(json!({ "product_id": row.product_id, "meta_title": row.meta_title })),
+    )
+    .await;
+
     Ok(Json(to_response(row)))
 }
 
 pub async fn delete_product_seo(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     Path(uuid): Path<Uuid>,
 ) -> Result<StatusCode, StatusCode> {
     let result = sqlx::query!("DELETE FROM products_seo WHERE id = $1", uuid)
@@ -253,6 +281,17 @@ pub async fn delete_product_seo(
     if result.rows_affected() == 0 {
         return Err(StatusCode::NOT_FOUND);
     }
+
+    log_audit(
+        &state.db,
+        Some(claims.sub),
+        "delete",
+        "product_seo",
+        Some(uuid),
+        "deleted",
+        None,
+    )
+    .await;
 
     Ok(StatusCode::NO_CONTENT)
 }

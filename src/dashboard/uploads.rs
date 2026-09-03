@@ -1,16 +1,18 @@
 use axum::{
-    Json,
+    Extension, Json,
     extract::{Multipart, Path, State},
     http::StatusCode,
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use std::path::Path as FsPath;
 use tokio::{fs, io::AsyncWriteExt};
 use uuid::Uuid;
 
 use crate::AppState;
-use crate::utils::slugify;
+use crate::auth::Claims;
+use crate::utils::*;
 
 const UPLOAD_DIR: &str = "uploads/files";
 const TMP_DIR: &str = "uploads/tmp";
@@ -290,6 +292,7 @@ pub async fn get_upload(
 
 pub async fn create_upload(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     mut multipart: Multipart,
 ) -> Result<(StatusCode, Json<Upload>), StatusCode> {
     let mut product_id: Option<Uuid> = None;
@@ -420,12 +423,24 @@ pub async fn create_upload(
         _ => StatusCode::INTERNAL_SERVER_ERROR,
     })?;
 
+    log_audit(
+        &state.db,
+        Some(claims.sub),
+        "create",
+        "upload",
+        Some(upload.id),
+        "created",
+        Some(json!({ "name": upload.name, "file_type": upload.file_type })),
+    )
+    .await;
+
     let upload = upload.with_full_url();
     Ok((StatusCode::CREATED, Json(upload)))
 }
 
 pub async fn update_upload(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     Path(uuid): Path<Uuid>,
     mut multipart: Multipart,
 ) -> Result<Json<Upload>, StatusCode> {
@@ -587,12 +602,24 @@ pub async fn update_upload(
         _ => StatusCode::INTERNAL_SERVER_ERROR,
     })?;
 
+    log_audit(
+        &state.db,
+        Some(claims.sub),
+        "update",
+        "upload",
+        Some(upload.id),
+        "updated",
+        Some(json!({ "name": upload.name, "file_type": upload.file_type })),
+    )
+    .await;
+
     let upload = upload.with_full_url();
     Ok(Json(upload))
 }
 
 pub async fn delete_upload(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     Path(uuid): Path<Uuid>,
 ) -> Result<StatusCode, StatusCode> {
     let upload = sqlx::query_as!(
@@ -613,6 +640,17 @@ pub async fn delete_upload(
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     let _ = fs::remove_file(&upload.file_path).await;
+
+    log_audit(
+        &state.db,
+        Some(claims.sub),
+        "delete",
+        "upload",
+        Some(uuid),
+        "deleted",
+        Some(json!({ "name": upload.name, "file_path": upload.file_path })),
+    )
+    .await;
 
     Ok(StatusCode::NO_CONTENT)
 }

@@ -1,15 +1,17 @@
 use axum::{
-    Json,
+    Extension, Json,
     extract::{Path, State},
     http::StatusCode,
 };
 use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use uuid::Uuid;
 
 use crate::AppState;
-use crate::utils::generate_order_number;
+use crate::auth::Claims;
+use crate::utils::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, sqlx::Type)]
 #[sqlx(type_name = "order_status", rename_all = "lowercase")]
@@ -299,8 +301,43 @@ pub async fn get_order_item(
     }))
 }
 
+pub async fn get_order(
+    State(state): State<AppState>,
+    Path(uuid): Path<Uuid>,
+) -> Result<Json<OrderWithItems>, StatusCode> {
+    let order = sqlx::query_as!(
+        Order,
+        r#"SELECT id, order_number, user_id, customer_name, customer_email, customer_phone,
+                  shipping_address, status as "status: OrderStatus", subtotal, tax_amount,
+                  shipping_amount, total_amount, notes, created_at, updated_at
+           FROM orders
+           WHERE id = $1"#,
+        uuid
+    )
+    .fetch_optional(&state.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+    .ok_or(StatusCode::NOT_FOUND)?;
+
+    let items = sqlx::query_as!(
+        OrderItem,
+        r#"SELECT id, order_id, product_id, product_name, product_sku, unit_price, quantity, line_total,
+                  status as "status: OrderItemStatus", created_at
+           FROM order_items
+           WHERE order_id = $1
+           ORDER BY created_at ASC"#,
+        uuid
+    )
+    .fetch_all(&state.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    Ok(Json(OrderWithItems { order, items }))
+}
+
 pub async fn create_order(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     Json(payload): Json<CreateOrder>,
 ) -> Result<(StatusCode, Json<Order>), StatusCode> {
     if payload.customer_name.trim().is_empty() {
@@ -347,45 +384,23 @@ pub async fn create_order(
 
     let order = order.ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
 
+    log_audit(
+        &state.db,
+        Some(claims.sub),
+        "create",
+        "order",
+        Some(order.id),
+        "created",
+        Some(json!({ "order_number": order.order_number, "customer_name": order.customer_name })),
+    )
+    .await;
+
     Ok((StatusCode::CREATED, Json(order)))
-}
-
-pub async fn get_order(
-    State(state): State<AppState>,
-    Path(uuid): Path<Uuid>,
-) -> Result<Json<OrderWithItems>, StatusCode> {
-    let order = sqlx::query_as!(
-        Order,
-        r#"SELECT id, order_number, user_id, customer_name, customer_email, customer_phone,
-                  shipping_address, status as "status: OrderStatus", subtotal, tax_amount,
-                  shipping_amount, total_amount, notes, created_at, updated_at
-           FROM orders
-           WHERE id = $1"#,
-        uuid
-    )
-    .fetch_optional(&state.db)
-    .await
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-    .ok_or(StatusCode::NOT_FOUND)?;
-
-    let items = sqlx::query_as!(
-        OrderItem,
-        r#"SELECT id, order_id, product_id, product_name, product_sku, unit_price, quantity, line_total,
-                  status as "status: OrderItemStatus", created_at
-           FROM order_items
-           WHERE order_id = $1
-           ORDER BY created_at ASC"#,
-        uuid
-    )
-    .fetch_all(&state.db)
-    .await
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    Ok(Json(OrderWithItems { order, items }))
 }
 
 pub async fn update_order(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     Path(uuid): Path<Uuid>,
     Json(payload): Json<UpdateOrder>,
 ) -> Result<Json<Order>, StatusCode> {
@@ -418,11 +433,23 @@ pub async fn update_order(
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
     .ok_or(StatusCode::NOT_FOUND)?;
 
+    log_audit(
+        &state.db,
+        Some(claims.sub),
+        "update",
+        "order",
+        Some(order.id),
+        "updated",
+        Some(json!({ "order_number": order.order_number, "status": order.status })),
+    )
+    .await;
+
     Ok(Json(order))
 }
 
 pub async fn delete_order(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     Path(uuid): Path<Uuid>,
 ) -> Result<StatusCode, StatusCode> {
     let result = sqlx::query!("DELETE FROM orders WHERE id = $1", uuid)
@@ -434,11 +461,23 @@ pub async fn delete_order(
         return Err(StatusCode::NOT_FOUND);
     }
 
+    log_audit(
+        &state.db,
+        Some(claims.sub),
+        "delete",
+        "order",
+        Some(uuid),
+        "deleted",
+        None,
+    )
+    .await;
+
     Ok(StatusCode::NO_CONTENT)
 }
 
 pub async fn add_order_items(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     Path(uuid): Path<Uuid>,
     Json(payload): Json<AddOrderItems>,
 ) -> Result<(StatusCode, Json<OrderWithItems>), StatusCode> {
@@ -536,6 +575,17 @@ pub async fn add_order_items(
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
+    log_audit(
+        &state.db,
+        Some(claims.sub),
+        "create",
+        "order_item",
+        Some(order.id),
+        "items_added",
+        Some(json!({ "order_number": order.order_number, "items_added": inserted_items.len(), "added_total": added_total })),
+    )
+    .await;
+
     Ok((
         StatusCode::CREATED,
         Json(OrderWithItems {
@@ -547,6 +597,7 @@ pub async fn add_order_items(
 
 pub async fn update_order_item(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     Path((order_uuid, item_uuid)): Path<(Uuid, Uuid)>,
     Json(payload): Json<UpdateOrderItem>,
 ) -> Result<Json<OrderItem>, StatusCode> {
@@ -702,11 +753,23 @@ pub async fn update_order_item(
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
+    log_audit(
+        &state.db,
+        Some(claims.sub),
+        "update",
+        "order_item",
+        Some(updated_item.id),
+        "updated",
+        Some(json!({ "order_id": order_uuid, "product_id": updated_item.product_id, "quantity": updated_item.quantity })),
+    )
+    .await;
+
     Ok(Json(updated_item))
 }
 
 async fn remove_order_item_and_restock(
     state: &AppState,
+    claims: &Claims,
     order_uuid: Uuid,
     item_uuid: Uuid,
 ) -> Result<StatusCode, StatusCode> {
@@ -768,18 +831,31 @@ async fn remove_order_item_and_restock(
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
+    log_audit(
+        &state.db,
+        Some(claims.sub),
+        "delete",
+        "order_item",
+        Some(item_uuid),
+        "deleted_and_restocked",
+        Some(json!({ "order_id": order_uuid, "product_id": item.product_id, "quantity": item.quantity })),
+    )
+    .await;
+
     Ok(StatusCode::NO_CONTENT)
 }
 
 pub async fn delete_order_item(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     Path((order_uuid, item_uuid)): Path<(Uuid, Uuid)>,
 ) -> Result<StatusCode, StatusCode> {
-    remove_order_item_and_restock(&state, order_uuid, item_uuid).await
+    remove_order_item_and_restock(&state, &claims, order_uuid, item_uuid).await
 }
 
 pub async fn update_order_item_status(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     Path((order_uuid, item_uuid)): Path<(Uuid, Uuid)>,
     Json(payload): Json<UpdateOrderItemStatus>,
 ) -> Result<Json<OrderItem>, StatusCode> {
@@ -860,6 +936,17 @@ pub async fn update_order_item_status(
     tx.commit()
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    log_audit(
+        &state.db,
+        Some(claims.sub),
+        "update",
+        "order_item",
+        Some(updated_item.id),
+        "status_changed",
+        Some(json!({ "order_id": order_uuid, "old_status": existing.status, "new_status": updated_item.status })),
+    )
+    .await;
 
     Ok(Json(updated_item))
 }

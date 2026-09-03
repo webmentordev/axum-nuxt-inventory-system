@@ -1,16 +1,18 @@
 use axum::{
-    Json,
+    Extension, Json,
     extract::{Path, State},
     http::StatusCode,
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use uuid::Uuid;
 
 use crate::AppState;
+use crate::auth::Claims;
 use crate::dashboard::categories::Category;
 use crate::dashboard::uploads::{Upload, WithFullUrl};
-use crate::utils::slugify;
+use crate::utils::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct SubCategory {
@@ -251,6 +253,7 @@ pub async fn get_sub_categories_by_category(
 
 pub async fn create_sub_category(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     Json(payload): Json<CreateSubCategory>,
 ) -> Result<(StatusCode, Json<SubCategory>), StatusCode> {
     let slug = slugify(&payload.name, false);
@@ -277,11 +280,23 @@ pub async fn create_sub_category(
         _ => StatusCode::INTERNAL_SERVER_ERROR,
     })?;
 
+    log_audit(
+        &state.db,
+        Some(claims.sub),
+        "create",
+        "sub_category",
+        Some(sub_category.id),
+        "created",
+        Some(json!({ "name": sub_category.name, "slug": sub_category.slug })),
+    )
+    .await;
+
     Ok((StatusCode::CREATED, Json(sub_category)))
 }
 
 pub async fn update_sub_category(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     Path(uuid): Path<Uuid>,
     Json(payload): Json<UpdateSubCategory>,
 ) -> Result<Json<SubCategory>, StatusCode> {
@@ -310,11 +325,27 @@ pub async fn update_sub_category(
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
     .ok_or(StatusCode::NOT_FOUND)?;
 
+    log_audit(
+        &state.db,
+        Some(claims.sub),
+        "update",
+        "sub_category",
+        Some(sub_category.id),
+        "updated",
+        Some(json!({
+            "name": sub_category.name,
+            "slug": sub_category.slug,
+            "is_active": sub_category.is_active
+        })),
+    )
+    .await;
+
     Ok(Json(sub_category))
 }
 
 pub async fn delete_sub_category(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     Path(uuid): Path<Uuid>,
 ) -> Result<StatusCode, StatusCode> {
     let result = sqlx::query!("DELETE FROM sub_categories WHERE id = $1", uuid)
@@ -325,6 +356,17 @@ pub async fn delete_sub_category(
     if result.rows_affected() == 0 {
         return Err(StatusCode::NOT_FOUND);
     }
+
+    log_audit(
+        &state.db,
+        Some(claims.sub),
+        "delete",
+        "sub_category",
+        Some(uuid),
+        "deleted",
+        None,
+    )
+    .await;
 
     Ok(StatusCode::NO_CONTENT)
 }

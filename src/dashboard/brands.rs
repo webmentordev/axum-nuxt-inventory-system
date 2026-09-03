@@ -1,14 +1,16 @@
 use axum::{
-    Json,
+    Extension, Json,
     extract::{Path, State},
     http::StatusCode,
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use uuid::Uuid;
 
+use crate::auth::Claims;
 use crate::dashboard::uploads::*;
-use crate::{AppState, utils::slugify};
+use crate::{AppState, utils::*};
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct Brand {
@@ -77,15 +79,15 @@ pub async fn get_brands(
     let ids: Vec<Uuid> = rows.iter().map(|r| r.id).collect();
 
     let uploads = sqlx::query_as!(
-    Upload,
-    r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, file_type, created_at
-       FROM uploads
-       WHERE brand_id = ANY($1)"#,
-    &ids
-)
-.fetch_all(&state.db)
-.await
-.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        Upload,
+        r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, file_type, created_at
+           FROM uploads
+           WHERE brand_id = ANY($1)"#,
+        &ids
+    )
+    .fetch_all(&state.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     let brands = rows
         .into_iter()
@@ -134,15 +136,15 @@ pub async fn get_brand(
     .ok_or(StatusCode::NOT_FOUND)?;
 
     let uploads = sqlx::query_as!(
-    Upload,
-    r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, file_type, created_at
-       FROM uploads
-       WHERE brand_id = $1"#,
-    uuid
-)
-.fetch_all(&state.db)
-.await
-.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        Upload,
+        r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, file_type, created_at
+           FROM uploads
+           WHERE brand_id = $1"#,
+        uuid
+    )
+    .fetch_all(&state.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     let uploads = uploads.into_iter().map(Upload::with_full_url).collect();
 
@@ -161,6 +163,7 @@ pub async fn get_brand(
 
 pub async fn create_brand(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     Json(payload): Json<CreateBrand>,
 ) -> Result<(StatusCode, Json<Brand>), StatusCode> {
     let slug = slugify(&payload.name, false);
@@ -183,11 +186,23 @@ pub async fn create_brand(
         _ => StatusCode::INTERNAL_SERVER_ERROR,
     })?;
 
+    log_audit(
+        &state.db,
+        Some(claims.sub),
+        "create",
+        "brand",
+        Some(brand.id),
+        "created",
+        Some(json!({ "name": brand.name, "slug": brand.slug })),
+    )
+    .await;
+
     Ok((StatusCode::CREATED, Json(brand)))
 }
 
 pub async fn update_brand(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     Path(uuid): Path<Uuid>,
     Json(payload): Json<UpdateBrand>,
 ) -> Result<Json<Brand>, StatusCode> {
@@ -219,11 +234,27 @@ pub async fn update_brand(
     })?
     .ok_or(StatusCode::NOT_FOUND)?;
 
+    log_audit(
+        &state.db,
+        Some(claims.sub),
+        "update",
+        "brand",
+        Some(brand.id),
+        "updated",
+        Some(json!({
+            "name": brand.name,
+            "slug": brand.slug,
+            "is_active": brand.is_active
+        })),
+    )
+    .await;
+
     Ok(Json(brand))
 }
 
 pub async fn delete_brand(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     Path(uuid): Path<Uuid>,
 ) -> Result<StatusCode, StatusCode> {
     let result = sqlx::query!("DELETE FROM brands WHERE id = $1", uuid)
@@ -234,6 +265,17 @@ pub async fn delete_brand(
     if result.rows_affected() == 0 {
         return Err(StatusCode::NOT_FOUND);
     }
+
+    log_audit(
+        &state.db,
+        Some(claims.sub),
+        "delete",
+        "brand",
+        Some(uuid),
+        "deleted",
+        None,
+    )
+    .await;
 
     Ok(StatusCode::NO_CONTENT)
 }

@@ -1,13 +1,15 @@
 use axum::{
-    Json,
+    Extension, Json,
     extract::{Path, State},
     http::StatusCode,
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use uuid::Uuid;
 
-use crate::{AppState, utils::slugify};
+use crate::auth::Claims;
+use crate::{AppState, utils::*};
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct Policy {
@@ -43,8 +45,24 @@ pub struct CreatePolicy {
     pub sort_order: i32,
 }
 
+pub async fn get_policies(State(state): State<AppState>) -> Result<Json<Vec<Policy>>, StatusCode> {
+    let policies = sqlx::query_as!(
+        Policy,
+        r#"SELECT id, name, slug, seo_title, seo_description, content,
+                  is_active, sort_order, created_at, updated_at
+           FROM policies
+           ORDER BY sort_order ASC"#
+    )
+    .fetch_all(&state.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    Ok(Json(policies))
+}
+
 pub async fn create_policy(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     Json(payload): Json<CreatePolicy>,
 ) -> Result<(StatusCode, Json<Policy>), StatusCode> {
     let slug = slugify(&payload.name, false);
@@ -74,26 +92,23 @@ pub async fn create_policy(
         _ => StatusCode::INTERNAL_SERVER_ERROR,
     })?;
 
-    Ok((StatusCode::CREATED, Json(policy)))
-}
-
-pub async fn get_policies(State(state): State<AppState>) -> Result<Json<Vec<Policy>>, StatusCode> {
-    let policies = sqlx::query_as!(
-        Policy,
-        r#"SELECT id, name, slug, seo_title, seo_description, content,
-                  is_active, sort_order, created_at, updated_at
-           FROM policies
-           ORDER BY sort_order ASC"#
+    log_audit(
+        &state.db,
+        Some(claims.sub),
+        "create",
+        "policy",
+        Some(policy.id),
+        "created",
+        Some(json!({ "name": policy.name, "slug": policy.slug })),
     )
-    .fetch_all(&state.db)
-    .await
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    .await;
 
-    Ok(Json(policies))
+    Ok((StatusCode::CREATED, Json(policy)))
 }
 
 pub async fn update_policy(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     Path(uuid): Path<Uuid>,
     Json(payload): Json<UpdatePolicy>,
 ) -> Result<Json<Policy>, StatusCode> {
@@ -132,11 +147,23 @@ pub async fn update_policy(
     })?
     .ok_or(StatusCode::NOT_FOUND)?;
 
+    log_audit(
+        &state.db,
+        Some(claims.sub),
+        "update",
+        "policy",
+        Some(policy.id),
+        "updated",
+        Some(json!({ "name": policy.name, "slug": policy.slug })),
+    )
+    .await;
+
     Ok(Json(policy))
 }
 
 pub async fn delete_policy(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     Path(uuid): Path<Uuid>,
 ) -> Result<StatusCode, StatusCode> {
     let result = sqlx::query!("DELETE FROM policies WHERE id = $1", uuid)
@@ -147,6 +174,17 @@ pub async fn delete_policy(
     if result.rows_affected() == 0 {
         return Err(StatusCode::NOT_FOUND);
     }
+
+    log_audit(
+        &state.db,
+        Some(claims.sub),
+        "delete",
+        "policy",
+        Some(uuid),
+        "deleted",
+        None,
+    )
+    .await;
 
     Ok(StatusCode::NO_CONTENT)
 }
