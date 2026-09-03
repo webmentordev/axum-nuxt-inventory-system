@@ -21,4 +21,8 @@ Policies reminder
 ├── shipping-policy.vue
 ├── terms-of-service.vue
 └── warranty-policy.vue
+```  
+Fix:
 ```
+Use PUT instead to patch to rest values on update!
+```  

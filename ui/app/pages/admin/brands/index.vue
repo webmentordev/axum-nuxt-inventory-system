@@ -37,14 +37,14 @@
                     <tr v-for="brand in filteredBrands" :key="brand.id"
                         class="border-t border-dark-300 hover:bg-dark-200 transition-colors">
                         <td class="px-4 py-3">
-                            <div v-if="brand.images && brand.images.length" class="flex items-center -space-x-3">
-                                <img v-for="(image, index) in brand.images.slice(0, 3)" :key="image.id"
+                            <div v-if="brand.uploads && brand.uploads.length" class="flex items-center -space-x-3">
+                                <img v-for="(image, index) in brand.uploads.slice(0, 3)" :key="image.id"
                                     :src="image.file_path" :alt="image.name || brand.name"
                                     class="w-9 h-9 rounded-lg object-cover border-2 border-dark-100 bg-dark-300"
-                                    :style="{ zIndex: brand.images.length - index }" />
-                                <span v-if="brand.images.length > 3"
+                                    :style="{ zIndex: brand.uploads.length - index }" />
+                                <span v-if="brand.uploads.length > 3"
                                     class="w-9 h-9 rounded-lg border-2 border-dark-100 bg-dark-300 text-zinc-300 text-xs font-semibold flex items-center justify-center">
-                                    +{{ brand.images.length - 3 }}
+                                    +{{ brand.uploads.length - 3 }}
                                 </span>
                             </div>
                             <div v-else

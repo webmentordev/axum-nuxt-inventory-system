@@ -39,14 +39,15 @@
                     <tr v-for="category in filteredCategories" :key="category.id"
                         class="border-t border-dark-300 hover:bg-dark-200 transition-colors">
                         <td class="px-4 py-3">
-                            <div v-if="category.images && category.images.length" class="flex items-center -space-x-3">
-                                <img v-for="(image, index) in category.images.slice(0, 3)" :key="image.id"
+                            <div v-if="category.uploads && category.uploads.length"
+                                class="flex items-center -space-x-3">
+                                <img v-for="(image, index) in category.uploads.slice(0, 3)" :key="image.id"
                                     :src="image.file_path" :alt="image.name || category.name"
                                     class="w-9 h-9 rounded-lg object-cover border-2 border-dark-100 bg-dark-300"
-                                    :style="{ zIndex: category.images.length - index }" />
-                                <span v-if="category.images.length > 3"
+                                    :style="{ zIndex: category.uploads.length - index }" />
+                                <span v-if="category.uploads.length > 3"
                                     class="w-9 h-9 rounded-lg border-2 border-dark-100 bg-dark-300 text-zinc-300 text-xs font-semibold flex items-center justify-center">
-                                    +{{ category.images.length - 3 }}
+                                    +{{ category.uploads.length - 3 }}
                                 </span>
                             </div>
                             <div v-else
