@@ -82,6 +82,12 @@
                 <Icon name="tabler:graph" size="20" />
                 <strong class="ml-1">Report</strong>
             </NuxtLink>
+            <NuxtLink to="/admin/audit-logs"
+                class="w-full flex items-center px-3 py-2 rounded-md text-sm font-semibold text-zinc-300 transition-colors hover:text-white hover:bg-dark-300"
+                active-class="!text-lime-main !bg-lime-bg !border !border-lime-main/30">
+                <Icon name="ant-design:audit-outlined" size="20" />
+                <strong class="ml-1">Audit logs</strong>
+            </NuxtLink>
         </div>
         <AdminButton icon="tabler:door-exit" class="py-3" @click="logout">Logout</AdminButton>
     </nav>

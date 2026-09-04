@@ -1,5 +1,6 @@
 use crate::AppState;
 use crate::auth::*;
+use crate::dashboard::audit_logs::*;
 use crate::dashboard::barcodes::*;
 use crate::dashboard::brands::*;
 use crate::dashboard::categories::*;
@@ -121,6 +122,8 @@ pub async fn init_admin_routes(state: AppState) -> Result<Router> {
         .route("/", get(get_policies).post(create_policy))
         .route("/{uuid}", patch(update_policy).delete(delete_policy));
 
+    let audit_logs = Router::new().route("/", get(get_audit_logs));
+
     let routes = Router::new()
         .nest("/products", product)
         .nest("/categories", categories)
@@ -134,6 +137,7 @@ pub async fn init_admin_routes(state: AppState) -> Result<Router> {
         .nest("/stats", stats)
         .nest("/seo", seo)
         .nest("/policies", policies)
+        .nest("/audit-logs", audit_logs)
         .layer(axum_middleware::from_fn_with_state(
             state.clone(),
             require_admin,
