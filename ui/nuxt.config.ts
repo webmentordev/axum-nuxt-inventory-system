@@ -12,9 +12,6 @@ export default defineNuxtConfig({
   },
 
   routeRules: {
-    '/': { prerender: true },
-    '/products': { swr: true },
-    '/products/**': { swr: 3600 },
     '/admin/**': { ssr: false },
     '/checkout': { ssr: false },
     '/api/**': { cors: true },

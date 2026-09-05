@@ -6,14 +6,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::{
-    AppState,
-    dashboard::uploads::Upload,
-    public::products::{
-        PublicProduct, PublicProductRow, build_public_product, fetch_category_minis,
-        fetch_product_brands, fetch_sub_category_minis,
-    },
-};
+use crate::{AppState, dashboard::uploads::*, public::products::*};
 
 #[derive(Debug, Serialize)]
 pub struct PublicCategoryDetail {
@@ -27,6 +20,7 @@ pub struct PublicCategoryDetail {
 pub struct CategoryQuery {
     pub sub_categories: Option<bool>,
     pub is_featured: Option<bool>,
+    pub with_uploads: Option<bool>,
 }
 
 #[derive(Debug, Serialize)]
@@ -36,6 +30,7 @@ pub struct PublicSubCategoryMini {
 }
 
 struct CategoryRow {
+    id: Uuid,
     name: String,
     slug: String,
     is_featured: bool,
@@ -60,6 +55,7 @@ pub struct PublicCategoryWithSub {
     pub slug: String,
     pub is_featured: bool,
     pub sub_categories: Option<Vec<PublicSubCategoryMini>>,
+    pub uploads: Option<Vec<Upload>>,
 }
 
 pub async fn get_public_categories(
@@ -71,7 +67,7 @@ pub async fn get_public_categories(
     let categories = if only_featured {
         sqlx::query_as!(
             CategoryRow,
-            r#"SELECT name, slug, is_featured
+            r#"SELECT id, name, slug, is_featured
                FROM categories
                WHERE is_active = TRUE AND is_featured = TRUE
                ORDER BY name ASC"#
@@ -82,7 +78,7 @@ pub async fn get_public_categories(
     } else {
         sqlx::query_as!(
             CategoryRow,
-            r#"SELECT name, slug, is_featured
+            r#"SELECT id, name, slug, is_featured
                FROM categories
                WHERE is_active = TRUE
                ORDER BY name ASC"#
@@ -93,6 +89,7 @@ pub async fn get_public_categories(
     };
 
     let include_sub = params.sub_categories.unwrap_or(false);
+    let include_uploads = params.with_uploads.unwrap_or(false);
 
     let sub_map: Vec<SubCategoryRow> = if include_sub {
         sqlx::query_as!(
@@ -102,6 +99,22 @@ pub async fn get_public_categories(
                JOIN categories c ON c.id = sc.category_id
                WHERE sc.is_active = TRUE AND c.is_active = TRUE
                ORDER BY sc.name ASC"#
+        )
+        .fetch_all(&state.db)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+    } else {
+        Vec::new()
+    };
+
+    let upload_map: Vec<Upload> = if include_uploads {
+        let ids: Vec<Uuid> = categories.iter().map(|c| c.id).collect();
+        sqlx::query_as!(
+            Upload,
+            r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, file_type, created_at
+               FROM uploads
+               WHERE category_id = ANY($1)"#,
+            &ids
         )
         .fetch_all(&state.db)
         .await
@@ -128,11 +141,25 @@ pub async fn get_public_categories(
                 None
             };
 
+            let uploads = if include_uploads {
+                Some(
+                    upload_map
+                        .iter()
+                        .filter(|u| u.category_id == Some(c.id))
+                        .cloned()
+                        .map(Upload::with_full_url)
+                        .collect(),
+                )
+            } else {
+                None
+            };
+
             PublicCategoryWithSub {
                 name: c.name,
                 slug: c.slug,
                 is_featured: c.is_featured,
                 sub_categories,
+                uploads,
             }
         })
         .collect();

@@ -44,6 +44,9 @@
                         <NuxtLink to="/" class="hover:text-orange">Home</NuxtLink>
                     </li>
                     <li>
+                        <NuxtLink to="/products" class="hover:text-orange">Products</NuxtLink>
+                    </li>
+                    <li>
                         <NuxtLink to="/about-us" class="hover:text-orange">About Us</NuxtLink>
                     </li>
                     <li>
@@ -93,7 +96,8 @@
 <script setup lang="js">
 const { categories, processing, fetchCategories } = useCategories({
     featured: true,
-    withSubCategories: false
+    withSubCategories: false,
+    withUploads: false,
 });
 
 const { policies, processing: policiesProcessing, fetchPolicies } = usePolicies();

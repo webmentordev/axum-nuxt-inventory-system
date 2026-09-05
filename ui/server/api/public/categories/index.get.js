@@ -5,7 +5,8 @@ export default defineEventHandler(async (event) => {
     try {
         const data = await $fetch(`${apiUrl}/api/public/categories`, { headers: allHeaders, query: {
             sub_categories: query.sub_categories,
-            is_featured: query.is_featured
+            is_featured: query.is_featured,
+            with_uploads: query.with_uploads,
         } });
         return data;
     } catch (e) {

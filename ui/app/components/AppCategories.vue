@@ -51,7 +51,8 @@
 <script setup lang="js">
 const { categories, processing, fetchCategories } = useCategories({
     featured: false,
-    withSubCategories: true
+    withSubCategories: true,
+    withUploads: false,
 });
 
 await fetchCategories();
