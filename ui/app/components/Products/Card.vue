@@ -24,9 +24,9 @@
                 </span>
             </div>
             <div
-                class="py-2 px-3 w-full text-sm bg-transparent border border-navy rounded-full text-navy text-center mt-3 flex items-center justify-center">
-                <img class="mr-2" src="https://api.iconify.design/mdi:eye.svg?color=%23062B5B" width="20px">
-                <strong>View product</strong>
+                class="py-2 px-3 w-full text-sm bg-navy rounded-md text-white text-center mt-3 flex items-center justify-center">
+                <strong class="mr-2 uppercase">View product</strong>
+                <Icon name="mdi:eye-outline" class="translate-y-0.5" size="20px" />
             </div>
         </div>
     </NuxtLink>

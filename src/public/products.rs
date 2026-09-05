@@ -1,6 +1,6 @@
 use axum::{
     Json,
-    extract::{Path, State},
+    extract::{Path, Query, State},
     http::StatusCode,
 };
 use rust_decimal::Decimal;
@@ -174,6 +174,11 @@ impl From<SearchProductRow> for PublicProductRow {
             unit: r.unit,
         }
     }
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct GetProductsQuery {
+    pub limit: Option<i64>,
 }
 
 pub async fn search_public_products(
@@ -658,4 +663,66 @@ pub async fn get_public_product(
     product.seo = seo;
 
     Ok(Json(product))
+}
+
+pub async fn get_public_products_limited(
+    State(state): State<AppState>,
+    Query(q): Query<GetProductsQuery>,
+) -> Result<Json<Vec<PublicProduct>>, StatusCode> {
+    let limit = q.limit.unwrap_or(20).clamp(1, 100);
+
+    let products = sqlx::query_as!(
+        PublicProductRow,
+        r#"SELECT id, name, slug, sku, product_type, brand_id, category_id as "category_id!", sub_category_id, model, description, content, image_url as "image_url!",
+                  power_rating_watts, per_watt_price, voltage_rating, capacity_ah, warranty_months,
+                  selling_price, quantity_in_stock, unit
+           FROM products
+           WHERE is_active = TRUE
+           ORDER BY created_at DESC
+           LIMIT $1"#,
+        limit
+    )
+    .fetch_all(&state.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let product_ids: Vec<Uuid> = products.iter().map(|p| p.id).collect();
+
+    let uploads = sqlx::query_as!(
+        Upload,
+        r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, file_type, created_at
+           FROM uploads
+           WHERE product_id = ANY($1)
+           ORDER BY created_at ASC"#,
+        &product_ids
+    )
+    .fetch_all(&state.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let brand_ids: Vec<Uuid> = products.iter().filter_map(|p| p.brand_id).collect();
+    let brand_map = fetch_product_brands(&state, &brand_ids).await?;
+
+    let category_ids: Vec<Uuid> = products.iter().map(|p| p.category_id).collect();
+    let sub_category_ids: Vec<Uuid> = products.iter().filter_map(|p| p.sub_category_id).collect();
+
+    let category_map = fetch_category_minis(&state, &category_ids).await?;
+    let sub_category_map = fetch_sub_category_minis(&state, &sub_category_ids).await?;
+
+    let result = products
+        .into_iter()
+        .map(|p| {
+            let category = category_map.get(&p.category_id).cloned();
+            let sub_category = p
+                .sub_category_id
+                .and_then(|id| sub_category_map.get(&id).cloned());
+
+            let mut product = build_public_product(p, &uploads, &brand_map);
+            product.category = category;
+            product.sub_category = sub_category;
+            product
+        })
+        .collect();
+
+    Ok(Json(result))
 }

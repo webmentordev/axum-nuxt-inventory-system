@@ -1,4 +1,4 @@
-export const useCategories = ({ featured = false, withSubCategories = false, withUploads = false } = {}) => {
+export const useCategories = ({ featured = false, withSubCategories = false, withUploads = false, limit = 6 } = {}) => {
   const { publicFetch } = usePublicFetch();
   const cacheKey = `categories:featured:${featured}:sub:${withSubCategories}`;
 
@@ -17,6 +17,7 @@ export const useCategories = ({ featured = false, withSubCategories = false, wit
         sub_categories: String(withSubCategories),
         is_featured: String(featured),
         with_uploads: String(withUploads),
+        limit: String(limit),
       });
 
       const data = await publicFetch(`/api/public/categories?${params}`);

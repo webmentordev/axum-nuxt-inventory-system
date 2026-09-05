@@ -7,6 +7,7 @@ export default defineEventHandler(async (event) => {
             sub_categories: query.sub_categories,
             is_featured: query.is_featured,
             with_uploads: query.with_uploads,
+            limit: query.limit,
         } });
         return data;
     } catch (e) {

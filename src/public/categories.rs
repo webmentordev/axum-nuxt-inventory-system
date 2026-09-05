@@ -21,6 +21,7 @@ pub struct CategoryQuery {
     pub sub_categories: Option<bool>,
     pub is_featured: Option<bool>,
     pub with_uploads: Option<bool>,
+    pub limit: Option<i64>,
 }
 
 #[derive(Debug, Serialize)]
@@ -64,13 +65,17 @@ pub async fn get_public_categories(
 ) -> Result<Json<Vec<PublicCategoryWithSub>>, StatusCode> {
     let only_featured = params.is_featured.unwrap_or(false);
 
+    let limit = params.limit.unwrap_or(i64::MAX);
+
     let categories = if only_featured {
         sqlx::query_as!(
             CategoryRow,
             r#"SELECT id, name, slug, is_featured
                FROM categories
                WHERE is_active = TRUE AND is_featured = TRUE
-               ORDER BY name ASC"#
+               ORDER BY name ASC
+               LIMIT $1"#,
+            limit
         )
         .fetch_all(&state.db)
         .await
@@ -81,7 +86,9 @@ pub async fn get_public_categories(
             r#"SELECT id, name, slug, is_featured
                FROM categories
                WHERE is_active = TRUE
-               ORDER BY name ASC"#
+               ORDER BY name ASC
+               LIMIT $1"#,
+            limit
         )
         .fetch_all(&state.db)
         .await
