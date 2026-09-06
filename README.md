@@ -1,5 +1,10 @@
 ## Inventory management system In Rust
 
+Start Nuxt project in production
+```
+$ npm nuxt build
+$ pm2 start ecosystem.config.cjs --only InventoryApp
+```
 ```
 - First time setup
 cargo install sqlx-cli

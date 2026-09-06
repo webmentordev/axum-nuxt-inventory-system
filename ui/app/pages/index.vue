@@ -1,6 +1,6 @@
 <template>
     <section>
-        <header class="min-h-180 bg-cover bg-center mb-12" style="background-image: url('/kaleem-solar-banner.png');">
+        <header class="min-h-180 bg-cover bg-center mb-12" style="background-image: url('/kaleemsolar-banner.webp');">
         </header>
         <div class="max-w-7xl m-auto py-6" v-if="categories.length > 0">
             <h3 class="uppercase text-center font-semibold text-2xl text-navy">Shop by category</h3>

@@ -29,7 +29,7 @@ export default defineNuxtConfig({
     addValidateEndpoint: true
   },
   runtimeConfig: {
-    apiUrl: '',
+    apiUrl: 'https://content.ahmerdev.online',
     public: {
       siteUrl: '',
       currency: '',
