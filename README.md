@@ -2,7 +2,7 @@
 
 Start Nuxt project in production
 ```
-$ npm nuxt build
+$ npx nuxt build
 $ pm2 start ecosystem.config.cjs --only InventoryApp
 ```
 ```
