@@ -41,7 +41,7 @@ defineProps({
 
 function formatCurrency(amount) {
     const currency = useRuntimeConfig().public.currency;
-    return new Intl.NumberFormat(undefined, {
+    return new Intl.NumberFormat('en-PK', {
         style: 'currency',
         currency: currency
     }).format(Number(amount));

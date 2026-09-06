@@ -15,10 +15,11 @@
 </template>
 
 <script setup lang="js">
-defineProps({
+const props = defineProps({
     category: {
         type: Object,
         default: () => []
     }
 });
+console.log(props.category)
 </script>

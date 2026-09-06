@@ -146,31 +146,18 @@ definePageMeta({
 
 const { publicFetch } = usePublicFetch();
 
-const products = ref([]);
+const { data: products } = await useAsyncData('home-products-limited', () =>
+    publicFetch('/api/public/products/limited'),
+    { default: () => [] }
+);
 
-const { categories, processing, fetchCategories } = useCategories({
-    featured: true,
-    withSubCategories: false,
-    withUploads: true,
-    limit: 5
-});
-
-onMounted(async () => {
-    try {
-        const data = await publicFetch('/api/public/products/limited');
-        if (data) {
-            products.value = data;
-        }
-    } catch (e) {
-        throw createError({
-            status: e.statusCode || 500,
-            statusText: e.statusMessage || 'Something went wrong!',
-            fatal: true
-        });
-    } finally {
-        processing.value = false;
-    }
-
-    await fetchCategories();
-});
+const { data: categories } = await useAsyncData('home-categories', () => {
+    const params = new URLSearchParams({
+        sub_categories: 'false',
+        is_featured: 'true',
+        with_uploads: 'true',
+        limit: '5'
+    });
+    return publicFetch(`/api/public/categories?${params}`);
+}, { default: () => [] });
 </script>

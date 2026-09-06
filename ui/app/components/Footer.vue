@@ -94,13 +94,19 @@
 </template>
 
 <script setup lang="js">
-const { categories, processing, fetchCategories } = useCategories({
-    featured: true,
-    withSubCategories: false,
-    withUploads: false,
-});
+const { publicFetch } = usePublicFetch();
 
-const { policies, processing: policiesProcessing, fetchPolicies } = usePolicies();
+const { data: categories } = await useAsyncData('categories', () => {
+    const params = new URLSearchParams({
+        sub_categories: 'false',
+        is_featured: 'true',
+        with_uploads: 'false',
+    });
+    return publicFetch(`/api/public/categories?${params}`);
+}, { default: () => [] });
 
-await Promise.all([fetchCategories(), fetchPolicies()]);
+const { data: policies } = await useAsyncData('policies', () =>
+    publicFetch('/api/public/policies'),
+    { default: () => [] }
+);
 </script>

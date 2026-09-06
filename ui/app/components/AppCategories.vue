@@ -49,13 +49,16 @@
 </template>
 
 <script setup lang="js">
-const { categories, processing, fetchCategories } = useCategories({
-    featured: false,
-    withSubCategories: true,
-    withUploads: false,
-});
+const { publicFetch } = usePublicFetch();
 
-await fetchCategories();
+const { data: categories, pending: processing } = await useAsyncData('categories-with-sub', () => {
+    const params = new URLSearchParams({
+        sub_categories: 'true',
+        is_featured: 'false',
+        with_uploads: 'false',
+    });
+    return publicFetch(`/api/public/categories?${params}`);
+}, { default: () => [] });
 
 const expandedCategories = ref(new Set());
 
@@ -70,22 +73,8 @@ const toggleExpand = (slug) => {
 
 const isExpanded = (slug) => expandedCategories.value.has(slug);
 
-const { publicFetch } = usePublicFetch();
-const brands = ref([]);
-const brandsProcessing = ref(true);
-
-try {
-    const data = await publicFetch('/api/public/brands');
-    if (data) {
-        brands.value = data;
-    }
-} catch (e) {
-    throw createError({
-        status: e.statusCode || 500,
-        statusText: e.statusMessage || 'Something went wrong!',
-        fatal: true
-    });
-} finally {
-    brandsProcessing.value = false;
-}
+const { data: brands, pending: brandsProcessing } = await useAsyncData('brands', () =>
+    publicFetch('/api/public/brands'),
+    { default: () => [] }
+);
 </script>
