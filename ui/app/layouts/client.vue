@@ -1,4 +1,5 @@
 <template>
+    <Announcements />
     <Navbar />
     <slot />
     <Footer />

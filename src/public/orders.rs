@@ -1,6 +1,6 @@
 use axum::{
     Json,
-    extract::{Path, State},
+    extract::{Extension, Path, State},
     http::StatusCode,
 };
 use rust_decimal::Decimal;
@@ -8,6 +8,7 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::AppState;
+use crate::auth::Claims;
 use crate::dashboard::orders::*;
 use crate::utils::generate_order_number;
 
@@ -291,4 +292,44 @@ pub async fn track_public_order(
     tx.commit().await.map_err(|_| OrderError::Internal)?;
 
     Ok(Json(OrderWithItems { order, items }))
+}
+
+pub async fn get_my_orders(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+) -> Result<Json<Vec<OrderWithItems>>, OrderError> {
+    let orders = sqlx::query_as!(
+        Order,
+        r#"SELECT id, order_number, user_id, customer_name, customer_email, customer_phone,
+                  shipping_address, status as "status: OrderStatus", subtotal, tax_amount,
+                  shipping_amount, total_amount, notes, created_at, updated_at
+           FROM orders
+           WHERE user_id = $1
+           ORDER BY created_at DESC"#,
+        claims.sub
+    )
+    .fetch_all(&state.db)
+    .await
+    .map_err(|_| OrderError::Internal)?;
+
+    let mut result = Vec::with_capacity(orders.len());
+
+    for order in orders {
+        let items = sqlx::query_as!(
+            OrderItem,
+            r#"SELECT id, order_id, product_id, product_name, product_sku, unit_price, quantity, line_total,
+                      status as "status: OrderItemStatus", created_at
+               FROM order_items
+               WHERE order_id = $1
+               ORDER BY created_at ASC"#,
+            order.id
+        )
+        .fetch_all(&state.db)
+        .await
+        .map_err(|_| OrderError::Internal)?;
+
+        result.push(OrderWithItems { order, items });
+    }
+
+    Ok(Json(result))
 }

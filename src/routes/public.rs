@@ -8,7 +8,9 @@ use crate::public::policies::*;
 use crate::public::products::*;
 use crate::public::sub_categories::*;
 
+use crate::middleware::require_auth;
 use anyhow::Result;
+use axum::middleware as axum_middleware;
 use axum::{
     Router,
     routing::{get, post},
@@ -45,7 +47,14 @@ pub async fn init_public_route(state: AppState) -> Result<Router> {
 
     let orders = Router::new()
         .route("/", post(create_public_order))
-        .route("/track-order/{order_number}", get(track_public_order));
+        .route("/track-order/{order_number}", get(track_public_order))
+        .route(
+            "/user-orders",
+            get(get_my_orders).route_layer(axum_middleware::from_fn_with_state(
+                state.clone(),
+                require_auth,
+            )),
+        );
 
     let routes = Router::new()
         .nest("/users", users)
