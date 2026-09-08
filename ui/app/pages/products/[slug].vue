@@ -47,13 +47,13 @@
                                 }}</NuxtLink>
                         </li>
                         <li v-if="stockLabel"><strong>Availability: </strong><span :class="stockClass">{{ stockLabel
-                                }}</span></li>
+                        }}</span></li>
                     </ul>
 
                     <div class="flex flex-col gap-1">
                         <div class="flex items-baseline gap-3">
                             <span class="text-2xl font-bold text-navy">{{ formatCurrency(product.selling_price)
-                                }}</span>
+                            }}</span>
                             <span v-if="hasDiscount" class="text-base text-zinc-400 line-through">
                                 {{ formatCurrency(product.compare_at_selling_price) }}
                             </span>
@@ -99,8 +99,12 @@
                 </article>
             </div>
             <div class="mt-6 border-t border-gray-200 py-4" v-if="suggested_products.length > 0">
-                <h1 class="text-2xl font-bold text-gray-800 py-2">Suggested products</h1>
+                <h2 class="text-2xl font-bold text-gray-800 py-2">Suggested products</h2>
                 <AppProducts :products="suggested_products" />
+            </div>
+            <div class="mt-6 border-t border-gray-200 py-4" v-if="recently_viewed.length > 0">
+                <h2 class="text-2xl font-bold text-gray-800 py-2">Recently viewed</h2>
+                <AppProducts :products="recently_viewed" />
             </div>
         </div>
     </section>
@@ -116,6 +120,7 @@ const { publicFetch } = usePublicFetch();
 const product = ref(null);
 const seo = ref(null);
 const suggested_products = ref([]);
+const recently_viewed = ref([]);
 const processing = ref(true);
 
 const route = useRoute();
@@ -125,6 +130,7 @@ const siteUrl = useRuntimeConfig().public?.siteUrl || '';
 const canonicalUrl = computed(() => `${siteUrl}/policies/${slug}`);
 
 const { addToCart: addProductToCart } = useCart();
+const { addRecentlyViewed, fetchRecentlyViewedProducts } = useRecentlyViewed();
 
 function addToCart() {
     addProductToCart(product.value, 1);
@@ -134,6 +140,7 @@ try {
     const data = await publicFetch('/api/public/products/' + slug);
     if (data) {
         product.value = data;
+        addRecentlyViewed(product.value.slug);
         suggested_products.value = data.suggested_products;
         seo.value = data.seo;
         if (seo.value) {
@@ -175,6 +182,12 @@ try {
 } finally {
     processing.value = false;
 }
+
+onMounted(async () => {
+    if (!product.value) return;
+    const items = await fetchRecentlyViewedProducts();
+    recently_viewed.value = (items || []).filter(p => p.slug !== product.value.slug);
+});
 
 const brandLogo = computed(() => {
     const brandUploads = product.value?.brand?.uploads || [];
