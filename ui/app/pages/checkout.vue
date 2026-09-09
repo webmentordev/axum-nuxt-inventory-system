@@ -1,40 +1,40 @@
 <template>
-    <section class="w-full min-h-[80vh] px-4 py-10">
+    <section class="w-full min-h-[80vh] px-4 py-6 sm:py-10">
         <div class="max-w-5xl mx-auto" v-if="cartItems.length === 0 && !submitting && !orderNumber">
-            <div class="text-center py-20">
-                <h1 class="text-xl font-bold text-zinc-900">Your cart is empty</h1>
+            <div class="text-center py-16 sm:py-20">
+                <h1 class="text-lg sm:text-xl font-bold text-zinc-900">Your cart is empty</h1>
                 <p class="text-sm text-zinc-500 mt-2">Add some products before checking out.</p>
                 <NuxtLink to="/" class="inline-block mt-4 text-orange hover:underline">Back to home</NuxtLink>
             </div>
         </div>
 
-        <div class="max-w-2xl mx-auto text-center py-20" v-else-if="orderNumber">
-            <h1 class="text-2xl font-bold text-zinc-900">Order placed</h1>
+        <div class="max-w-2xl mx-auto text-center py-16 sm:py-20" v-else-if="orderNumber">
+            <h1 class="text-xl sm:text-2xl font-bold text-zinc-900">Order placed</h1>
             <p class="text-sm text-zinc-500 mt-2">Your order number is</p>
-            <p class="text-lg font-semibold text-navy mt-1">{{ orderNumber }}</p>
+            <p class="text-base sm:text-lg font-semibold text-navy mt-1">{{ orderNumber }}</p>
             <NuxtLink to="/" class="inline-block mt-6 text-orange hover:underline">Continue shopping</NuxtLink>
         </div>
 
-        <div class="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8" v-else>
+        <div class="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8" v-else>
             <div class="md:col-span-2 flex flex-col gap-4">
-                <h1 class="text-2xl font-bold text-zinc-900">Checkout</h1>
+                <h1 class="text-xl sm:text-2xl font-bold text-zinc-900">Checkout</h1>
 
                 <div class="flex flex-col gap-3">
                     <div v-for="item in cartItems" :key="item.slug"
-                        class="flex items-center gap-4 border border-gray-200 rounded-md p-3">
+                        class="flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-4 border border-gray-200 rounded-md p-3">
                         <div
-                            class="w-16 h-16 rounded-md overflow-hidden bgfader flex items-center justify-center shrink-0">
+                            class="w-14 h-14 sm:w-16 sm:h-16 rounded-md overflow-hidden bgfader flex items-center justify-center shrink-0">
                             <img v-if="item.image_url" :src="item.image_url" :alt="item.name"
                                 class="w-full h-full object-contain" />
                             <span v-else class="text-zinc-400 text-xs">No image</span>
                         </div>
 
-                        <div class="flex-1 min-w-0">
+                        <div class="flex-1 min-w-[120px]">
                             <p class="text-sm font-semibold text-zinc-900 mb-1">{{ item.name }}</p>
                             <p class="text-xs text-zinc-500">SKU: {{ item.sku }}</p>
                         </div>
 
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2 order-3 sm:order-none">
                             <button type="button" @click="updateQuantity(item.slug, item.quantity - 1)"
                                 class="w-7 h-7 rounded-md border border-gray-300 text-sm hover:bg-gray-50">-</button>
                             <input type="number" min="1" v-model.number="item.quantity"
@@ -45,12 +45,12 @@
                         </div>
 
                         <button type="button" @click="removeFromCart(item.slug)"
-                            class="text-xs text-red-500 hover:underline shrink-0">Remove</button>
+                            class="text-xs text-red-500 hover:underline shrink-0 order-4 sm:order-none">Remove</button>
                     </div>
                 </div>
 
                 <div class="flex flex-col gap-3 mt-4">
-                    <h2 class="text-lg font-semibold text-zinc-900">Delivery details</h2>
+                    <h2 class="text-base sm:text-lg font-semibold text-zinc-900">Delivery details</h2>
 
                     <p v-if="!user?.id"
                         class="text-xs text-zinc-500 bg-gray-50 border border-gray-200 rounded-md px-3 py-2">
@@ -90,7 +90,7 @@
             </div>
 
             <div class="flex flex-col gap-4 h-fit border border-gray-200 rounded-md p-4">
-                <h2 class="text-lg font-semibold text-zinc-900">Order summary</h2>
+                <h2 class="text-base sm:text-lg font-semibold text-zinc-900">Order summary</h2>
 
                 <div class="flex flex-col gap-2 text-sm">
                     <div class="flex justify-between">

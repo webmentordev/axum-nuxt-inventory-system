@@ -1,9 +1,9 @@
 <template>
-    <section class="w-full">
+    <section class="w-full py-6">
         <Loading v-if="pending" message="Loading products..." />
         <div class="pb-3 border-b border-gray-200 mb-2">
-            <h1 class="text-2xl font-bold text-gray-800">Products</h1>
-            <p class="text-gray-500 mt-2">Our solar products listing</p>
+            <h1 class="text-xl sm:text-2xl font-bold text-gray-800">Products</h1>
+            <p class="text-sm sm:text-base text-gray-500 mt-2">Our solar products listing</p>
         </div>
         <AppProducts v-if="!pending && products.length > 0" :products="products" />
     </section>

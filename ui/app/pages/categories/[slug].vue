@@ -1,9 +1,10 @@
 <template>
-    <section class="w-full">
+    <section class="w-full py-6">
         <Loading v-if="processing" message="Loading category..." />
         <div v-else-if="category" class="pb-3 border-b border-gray-200 mb-2">
-            <h1 class="text-2xl font-bold text-gray-800">{{ category.name }}</h1>
-            <p v-if="category.description" class="text-gray-500 mt-2">{{ category.description }}</p>
+            <h1 class="text-xl sm:text-2xl font-bold text-gray-800">{{ category.name }}</h1>
+            <p v-if="category.description" class="text-sm sm:text-base text-gray-500 mt-2">{{ category.description }}
+            </p>
         </div>
         <AppProducts v-if="!processing" :products="products" />
         <AlertsError v-if="errors.message" :message="errors.message" />

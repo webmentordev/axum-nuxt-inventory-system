@@ -1,18 +1,18 @@
 <template>
-    <section class="w-full min-h-[80vh] px-4 py-10">
+    <section class="w-full min-h-[80vh] px-4 py-6 sm:py-10">
         <div v-if="processing" class="max-w-5xl mx-auto">
             <p class="text-zinc-500">Loading product...</p>
         </div>
 
-        <div v-else-if="!product" class="max-w-5xl mx-auto text-center py-20">
-            <h1 class="text-xl font-bold text-zinc-900">Product not found</h1>
+        <div v-else-if="!product" class="max-w-5xl mx-auto text-center py-16 sm:py-20">
+            <h1 class="text-lg sm:text-xl font-bold text-zinc-900">Product not found</h1>
             <p class="text-sm text-zinc-500 mt-2">The product you're looking for doesn't exist or is no longer
                 available.</p>
             <NuxtLink to="/" class="inline-block mt-4 text-orange hover:underline">Back to home</NuxtLink>
         </div>
 
         <div class="w-full max-w-5xl mx-auto" v-else>
-            <div class="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
                 <div class="w-full aspect-square rounded-lg overflow-hidden bgfader flex items-center justify-center">
                     <img v-if="product.image_url" :src="product.image_url" :alt="product.name"
                         class="w-full h-full object-contain" />
@@ -24,7 +24,7 @@
                         <div v-if="brandLogo" class="text-sm text-zinc-500 mb-3">
                             <img :src="brandLogo" width="90px">
                         </div>
-                        <h1 class="text-2xl font-bold text-zinc-900 my-2">{{ product.name }}</h1>
+                        <h1 class="text-xl sm:text-2xl font-bold text-zinc-900 my-2">{{ product.name }}</h1>
                         <p v-if="product.model" class="text-sm text-zinc-500">Model: {{ product.model }}</p>
                     </div>
 
@@ -51,10 +51,11 @@
                     </ul>
 
                     <div class="flex flex-col gap-1">
-                        <div class="flex items-baseline gap-3">
-                            <span class="text-2xl font-bold text-navy">{{ formatCurrency(product.selling_price)
+                        <div class="flex flex-wrap items-baseline gap-2 sm:gap-3">
+                            <span class="text-xl sm:text-2xl font-bold text-navy">{{
+                                formatCurrency(product.selling_price)
                             }}</span>
-                            <span v-if="hasDiscount" class="text-base text-zinc-400 line-through">
+                            <span v-if="hasDiscount" class="text-sm sm:text-base text-zinc-400 line-through">
                                 {{ formatCurrency(product.compare_at_selling_price) }}
                             </span>
                             <span v-if="hasDiscount"
@@ -67,7 +68,8 @@
                         </span>
                     </div>
 
-                    <p v-if="product.description" class="text-zinc-700 leading-relaxed">{{ product.description }}</p>
+                    <p v-if="product.description" class="text-sm sm:text-base text-zinc-700 leading-relaxed">{{
+                        product.description }}</p>
 
                     <ul v-if="specs.length" class="text-sm text-zinc-600 flex flex-col gap-1">
                         <li v-for="spec in specs" :key="spec.label">
@@ -79,31 +81,32 @@
                         {{ product.warranty_months }} month warranty
                     </p>
 
-                    <div class="flex items-center gap-3" v-if="product.in_stock">
+                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3" v-if="product.in_stock">
                         <button type="button" :disabled="!product.in_stock" @click="addToCart"
-                            class="mt-4 px-4 py-2 rounded-md text-sm font-semibold border border-navy bg-navy text-white hover:bg-orange hover:text-black hover:border-orange transition-colors w-fit disabled:opacity-40 disabled:cursor-not-allowed">
+                            class="mt-4 px-4 py-2 rounded-md text-sm font-semibold border border-navy bg-navy text-white hover:bg-orange hover:text-black hover:border-orange transition-colors w-full sm:w-fit disabled:opacity-40 disabled:cursor-not-allowed">
                             {{ product.in_stock ? 'Add to Cart' : 'Out of Stock' }}
                         </button>
                         <button type="button" :disabled="!product.in_stock" @click="addToCart"
-                            class="mt-4 px-4 py-2 rounded-md text-sm font-semibold border border-navy bg-transparent text-navy hover:bg-orange hover:border-orange hover:text-black transition-colors w-fit disabled:opacity-40 disabled:cursor-not-allowed">
+                            class="sm:mt-4 px-4 py-2 rounded-md text-sm font-semibold border border-navy bg-transparent text-navy hover:bg-orange hover:border-orange hover:text-black transition-colors w-full sm:w-fit disabled:opacity-40 disabled:cursor-not-allowed">
                             {{ product.in_stock ? 'Buy now' : 'Out of Stock' }}
                         </button>
                     </div>
                 </div>
             </div>
-            <div v-if="product.content">
-                <h3 class="text-xl font-semibold mb-2" :title='`${product.name} details and specifications`'>Product
+            <div v-if="product.content" class="mt-6">
+                <h3 class="text-lg sm:text-xl font-semibold mb-2" :title='`${product.name} details and specifications`'>
+                    Product
                     description
                 </h3>
-                <article class="product prose prose-neutral max-w-none" v-html="product.content">
+                <article class="product prose prose-neutral prose-sm sm:prose-base max-w-none" v-html="product.content">
                 </article>
             </div>
             <div class="mt-6 border-t border-gray-200 py-4" v-if="suggested_products.length > 0">
-                <h2 class="text-2xl font-bold text-gray-800 py-2">Suggested products</h2>
+                <h2 class="text-xl sm:text-2xl font-bold text-gray-800 py-2">Suggested products</h2>
                 <AppProducts :products="suggested_products" />
             </div>
             <div class="mt-6 border-t border-gray-200 py-4" v-if="recently_viewed.length > 0">
-                <h2 class="text-2xl font-bold text-gray-800 py-2">Recently viewed</h2>
+                <h2 class="text-xl sm:text-2xl font-bold text-gray-800 py-2">Recently viewed</h2>
                 <AppProducts :products="recently_viewed" />
             </div>
         </div>

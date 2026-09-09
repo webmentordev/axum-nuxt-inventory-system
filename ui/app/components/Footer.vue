@@ -1,8 +1,9 @@
 <template>
     <footer class="bg-navy text-white">
-        <div class="mx-auto grid max-w-7xl gap-12 px-4 py-14 md:grid-cols-2 lg:grid-cols-4">
+        <div
+            class="mx-auto grid max-w-7xl gap-10 lg:gap-12 px-4 py-10 lg:py-14 grid-cols-2 md:grid-cols-2 lg:grid-cols-4">
 
-            <div>
+            <div class="col-span-2 lg:col-span-1">
                 <NuxtLink to="/" class="mb-5 text-right leading-none inline-block">
                     <img src="/kaleem-solar-logo-t-4.png" alt="kaleemSolar Multan Logo" width="140px">
                 </NuxtLink>
@@ -38,7 +39,7 @@
             </div>
 
             <div>
-                <h3 class="mb-5 text-lg font-bold">QUICK LINKS</h3>
+                <h3 class="mb-4 lg:mb-5 text-base lg:text-lg font-bold">QUICK LINKS</h3>
                 <ul class="space-y-3 text-sm text-slate-300">
                     <li>
                         <NuxtLink to="/" class="hover:text-orange">Home</NuxtLink>
@@ -59,7 +60,7 @@
             </div>
 
             <div v-if="categories.length">
-                <h3 class="mb-5 text-lg font-bold">CATEGORIES</h3>
+                <h3 class="mb-4 lg:mb-5 text-base lg:text-lg font-bold">CATEGORIES</h3>
                 <ul class="space-y-3 text-sm text-slate-300">
                     <li v-for="(category, index) in categories" :key="index">
                         <NuxtLink :to='`/categories/${category.slug}`' class="hover:text-orange">{{ category.name }}
@@ -69,7 +70,7 @@
             </div>
 
             <div v-if="policies.length">
-                <h3 class="mb-5 text-lg font-bold">HELP & SUPPORT</h3>
+                <h3 class="mb-4 lg:mb-5 text-base lg:text-lg font-bold">HELP & SUPPORT</h3>
                 <ul class="space-y-3 text-sm text-slate-300" title="Kaleem solar policies">
                     <li v-for="policy in policies" :key="policy.slug">
                         <NuxtLink :to="`/policies/${policy.slug}`" class="hover:text-orange">
@@ -82,9 +83,9 @@
 
         <div class="border-t border-slate-700">
             <div
-                class="mx-auto flex max-w-7xl flex-col justify-between gap-3 px-4 py-5 text-xs text-slate-400 md:flex-row">
+                class="mx-auto flex max-w-7xl flex-col justify-between gap-3 px-4 py-5 text-xs text-slate-400 md:flex-row text-center md:text-left">
                 <p>© 2026 کلیم سولر. All Rights Reserved.</p>
-                <p class="flex gap-1">Built in <img
+                <p class="flex gap-1 items-center justify-center md:justify-start">Built in <img
                         src="https://api.iconify.design/selfhst:nuxt-light.svg?color=%23ffffff" width="17px"> & <img
                         src="https://api.iconify.design/material-icon-theme:rust.svg" width="17px">
                     | M Ahmer Tahir</p>
@@ -92,7 +93,6 @@
         </div>
     </footer>
 </template>
-
 <script setup lang="js">
 const { publicFetch } = usePublicFetch();
 

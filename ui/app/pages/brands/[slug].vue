@@ -1,9 +1,9 @@
 <template>
-    <section class="w-full">
+    <section class="w-full py-6">
         <Loading v-if="processing" message="Loading brands..." />
         <div v-else-if="brand" class="pb-3 border-b border-gray-200 mb-2">
-            <h1 class="text-2xl font-bold text-gray-800">{{ brand.name }}</h1>
-            <p v-if="brand.description" class="text-gray-500 mt-2">{{ brand.description }}</p>
+            <h1 class="text-xl sm:text-2xl font-bold text-gray-800">{{ brand.name }}</h1>
+            <p v-if="brand.description" class="text-sm sm:text-base text-gray-500 mt-2">{{ brand.description }}</p>
         </div>
         <AppProducts v-if="!processing" :products="products" />
         <AlertsError v-if="errors.message" :message="errors.message" />

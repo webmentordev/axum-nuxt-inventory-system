@@ -1,24 +1,30 @@
 <template>
     <nav class="border-b border-gray-300 bg-white w-full">
-        <div class="mx-auto flex max-w-7xl items-center justify-between py-2 px-4">
-            <NuxtLink to="/" class="flex items-center">
-                <img src="/kaleem-solar-logo-t-2.png" width="120px">
+        <div class="mx-auto flex max-w-7xl items-center justify-between py-2 px-4 gap-3">
+            <NuxtLink to="/" class="flex items-center shrink-0">
+                <img src="/kaleem-solar-logo-t-2.png" class="w-24 sm:w-30">
             </NuxtLink>
 
-            <ProductsSearch />
+            <div class="hidden md:block flex-1">
+                <ProductsSearch />
+            </div>
 
-            <div class="flex items-center gap-5 text-xl text-navy">
+            <div class="flex items-center gap-3 sm:gap-5 text-xl text-navy">
+                <button class="md:hidden" @click="mobileSearchOpen = !mobileSearchOpen">
+                    <Icon name="ic:outline-search" size="24px" />
+                </button>
+
                 <div class="relative" ref="cartDropdownRef">
                     <button @click="cartDropdownOpen = !cartDropdownOpen" class="relative">
                         🛒
                         <span v-if="cartCount > 0"
-                            class="absolute -top-2 -right-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-orange px-1 text-[10px] font-semibold text-black">
+                            class="absolute -top-2 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-orange px-1 text-[10px] font-semibold text-black">
                             {{ cartCount }}
                         </span>
                     </button>
 
                     <div v-if="cartDropdownOpen"
-                        class="absolute right-0 mt-2 w-80 rounded-md border border-gray-200 bg-white py-2 shadow-lg text-sm">
+                        class="absolute right-0 mt-2 w-[calc(100vw-2rem)] max-w-80 rounded-md border border-gray-200 bg-white py-2 shadow-lg text-sm z-50">
                         <div v-if="cartItems.length === 0" class="px-4 py-6 text-center text-zinc-500">
                             Your cart is empty
                         </div>
@@ -64,11 +70,12 @@
                 <div v-if="user" class="relative" ref="dropdownRef">
                     <button @click="dropdownOpen = !dropdownOpen"
                         class="flex items-center gap-1 text-sm font-medium text-navy">
-                        <span>{{ user.name }}</span>
-                        <span class="text-xs">▾</span>
+                        <span class="hidden sm:inline">{{ user.name }}</span>
+                        <span class="sm:hidden text-xl">👤</span>
+                        <span class="text-xs hidden sm:inline">▾</span>
                     </button>
                     <div v-if="dropdownOpen"
-                        class="absolute right-0 mt-2 w-40 rounded-md border border-gray-200 bg-white py-1 shadow-lg">
+                        class="absolute right-0 mt-2 w-40 rounded-md border border-gray-200 bg-white py-1 shadow-lg z-40">
                         <NuxtLink to="/user/profile" class="block px-4 py-2 text-sm text-navy hover:bg-gray-100"
                             @click="dropdownOpen = false">Profile</NuxtLink>
                         <NuxtLink v-if="user.is_admin" to="/admin/dashboard"
@@ -80,6 +87,10 @@
                 </div>
                 <NuxtLink v-else to="/login" class="text-sm font-medium hover:text-orange">Login</NuxtLink>
             </div>
+        </div>
+
+        <div v-if="mobileSearchOpen" class="md:hidden px-4 pb-3">
+            <ProductsSearch />
         </div>
     </nav>
 </template>
@@ -94,6 +105,7 @@ const dropdownRef = ref(null);
 const { cartItems, cartCount, removeFromCart } = useCart();
 const cartDropdownOpen = ref(false);
 const cartDropdownRef = ref(null);
+const mobileSearchOpen = ref(false);
 
 const cartSubtotal = computed(() =>
     cartItems.value.reduce((sum, item) => sum + (Number(item.unit_price) || 0) * item.quantity, 0)
