@@ -13,10 +13,22 @@
 
         <div class="w-full max-w-5xl mx-auto" v-else>
             <div class="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
-                <div class="w-full aspect-square rounded-lg overflow-hidden bgfader flex items-center justify-center">
-                    <img v-if="product.image_url" :src="product.image_url" :alt="product.name"
-                        class="w-full h-full object-contain" />
-                    <span v-else class="text-zinc-400 text-sm">No image available</span>
+                <div class="flex flex-col gap-3">
+                    <div
+                        class="w-full aspect-square rounded-lg overflow-hidden bgfader flex items-center justify-center">
+                        <img v-if="selectedImage" :src="selectedImage" :alt="product.name"
+                            class="w-full h-full object-contain" />
+                        <span v-else class="text-zinc-400 text-sm">No image available</span>
+                    </div>
+
+                    <div v-if="galleryImages.length > 1" class="flex flex-wrap gap-2">
+                        <button v-for="img in galleryImages" :key="img.id" type="button"
+                            @click="selectedImage = img.src"
+                            class="w-14 h-14 sm:w-16 sm:h-16 rounded-md overflow-hidden bgfader flex items-center justify-center border-2 transition-colors"
+                            :class="selectedImage === img.src ? 'border-orange' : 'border-transparent hover:border-zinc-300'">
+                            <img :src="img.src" :alt="img.name || product.name" class="w-full h-full object-contain" />
+                        </button>
+                    </div>
                 </div>
 
                 <div class="flex flex-col gap-4">
@@ -113,6 +125,7 @@
     </section>
 </template>
 
+
 <script setup>
 definePageMeta({
     layout: 'product'
@@ -138,6 +151,27 @@ const { addRecentlyViewed, fetchRecentlyViewedProducts } = useRecentlyViewed();
 function addToCart() {
     addProductToCart(product.value, 1);
 }
+
+const galleryImages = computed(() => {
+    if (!product.value) return [];
+    const images = [];
+
+    if (product.value.image_url) {
+        images.push({ id: 'main', src: product.value.image_url, name: product.value.name });
+    }
+
+    const uploadImages = (product.value.uploads || [])
+        .filter((u) => u.file_type === 'image')
+        .map((u) => ({ id: u.id, src: u.file_path, name: u.name }));
+
+    return [...images, ...uploadImages];
+});
+
+const selectedImage = ref(null);
+
+watch(product, (p) => {
+    selectedImage.value = p?.image_url || galleryImages.value[0]?.src || null;
+}, { immediate: true });
 
 try {
     const data = await publicFetch('/api/public/products/' + slug);
