@@ -34,6 +34,7 @@ pub struct PublicProductRow {
     pub capacity_ah: Option<Decimal>,
     pub warranty_months: Option<i16>,
     pub selling_price: Decimal,
+    pub compare_at_selling_price: Option<Decimal>,
     pub quantity_in_stock: i32,
     pub image_url: String,
     pub unit: String,
@@ -66,6 +67,7 @@ pub struct PublicProduct {
     pub capacity_ah: Option<Decimal>,
     pub warranty_months: Option<i16>,
     pub selling_price: Decimal,
+    pub compare_at_selling_price: Option<Decimal>,
     pub in_stock: bool,
     pub unit: String,
     pub image_url: String,
@@ -144,6 +146,7 @@ struct SearchProductRow {
     capacity_ah: Option<Decimal>,
     warranty_months: Option<i16>,
     selling_price: Decimal,
+    compare_at_selling_price: Option<Decimal>,
     quantity_in_stock: i32,
     image_url: String,
     unit: String,
@@ -170,6 +173,7 @@ impl From<SearchProductRow> for PublicProductRow {
             warranty_months: r.warranty_months,
             selling_price: r.selling_price,
             quantity_in_stock: r.quantity_in_stock,
+            compare_at_selling_price: r.compare_at_selling_price,
             image_url: r.image_url,
             unit: r.unit,
         }
@@ -203,7 +207,7 @@ pub async fn search_public_products(
         r#"SELECT p.id, p.name, p.slug, p.sku, p.brand_id, p.category_id as "category_id!",
                   p.sub_category_id, p.model, p.product_type, p.description, p.content,
                   p.power_rating_watts, p.per_watt_price, p.voltage_rating, p.capacity_ah,
-                  p.warranty_months, p.selling_price, p.quantity_in_stock,
+                  p.warranty_months, p.selling_price, compare_at_selling_price, p.quantity_in_stock,
                   p.image_url as "image_url!", p.unit
            FROM products p
            LEFT JOIN brands b ON b.id = p.brand_id
@@ -410,6 +414,7 @@ pub fn build_public_product(
         capacity_ah: p.capacity_ah,
         warranty_months: p.warranty_months,
         selling_price: p.selling_price,
+        compare_at_selling_price: p.compare_at_selling_price,
         in_stock: p.quantity_in_stock > 0,
         unit: p.unit,
         image_url: p.image_url,
@@ -427,7 +432,7 @@ pub async fn fetch_suggested_products(
         PublicProductRow,
         r#"SELECT id, name, slug, sku, product_type, brand_id, category_id as "category_id!", sub_category_id, model, description, content, image_url as "image_url!",
                   power_rating_watts, per_watt_price, voltage_rating, capacity_ah, warranty_months,
-                  selling_price, quantity_in_stock, unit
+                  selling_price, compare_at_selling_price, quantity_in_stock, unit
            FROM products
            WHERE is_active = TRUE AND id != $1
            ORDER BY random()
@@ -469,7 +474,7 @@ pub async fn get_public_products(
         PublicProductRow,
         r#"SELECT id, name, slug, sku, product_type, brand_id, category_id as "category_id!", sub_category_id, model, description, content, image_url as "image_url!",
                   power_rating_watts, per_watt_price, voltage_rating, capacity_ah, warranty_months,
-                  selling_price, quantity_in_stock, unit
+                  selling_price, compare_at_selling_price, quantity_in_stock, unit
            FROM products
            WHERE is_active = TRUE
            ORDER BY created_at DESC"#
@@ -592,10 +597,10 @@ pub async fn get_public_product(
     let p = sqlx::query_as!(
         PublicProductRow,
         r#"SELECT id, name, slug, sku, product_type, brand_id, category_id as "category_id!", sub_category_id, model, description, content, image_url as "image_url!",
-                  power_rating_watts, per_watt_price, voltage_rating, capacity_ah, warranty_months,
-                  selling_price, quantity_in_stock, unit
-           FROM products
-           WHERE slug = $1 AND is_active = TRUE"#,
+                power_rating_watts, per_watt_price, voltage_rating, capacity_ah, warranty_months,
+                selling_price, compare_at_selling_price, quantity_in_stock, unit
+        FROM products
+        WHERE slug = $1 AND is_active = TRUE"#,
         slug
     )
     .fetch_optional(&state.db)
@@ -679,7 +684,7 @@ pub async fn get_public_products_limited(
         PublicProductRow,
         r#"SELECT id, name, slug, sku, product_type, brand_id, category_id as "category_id!", sub_category_id, model, description, content, image_url as "image_url!",
                   power_rating_watts, per_watt_price, voltage_rating, capacity_ah, warranty_months,
-                  selling_price, quantity_in_stock, unit
+                  selling_price, compare_at_selling_price, quantity_in_stock, unit
            FROM products
            WHERE is_active = TRUE
            ORDER BY created_at DESC
@@ -745,7 +750,7 @@ pub async fn get_recently_viewed_products(
         PublicProductRow,
         r#"SELECT id, name, slug, sku, product_type, brand_id, category_id as "category_id!", sub_category_id, model, description, content, image_url as "image_url!",
                   power_rating_watts, per_watt_price, voltage_rating, capacity_ah, warranty_months,
-                  selling_price, quantity_in_stock, unit
+                  selling_price, compare_at_selling_price, quantity_in_stock, unit
            FROM products
            WHERE slug = ANY($1) AND is_active = TRUE"#,
         &slugs

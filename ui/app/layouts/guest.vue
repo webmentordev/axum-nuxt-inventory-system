@@ -1,4 +1,5 @@
 <template>
+    <Announcements />
     <Navbar />
     <div class="h-full">
         <slot />

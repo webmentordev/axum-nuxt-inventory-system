@@ -17,10 +17,6 @@
                     <Icon name="iconoir:delivery-truck" size="22px" />
                     <p>Free delivery exclusively in <strong class="text-orange">Multan</strong>.</p>
                 </div>
-                <div class="text-white flex items-center gap-2">
-                    <Icon name="ri:shield-check-line" size="18px" />
-                    <p>100% Original products with warranty.</p>
-                </div>
             </div>
         </div>
     </section>

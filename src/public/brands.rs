@@ -6,14 +6,7 @@ use axum::{
 use serde::Serialize;
 use uuid::Uuid;
 
-use crate::{
-    AppState,
-    dashboard::uploads::Upload,
-    public::products::{
-        PublicProduct, PublicProductRow, build_public_product, fetch_category_minis,
-        fetch_product_brands, fetch_sub_category_minis,
-    },
-};
+use crate::{AppState, dashboard::uploads::Upload, public::products::*};
 
 #[derive(Debug, Serialize, sqlx::FromRow)]
 pub struct PublicBrandListItem {
@@ -73,7 +66,7 @@ pub async fn get_public_brand(
 PublicProductRow,
 r#"SELECT id, name, slug, sku, product_type, brand_id, category_id as "category_id!", sub_category_id, model, description, content, image_url as "image_url!",
                   power_rating_watts, per_watt_price, voltage_rating, capacity_ah, warranty_months,
-                  selling_price, quantity_in_stock, unit
+                  selling_price, compare_at_selling_price, quantity_in_stock, unit
            FROM products
            WHERE brand_id = $1 AND is_active = TRUE
            ORDER BY created_at DESC"#,

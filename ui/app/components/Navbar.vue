@@ -10,7 +10,7 @@
             </div>
 
             <div class="flex items-center gap-3 sm:gap-5 text-xl text-navy">
-                <button class="md:hidden" @click="mobileSearchOpen = !mobileSearchOpen">
+                <button class="md:hidden h-fit flex items-center" @click="mobileSearchOpen = !mobileSearchOpen">
                     <Icon name="ic:outline-search" size="24px" />
                 </button>
 
