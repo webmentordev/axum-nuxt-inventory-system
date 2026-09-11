@@ -242,7 +242,10 @@ pub async fn create_public_order(
         .await
         .map_err(|_| OrderError::Internal)?;
 
-        items.push(order_item);
+        items.push(OrderItemWithBarcodes {
+            item: order_item,
+            barcodes: Vec::new(),
+        });
     }
 
     tx.commit().await.map_err(|_| OrderError::Internal)?;
@@ -287,7 +290,10 @@ pub async fn track_public_order(
     )
     .fetch_all(&mut *tx)
     .await
-    .map_err(|_| OrderError::Internal)?;
+    .map_err(|_| OrderError::Internal)?
+    .into_iter()
+    .map(|item| OrderItemWithBarcodes { item, barcodes: Vec::new() })
+    .collect();
 
     tx.commit().await.map_err(|_| OrderError::Internal)?;
 
@@ -326,7 +332,10 @@ pub async fn get_my_orders(
         )
         .fetch_all(&state.db)
         .await
-        .map_err(|_| OrderError::Internal)?;
+        .map_err(|_| OrderError::Internal)?
+        .into_iter()
+        .map(|item| OrderItemWithBarcodes { item, barcodes: Vec::new() })
+        .collect();
 
         result.push(OrderWithItems { order, items });
     }

@@ -1,12 +1,13 @@
 use axum::{
     Extension, Json,
-    extract::{Path, State},
+    extract::{Path, Query, State},
     http::StatusCode,
 };
 use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
 
 use crate::AppState;
@@ -108,7 +109,7 @@ pub struct UpdateOrder {
 pub struct OrderWithItems {
     #[serde(flatten)]
     pub order: Order,
-    pub items: Vec<OrderItem>,
+    pub items: Vec<OrderItemWithBarcodes>,
 }
 
 #[derive(Debug, Serialize)]
@@ -131,14 +132,30 @@ pub struct ItemWithOrder {
     pub line_total: Decimal,
     pub status: OrderItemStatus,
     pub created_at: DateTime<Utc>,
+    pub barcodes: Vec<String>,
 
     pub order: Order,
+}
+
+/// An order item paired with the barcodes (physical unit codes) that are
+/// currently attached to it. `barcodes.len()` can be anywhere from 0 up to
+/// `quantity` — attaching a barcode to a sold unit is optional.
+#[derive(Debug, Serialize)]
+pub struct OrderItemWithBarcodes {
+    #[serde(flatten)]
+    pub item: OrderItem,
+    pub barcodes: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct AddOrderItem {
     pub product_id: Uuid,
     pub quantity: i32,
+    /// Optional scanned barcode codes for this line. May contain fewer
+    /// entries than `quantity` (some units may not have a barcode), but
+    /// never more. Blank strings are ignored.
+    #[serde(default)]
+    pub barcodes: Option<Vec<String>>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -155,6 +172,105 @@ pub struct UpdateOrderItem {
 #[derive(Debug, Deserialize)]
 pub struct UpdateOrderItemStatus {
     pub status: OrderItemStatus,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct BarcodeLookupQuery {
+    pub code: String,
+    pub product_id: Uuid,
+}
+
+#[derive(Debug, Serialize)]
+pub struct BarcodeLookupResult {
+    pub valid: bool,
+    pub reason: Option<String>,
+}
+
+/// Batch-fetch barcodes for a set of order items. Returns a map of
+/// order_item_id -> sorted list of barcode codes.
+async fn get_barcodes_for_items(
+    db: &sqlx::PgPool,
+    item_ids: &[Uuid],
+) -> Result<HashMap<Uuid, Vec<String>>, sqlx::Error> {
+    if item_ids.is_empty() {
+        return Ok(HashMap::new());
+    }
+
+    let rows = sqlx::query!(
+        r#"SELECT order_item_id as "order_item_id!", code
+           FROM barcodes
+           WHERE order_item_id = ANY($1)
+           ORDER BY code ASC"#,
+        item_ids
+    )
+    .fetch_all(db)
+    .await?;
+
+    let mut map: HashMap<Uuid, Vec<String>> = HashMap::new();
+    for row in rows {
+        map.entry(row.order_item_id).or_default().push(row.code);
+    }
+
+    Ok(map)
+}
+
+async fn get_barcodes_for_item(
+    db: &sqlx::PgPool,
+    item_id: Uuid,
+) -> Result<Vec<String>, sqlx::Error> {
+    let rows = sqlx::query!(
+        r#"SELECT code FROM barcodes WHERE order_item_id = $1 ORDER BY code ASC"#,
+        item_id
+    )
+    .fetch_all(db)
+    .await?;
+
+    Ok(rows.into_iter().map(|r| r.code).collect())
+}
+
+/// Look up a barcode against a specific product before it's added to an
+/// order — used by the "add items" UI to validate a scan in real time.
+pub async fn lookup_order_barcode(
+    State(state): State<AppState>,
+    Query(params): Query<BarcodeLookupQuery>,
+) -> Json<BarcodeLookupResult> {
+    let code = params.code.trim();
+    if code.is_empty() {
+        return Json(BarcodeLookupResult {
+            valid: false,
+            reason: Some("Enter or scan a barcode.".to_string()),
+        });
+    }
+
+    let row = sqlx::query!(
+        "SELECT product_id, is_sold FROM barcodes WHERE code = $1",
+        code
+    )
+    .fetch_optional(&state.db)
+    .await;
+
+    match row {
+        Ok(None) => Json(BarcodeLookupResult {
+            valid: false,
+            reason: Some("Barcode not found.".to_string()),
+        }),
+        Ok(Some(r)) if r.product_id != Some(params.product_id) => Json(BarcodeLookupResult {
+            valid: false,
+            reason: Some("Barcode belongs to a different product.".to_string()),
+        }),
+        Ok(Some(r)) if r.is_sold => Json(BarcodeLookupResult {
+            valid: false,
+            reason: Some("Barcode is already attached to a sold item.".to_string()),
+        }),
+        Ok(Some(_)) => Json(BarcodeLookupResult {
+            valid: true,
+            reason: None,
+        }),
+        Err(_) => Json(BarcodeLookupResult {
+            valid: false,
+            reason: Some("Could not verify barcode right now.".to_string()),
+        }),
+    }
 }
 
 pub async fn get_orders(
@@ -234,20 +350,29 @@ pub async fn get_order_items(
     .await
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
+    let item_ids: Vec<Uuid> = items.iter().map(|i| i.id).collect();
+    let mut barcode_map = get_barcodes_for_items(&state.db, &item_ids)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
     let items_with_order = items
         .into_iter()
-        .map(|item| ItemWithOrder {
-            id: item.id,
-            order_id: item.order_id,
-            product_id: item.product_id,
-            product_name: item.product_name,
-            product_sku: item.product_sku,
-            unit_price: item.unit_price,
-            quantity: item.quantity,
-            line_total: item.line_total,
-            status: item.status,
-            created_at: item.created_at,
-            order: order.clone(),
+        .map(|item| {
+            let barcodes = barcode_map.remove(&item.id).unwrap_or_default();
+            ItemWithOrder {
+                id: item.id,
+                order_id: item.order_id,
+                product_id: item.product_id,
+                product_name: item.product_name,
+                product_sku: item.product_sku,
+                unit_price: item.unit_price,
+                quantity: item.quantity,
+                line_total: item.line_total,
+                status: item.status,
+                created_at: item.created_at,
+                barcodes,
+                order: order.clone(),
+            }
         })
         .collect();
 
@@ -286,6 +411,10 @@ pub async fn get_order_item(
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
     .ok_or(StatusCode::NOT_FOUND)?;
 
+    let barcodes = get_barcodes_for_item(&state.db, item.id)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
     Ok(Json(ItemWithOrder {
         id: item.id,
         order_id: item.order_id,
@@ -297,6 +426,7 @@ pub async fn get_order_item(
         line_total: item.line_total,
         status: item.status,
         created_at: item.created_at,
+        barcodes,
         order,
     }))
 }
@@ -331,6 +461,19 @@ pub async fn get_order(
     .fetch_all(&state.db)
     .await
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let item_ids: Vec<Uuid> = items.iter().map(|i| i.id).collect();
+    let mut barcode_map = get_barcodes_for_items(&state.db, &item_ids)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let items = items
+        .into_iter()
+        .map(|item| {
+            let barcodes = barcode_map.remove(&item.id).unwrap_or_default();
+            OrderItemWithBarcodes { item, barcodes }
+        })
+        .collect();
 
     Ok(Json(OrderWithItems { order, items }))
 }
@@ -505,6 +648,27 @@ pub async fn add_order_items(
             return Err(StatusCode::BAD_REQUEST);
         }
 
+        // Normalize + validate any scanned barcodes for this line before
+        // touching stock, so a bad scan fails the whole request cleanly.
+        let mut codes: Vec<String> = Vec::new();
+        if let Some(raw_codes) = &item.barcodes {
+            let mut seen: HashSet<String> = HashSet::new();
+            for raw in raw_codes {
+                let code = raw.trim();
+                if code.is_empty() {
+                    continue;
+                }
+                if !seen.insert(code.to_string()) {
+                    // Same barcode scanned twice in one request.
+                    return Err(StatusCode::BAD_REQUEST);
+                }
+                codes.push(code.to_string());
+            }
+            if codes.len() > item.quantity as usize {
+                return Err(StatusCode::BAD_REQUEST);
+            }
+        }
+
         let product = sqlx::query!(
             r#"SELECT name, sku, selling_price, quantity_in_stock
                FROM products
@@ -519,6 +683,29 @@ pub async fn add_order_items(
 
         if product.quantity_in_stock < item.quantity {
             return Err(StatusCode::CONFLICT);
+        }
+
+        // Lock and validate each scanned barcode: must exist, belong to
+        // this product, and not already be attached to a sold item.
+        let mut barcode_ids: Vec<Uuid> = Vec::new();
+        for code in &codes {
+            let barcode = sqlx::query!(
+                r#"SELECT id, product_id, is_sold FROM barcodes WHERE code = $1 FOR UPDATE"#,
+                code
+            )
+            .fetch_optional(&mut *tx)
+            .await
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+            .ok_or(StatusCode::BAD_REQUEST)?;
+
+            if barcode.product_id != Some(item.product_id) {
+                return Err(StatusCode::BAD_REQUEST);
+            }
+            if barcode.is_sold {
+                return Err(StatusCode::CONFLICT);
+            }
+
+            barcode_ids.push(barcode.id);
         }
 
         let line_total = product.selling_price * Decimal::from(item.quantity);
@@ -551,7 +738,21 @@ pub async fn add_order_items(
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-        inserted_items.push(order_item);
+        for barcode_id in &barcode_ids {
+            sqlx::query!(
+                "UPDATE barcodes SET is_sold = true, order_item_id = $1 WHERE id = $2",
+                order_item.id,
+                barcode_id
+            )
+            .execute(&mut *tx)
+            .await
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        }
+
+        inserted_items.push(OrderItemWithBarcodes {
+            item: order_item,
+            barcodes: codes,
+        });
     }
 
     let order = sqlx::query_as!(
@@ -575,6 +776,8 @@ pub async fn add_order_items(
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
+    let total_barcodes: usize = inserted_items.iter().map(|i| i.barcodes.len()).sum();
+
     log_audit(
         &state.db,
         Some(claims.sub),
@@ -582,7 +785,12 @@ pub async fn add_order_items(
         "order_item",
         Some(order.id),
         "items_added",
-        Some(json!({ "order_number": order.order_number, "items_added": inserted_items.len(), "added_total": added_total })),
+        Some(json!({
+            "order_number": order.order_number,
+            "items_added": inserted_items.len(),
+            "added_total": added_total,
+            "barcodes_attached": total_barcodes
+        })),
     )
     .await;
 
@@ -638,6 +846,18 @@ pub async fn update_order_item(
     }
 
     let new_product_id = payload.product_id.unwrap_or(existing.product_id);
+
+    // The quantity/product on this line is changing, so any barcodes
+    // previously attached to it no longer necessarily correspond to the
+    // right units. Release them back to available stock; re-attach new
+    // ones via a follow-up scan if needed.
+    sqlx::query!(
+        "UPDATE barcodes SET is_sold = false, order_item_id = NULL WHERE order_item_id = $1",
+        item_uuid
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     let (product_name, product_sku, unit_price) = if new_product_id != existing.product_id {
         sqlx::query!(
@@ -800,6 +1020,16 @@ async fn remove_order_item_and_restock(
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
     .ok_or(StatusCode::NOT_FOUND)?;
 
+    // Release any barcodes attached to this item back to available stock
+    // before the row (and its FK) disappears.
+    sqlx::query!(
+        "UPDATE barcodes SET is_sold = false, order_item_id = NULL WHERE order_item_id = $1",
+        item_uuid
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
     sqlx::query!("DELETE FROM order_items WHERE id = $1", item_uuid)
         .execute(&mut *tx)
         .await
@@ -909,6 +1139,18 @@ pub async fn update_order_item_status(
             "UPDATE products SET quantity_in_stock = quantity_in_stock + $1 WHERE id = $2",
             existing.quantity,
             existing.product_id
+        )
+        .execute(&mut *tx)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+        // A plain refund puts the physical units back on the shelf, so
+        // free up their barcodes too. Defective / refunded-defective units
+        // don't go back into sellable stock, so their barcodes stay
+        // attached to this (now closed) order item as a record.
+        sqlx::query!(
+            "UPDATE barcodes SET is_sold = false, order_item_id = NULL WHERE order_item_id = $1",
+            item_uuid
         )
         .execute(&mut *tx)
         .await

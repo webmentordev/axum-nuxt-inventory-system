@@ -66,7 +66,8 @@ pub async fn init_admin_routes(state: AppState) -> Result<Router> {
         .route(
             "/{order_id}/items/{item_id}/status",
             patch(update_order_item_status),
-        );
+        )
+        .route("/barcodes/lookup", get(lookup_order_barcode));
 
     let uploads = Router::new()
         .route("/", get(get_uploads).post(create_upload))
