@@ -34,27 +34,32 @@ pub struct Barcode {
 #[derive(Debug, Deserialize)]
 pub struct CreateBarcode {
     pub product_id: Option<Uuid>,
-    pub barcode_type: Option<BarcodeType>,
-    // code + is_sold are set server-side, not from the client
+    pub code: String,
+    pub barcode_type: BarcodeType,
 }
 
-// Generate many at once — e.g. { "count": 50 } for blank labels,
-// or { "product_id": "...", "count": 5 } for one product
+#[derive(Debug, Deserialize)]
+pub struct BulkBarcodeEntry {
+    pub code: String,
+    pub barcode_type: BarcodeType,
+}
+
 #[derive(Debug, Deserialize)]
 pub struct CreateBarcodesBulk {
     pub product_id: Option<Uuid>,
-    pub barcode_type: Option<BarcodeType>,
-    pub count: u32,
+    pub barcodes: Vec<BulkBarcodeEntry>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct CreateBarcodesBulkResult {
+    pub created: Vec<Barcode>,
+    pub skipped: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct UpdateBarcode {
     pub product_id: Option<Uuid>,
     pub is_sold: Option<bool>,
-}
-
-fn generate_code() -> String {
-    format!("BC-{}", Uuid::new_v4().simple())
 }
 
 pub async fn get_barcodes(State(state): State<AppState>) -> Result<Json<Vec<Barcode>>, StatusCode> {
@@ -75,8 +80,10 @@ pub async fn create_barcode(
     State(state): State<AppState>,
     Json(payload): Json<CreateBarcode>,
 ) -> Result<(StatusCode, Json<Barcode>), StatusCode> {
-    let barcode_type = payload.barcode_type.unwrap_or(BarcodeType::Code128);
-    let code = generate_code();
+    let code = payload.code.trim();
+    if code.is_empty() {
+        return Err(StatusCode::BAD_REQUEST);
+    }
 
     let barcode = sqlx::query_as!(
         Barcode,
@@ -85,7 +92,7 @@ pub async fn create_barcode(
            RETURNING id, product_id, code, type as "barcode_type: BarcodeType", is_sold, created_at"#,
         payload.product_id,
         code,
-        barcode_type as BarcodeType
+        payload.barcode_type as BarcodeType
     )
     .fetch_one(&state.db)
     .await
@@ -105,12 +112,10 @@ pub async fn create_barcode(
 pub async fn create_barcodes_bulk(
     State(state): State<AppState>,
     Json(payload): Json<CreateBarcodesBulk>,
-) -> Result<(StatusCode, Json<Vec<Barcode>>), StatusCode> {
-    if payload.count == 0 {
+) -> Result<(StatusCode, Json<CreateBarcodesBulkResult>), StatusCode> {
+    if payload.barcodes.is_empty() {
         return Err(StatusCode::BAD_REQUEST);
     }
-
-    let barcode_type = payload.barcode_type.unwrap_or(BarcodeType::Code128);
 
     let mut tx = state
         .db
@@ -118,32 +123,49 @@ pub async fn create_barcodes_bulk(
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    let mut barcodes = Vec::with_capacity(payload.count as usize);
+    let mut seen = std::collections::HashSet::new();
+    let mut created = Vec::new();
+    let mut skipped = Vec::new();
 
-    for _ in 0..payload.count {
-        let code = generate_code();
+    for entry in &payload.barcodes {
+        let code = entry.code.trim();
+        if code.is_empty() {
+            continue;
+        }
+        if !seen.insert(code.to_string()) {
+            skipped.push(code.to_string());
+            continue;
+        }
 
-        let barcode = sqlx::query_as!(
+        let attempt = sqlx::query_as!(
             Barcode,
             r#"INSERT INTO barcodes (product_id, code, type)
                VALUES ($1, $2, $3)
                RETURNING id, product_id, code, type as "barcode_type: BarcodeType", is_sold, created_at"#,
             payload.product_id,
             code,
-            barcode_type as BarcodeType
+            entry.barcode_type as BarcodeType
         )
         .fetch_one(&mut *tx)
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .await;
 
-        barcodes.push(barcode);
+        match attempt {
+            Ok(b) => created.push(b),
+            Err(sqlx::Error::Database(db_err)) if db_err.code().as_deref() == Some("23505") => {
+                skipped.push(code.to_string());
+            }
+            Err(_) => return Err(StatusCode::INTERNAL_SERVER_ERROR),
+        }
     }
 
     tx.commit()
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    Ok((StatusCode::CREATED, Json(barcodes)))
+    Ok((
+        StatusCode::CREATED,
+        Json(CreateBarcodesBulkResult { created, skipped }),
+    ))
 }
 
 pub async fn get_barcode(
