@@ -7,11 +7,7 @@
             </div>
             <div class="flex items-center">
                 <AdminButton @click="fetchAll()" icon="tabler:refresh">Refresh</AdminButton>
-                <NuxtLink to="/admin/barcodes/example" target="_blank"
-                    class="px-4 py-2 rounded-md text-sm font-semibold bg-lime-main text-dark hover:bg-lime-hover transition-colors ml-2">
-                    Barcode example
-                </NuxtLink>
-                <NuxtLink to="/admin/barcodes/create"
+                <NuxtLink to="/admin/barcodes/add"
                     class="px-4 py-2 rounded-md text-sm font-semibold bg-lime-main text-dark hover:bg-lime-hover transition-colors ml-2">
                     Add barcodes
                 </NuxtLink>
@@ -165,7 +161,7 @@ function productName(productId) {
 
 const productOptions = computed(() =>
     products.value.map((product) => ({
-        label: `${product.name} (${product.sku})`,
+        label: product.name,
         value: product.id
     }))
 );

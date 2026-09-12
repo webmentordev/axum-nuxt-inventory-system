@@ -107,7 +107,7 @@
 
                 <video ref="videoEl" class="w-full rounded-md bg-black aspect-video" autoplay playsinline muted />
 
-                <p class="text-xs text-zinc-500 mt-3">{{ scanModal.supported ? 'Point the camera ' : "No supported" }}
+                <p class="text-xs text-zinc-500 mt-3">{{ scanModal.supported ? 'Point the camera.' : "No supported." }}
                 </p>
             </div>
         </div>

@@ -197,6 +197,7 @@ pub struct ProductOption {
     pub id: Uuid,
     pub name: String,
     pub slug: String,
+    pub sku: String,
     pub is_active: bool,
     pub quantity_in_stock: i32,
 }
@@ -206,7 +207,7 @@ pub async fn get_products_list(
 ) -> Result<Json<Vec<ProductOption>>, StatusCode> {
     let products = sqlx::query_as!(
         ProductOption,
-        r#"SELECT id, name, slug, is_active, quantity_in_stock
+        r#"SELECT id, name, slug, sku, is_active, quantity_in_stock
            FROM products
            ORDER BY name ASC"#
     )
