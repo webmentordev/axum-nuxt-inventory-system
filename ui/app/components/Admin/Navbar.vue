@@ -1,98 +1,17 @@
 <template>
     <nav class="flex flex-col justify-between w-full p-2 h-full">
-        <div class="w-full mb-3 pb-3 border-b border-dark-400">
+        <div class="w-full mb-3 pb-3 border-b border-dark-400 flex items-center justify-between">
             <img src="/kaleem-solar-logo-t-4.png" width="160px" class="justify-center flex w-fit">
+            <button class="lg:hidden text-zinc-300" @click="isOpen = false">
+                <Icon name="mdi:close" size="24" />
+            </button>
         </div>
-        <div class="w-full flex flex-col gap-1 h-full">
-            <NuxtLink to="/"
+        <div class="w-full flex flex-col gap-1 h-full overflow-y-auto themed-scroll">
+            <NuxtLink v-for="item in links" :key="item.to" :to="item.to" @click="isOpen = false"
                 class="w-full flex items-center px-3 py-2 rounded-md text-sm font-semibold text-zinc-300 transition-colors hover:text-white hover:bg-dark-300"
                 active-class="!text-lime-main !bg-lime-bg !border !border-lime-main/30">
-                <Icon name="mdi-light:home" size="20" />
-                <strong class="ml-1">Home</strong>
-            </NuxtLink>
-            <NuxtLink to="/admin/dashboard"
-                class="w-full flex items-center px-3 py-2 rounded-md text-sm font-semibold text-zinc-300 transition-colors hover:text-white hover:bg-dark-300"
-                active-class="!text-lime-main !bg-lime-bg !border !border-lime-main/30">
-                <Icon name="mdi-light:view-dashboard" size="20" />
-                <strong class="ml-1">Dashboard</strong>
-            </NuxtLink>
-            <NuxtLink to="/admin/users"
-                class="w-full flex items-center px-3 py-2 rounded-md text-sm font-semibold text-zinc-300 transition-colors hover:text-white hover:bg-dark-300"
-                active-class="!text-lime-main !bg-lime-bg !border !border-lime-main/30">
-                <Icon name="mdi:account-outline" size="20" />
-                <strong class="ml-1">Users</strong>
-            </NuxtLink>
-            <NuxtLink to="/admin/products"
-                class="w-full flex items-center px-3 py-2 rounded-md text-sm font-semibold text-zinc-300 transition-colors hover:text-white hover:bg-dark-300"
-                active-class="!text-lime-main !bg-lime-bg !border !border-lime-main/30">
-                <Icon name="game-icons:cargo-ship" size="20" />
-                <strong class="ml-1">Products</strong>
-            </NuxtLink>
-            <NuxtLink to="/admin/seo"
-                class="w-full flex items-center px-3 py-2 rounded-md text-sm font-semibold text-zinc-300 transition-colors hover:text-white hover:bg-dark-300"
-                active-class="!text-lime-main !bg-lime-bg !border !border-lime-main/30">
-                <Icon name="streamline-ultimate:seo-search-graph-bold" size="20" />
-                <strong class="ml-1">Product SEO</strong>
-            </NuxtLink>
-            <NuxtLink to="/admin/brands"
-                class="w-full flex items-center px-3 py-2 rounded-md text-sm font-semibold text-zinc-300 transition-colors hover:text-white hover:bg-dark-300"
-                active-class="!text-lime-main !bg-lime-bg !border !border-lime-main/30">
-                <Icon name="mdi:tag-outline" size="20" />
-                <strong class="ml-1">Brands</strong>
-            </NuxtLink>
-            <NuxtLink to="/admin/categories"
-                class="w-full flex items-center px-3 py-2 rounded-md text-sm font-semibold text-zinc-300 transition-colors hover:text-white hover:bg-dark-300"
-                active-class="!text-lime-main !bg-lime-bg !border !border-lime-main/30">
-                <Icon name="bxs:category-alt" size="20" />
-                <strong class="ml-1">Categories</strong>
-            </NuxtLink>
-            <NuxtLink to="/admin/sub-categories"
-                class="w-full flex items-center px-3 py-2 rounded-md text-sm font-semibold text-zinc-300 transition-colors hover:text-white hover:bg-dark-300"
-                active-class="!text-lime-main !bg-lime-bg !border !border-lime-main/30">
-                <Icon name="material-symbols:filter-list-rounded" size="20" />
-                <strong class="ml-1">Sub categories</strong>
-            </NuxtLink>
-            <NuxtLink to="/admin/orders"
-                class="w-full flex items-center px-3 py-2 rounded-md text-sm font-semibold text-zinc-300 transition-colors hover:text-white hover:bg-dark-300"
-                active-class="!text-lime-main !bg-lime-bg !border !border-lime-main/30">
-                <Icon name="carbon:delivery-parcel" size="20" />
-                <strong class="ml-1">Orders</strong>
-            </NuxtLink>
-            <NuxtLink to="/admin/barcodes"
-                class="w-full flex items-center px-3 py-2 rounded-md text-sm font-semibold text-zinc-300 transition-colors hover:text-white hover:bg-dark-300"
-                active-class="!text-lime-main !bg-lime-bg !border !border-lime-main/30">
-                <Icon name="si:barcode-scan-fill" size="20" />
-                <strong class="ml-1">Barcodes</strong>
-            </NuxtLink>
-            <NuxtLink to="/admin/policies"
-                class="w-full flex items-center px-3 py-2 rounded-md text-sm font-semibold text-zinc-300 transition-colors hover:text-white hover:bg-dark-300"
-                active-class="!text-lime-main !bg-lime-bg !border !border-lime-main/30">
-                <Icon name="carbon:policy" size="20" />
-                <strong class="ml-1">Policies</strong>
-            </NuxtLink>
-            <NuxtLink to="/admin/uploads"
-                class="w-full flex items-center px-3 py-2 rounded-md text-sm font-semibold text-zinc-300 transition-colors hover:text-white hover:bg-dark-300"
-                active-class="!text-lime-main !bg-lime-bg !border !border-lime-main/30">
-                <Icon name="ic:round-upload" size="20" />
-                <strong class="ml-1">Uploads</strong>
-            </NuxtLink>
-            <NuxtLink to="/admin/contacts"
-                class="w-full flex items-center px-3 py-2 rounded-md text-sm font-semibold text-zinc-300 transition-colors hover:text-white hover:bg-dark-300"
-                active-class="!text-lime-main !bg-lime-bg !border !border-lime-main/30">
-                <Icon name="tabler:mail" size="20" />
-                <strong class="ml-1">Contacts</strong>
-            </NuxtLink>
-            <NuxtLink to="/admin/report"
-                class="w-full flex items-center px-3 py-2 rounded-md text-sm font-semibold text-zinc-300 transition-colors hover:text-white hover:bg-dark-300"
-                active-class="!text-lime-main !bg-lime-bg !border !border-lime-main/30">
-                <Icon name="tabler:graph" size="20" />
-                <strong class="ml-1">Report</strong>
-            </NuxtLink>
-            <NuxtLink to="/admin/audit-logs"
-                class="w-full flex items-center px-3 py-2 rounded-md text-sm font-semibold text-zinc-300 transition-colors hover:text-white hover:bg-dark-300"
-                active-class="!text-lime-main !bg-lime-bg !border !border-lime-main/30">
-                <Icon name="ant-design:audit-outlined" size="20" />
-                <strong class="ml-1">Audit logs</strong>
+                <Icon :name="item.icon" size="20" />
+                <strong class="ml-1">{{ item.label }}</strong>
             </NuxtLink>
         </div>
         <AdminButton icon="tabler:door-exit" class="py-3" @click="logout">Logout</AdminButton>
@@ -100,8 +19,27 @@
 </template>
 
 <script setup lang="js">
+const isOpen = useState('admin-nav-open', () => false);
 const { removeToken } = useAuthToken();
 const { removeUser } = useAuthUser();
+
+const links = [
+    { to: '/', icon: 'mdi-light:home', label: 'Home' },
+    { to: '/admin/dashboard', icon: 'mdi-light:view-dashboard', label: 'Dashboard' },
+    { to: '/admin/users', icon: 'mdi:account-outline', label: 'Users' },
+    { to: '/admin/products', icon: 'game-icons:cargo-ship', label: 'Products' },
+    { to: '/admin/seo', icon: 'streamline-ultimate:seo-search-graph-bold', label: 'Product SEO' },
+    { to: '/admin/brands', icon: 'mdi:tag-outline', label: 'Brands' },
+    { to: '/admin/categories', icon: 'bxs:category-alt', label: 'Categories' },
+    { to: '/admin/sub-categories', icon: 'material-symbols:filter-list-rounded', label: 'Sub categories' },
+    { to: '/admin/orders', icon: 'carbon:delivery-parcel', label: 'Orders' },
+    { to: '/admin/barcodes', icon: 'si:barcode-scan-fill', label: 'Barcodes' },
+    { to: '/admin/policies', icon: 'carbon:policy', label: 'Policies' },
+    { to: '/admin/uploads', icon: 'ic:round-upload', label: 'Uploads' },
+    { to: '/admin/contacts', icon: 'tabler:mail', label: 'Contacts' },
+    { to: '/admin/report', icon: 'tabler:graph', label: 'Report' },
+    { to: '/admin/audit-logs', icon: 'ant-design:audit-outlined', label: 'Audit logs' },
+];
 
 async function logout() {
     removeToken();

@@ -9,9 +9,11 @@ use axum::{
 };
 
 use crate::AppState;
+use crate::dashboard::orders::OrderItemStatus;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, sqlx::Type)]
 #[sqlx(type_name = "barcode_type", rename_all = "lowercase")]
+#[serde(rename_all = "snake_case")]
 pub enum BarcodeType {
     Code128,
     Ean13,
@@ -29,6 +31,8 @@ pub struct Barcode {
     pub barcode_type: BarcodeType,
     pub is_sold: bool,
     pub created_at: DateTime<Utc>,
+    pub order_item_id: Option<Uuid>,
+    pub item_status: Option<OrderItemStatus>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -65,13 +69,25 @@ pub struct UpdateBarcode {
 pub async fn get_barcodes(State(state): State<AppState>) -> Result<Json<Vec<Barcode>>, StatusCode> {
     let barcodes = sqlx::query_as!(
         Barcode,
-        r#"SELECT id, product_id, code, type as "barcode_type: BarcodeType", is_sold, created_at
-           FROM barcodes
-           ORDER BY created_at DESC"#
+        r#"SELECT
+               b.id,
+               b.product_id,
+               b.code,
+               b.type as "barcode_type: BarcodeType",
+               b.is_sold,
+               b.created_at,
+               b.order_item_id,
+               oi.status as "item_status?: OrderItemStatus"
+           FROM barcodes b
+           LEFT JOIN order_items oi ON oi.id = b.order_item_id
+           ORDER BY b.created_at DESC"#
     )
     .fetch_all(&state.db)
     .await
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    .map_err(|e| {
+        println!("{:?}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
 
     Ok(Json(barcodes))
 }
@@ -89,7 +105,15 @@ pub async fn create_barcode(
         Barcode,
         r#"INSERT INTO barcodes (product_id, code, type)
            VALUES ($1, $2, $3)
-           RETURNING id, product_id, code, type as "barcode_type: BarcodeType", is_sold, created_at"#,
+           RETURNING
+               id,
+               product_id,
+               code,
+               type as "barcode_type: BarcodeType",
+               is_sold,
+               created_at,
+               order_item_id,
+               NULL::order_item_status as "item_status: OrderItemStatus""#,
         payload.product_id,
         code,
         payload.barcode_type as BarcodeType
@@ -141,7 +165,15 @@ pub async fn create_barcodes_bulk(
             Barcode,
             r#"INSERT INTO barcodes (product_id, code, type)
                VALUES ($1, $2, $3)
-               RETURNING id, product_id, code, type as "barcode_type: BarcodeType", is_sold, created_at"#,
+               RETURNING
+                   id,
+                   product_id,
+                   code,
+                   type as "barcode_type: BarcodeType",
+                   is_sold,
+                   created_at,
+                   order_item_id,
+                   NULL::order_item_status as "item_status: OrderItemStatus""#,
             payload.product_id,
             code,
             entry.barcode_type as BarcodeType
@@ -174,9 +206,18 @@ pub async fn get_barcode(
 ) -> Result<Json<Barcode>, StatusCode> {
     let barcode = sqlx::query_as!(
         Barcode,
-        r#"SELECT id, product_id, code, type as "barcode_type: BarcodeType", is_sold, created_at
-           FROM barcodes
-           WHERE id = $1"#,
+        r#"SELECT
+               b.id,
+               b.product_id,
+               b.code,
+               b.type as "barcode_type: BarcodeType",
+               b.is_sold,
+               b.created_at,
+               b.order_item_id,
+               oi.status as "item_status?: OrderItemStatus"
+           FROM barcodes b
+           LEFT JOIN order_items oi ON oi.id = b.order_item_id
+           WHERE b.id = $1"#,
         uuid
     )
     .fetch_optional(&state.db)
@@ -194,11 +235,19 @@ pub async fn update_barcode(
 ) -> Result<Json<Barcode>, StatusCode> {
     let barcode = sqlx::query_as!(
         Barcode,
-        r#"UPDATE barcodes
-           SET product_id = COALESCE($1, product_id),
-               is_sold = COALESCE($2, is_sold)
-           WHERE id = $3
-           RETURNING id, product_id, code, type as "barcode_type: BarcodeType", is_sold, created_at"#,
+        r#"UPDATE barcodes b
+           SET product_id = COALESCE($1, b.product_id),
+               is_sold = COALESCE($2, b.is_sold)
+           WHERE b.id = $3
+           RETURNING
+               b.id,
+               b.product_id,
+               b.code,
+               b.type as "barcode_type: BarcodeType",
+               b.is_sold,
+               b.created_at,
+               b.order_item_id,
+               (SELECT oi.status FROM order_items oi WHERE oi.id = b.order_item_id) as "item_status: OrderItemStatus""#,
         payload.product_id,
         payload.is_sold,
         uuid

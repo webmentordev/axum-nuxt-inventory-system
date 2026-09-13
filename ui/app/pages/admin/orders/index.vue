@@ -70,10 +70,6 @@
                                     class="w-full px-3 py-2 text-sm text-zinc-300 hover:bg-dark-300 hover:text-white transition-colors text-left">
                                     View
                                 </button>
-                                <button type="button" @click="handleAddItems(order)"
-                                    class="w-full px-3 py-2 text-sm text-zinc-300 hover:bg-dark-300 hover:text-white transition-colors text-left">
-                                    Add items
-                                </button>
                                 <button type="button" @click="handleDelete(order)"
                                     class="w-full px-3 py-2 text-sm text-red-400 hover:bg-dark-300 hover:text-red-300 transition-colors text-left">
                                     Delete
@@ -203,11 +199,6 @@ function closeMenu() {
 function handleViewItems(order) {
     closeMenu();
     navigateTo(`/admin/orders/${order.id}/items`);
-}
-
-function handleAddItems(order) {
-    closeMenu();
-    navigateTo(`/admin/orders/${order.id}/items/create`);
 }
 
 function handleEdit(order) {

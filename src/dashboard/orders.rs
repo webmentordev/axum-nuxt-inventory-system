@@ -137,9 +137,6 @@ pub struct ItemWithOrder {
     pub order: Order,
 }
 
-/// An order item paired with the barcodes (physical unit codes) that are
-/// currently attached to it. `barcodes.len()` can be anywhere from 0 up to
-/// `quantity` — attaching a barcode to a sold unit is optional.
 #[derive(Debug, Serialize)]
 pub struct OrderItemWithBarcodes {
     #[serde(flatten)]
@@ -151,9 +148,6 @@ pub struct OrderItemWithBarcodes {
 pub struct AddOrderItem {
     pub product_id: Uuid,
     pub quantity: i32,
-    /// Optional scanned barcode codes for this line. May contain fewer
-    /// entries than `quantity` (some units may not have a barcode), but
-    /// never more. Blank strings are ignored.
     #[serde(default)]
     pub barcodes: Option<Vec<String>>,
 }
@@ -186,8 +180,6 @@ pub struct BarcodeLookupResult {
     pub reason: Option<String>,
 }
 
-/// Batch-fetch barcodes for a set of order items. Returns a map of
-/// order_item_id -> sorted list of barcode codes.
 async fn get_barcodes_for_items(
     db: &sqlx::PgPool,
     item_ids: &[Uuid],
@@ -228,8 +220,6 @@ async fn get_barcodes_for_item(
     Ok(rows.into_iter().map(|r| r.code).collect())
 }
 
-/// Look up a barcode against a specific product before it's added to an
-/// order — used by the "add items" UI to validate a scan in real time.
 pub async fn lookup_order_barcode(
     State(state): State<AppState>,
     Query(params): Query<BarcodeLookupQuery>,
@@ -648,8 +638,6 @@ pub async fn add_order_items(
             return Err(StatusCode::BAD_REQUEST);
         }
 
-        // Normalize + validate any scanned barcodes for this line before
-        // touching stock, so a bad scan fails the whole request cleanly.
         let mut codes: Vec<String> = Vec::new();
         if let Some(raw_codes) = &item.barcodes {
             let mut seen: HashSet<String> = HashSet::new();
@@ -659,7 +647,6 @@ pub async fn add_order_items(
                     continue;
                 }
                 if !seen.insert(code.to_string()) {
-                    // Same barcode scanned twice in one request.
                     return Err(StatusCode::BAD_REQUEST);
                 }
                 codes.push(code.to_string());
@@ -685,8 +672,6 @@ pub async fn add_order_items(
             return Err(StatusCode::CONFLICT);
         }
 
-        // Lock and validate each scanned barcode: must exist, belong to
-        // this product, and not already be attached to a sold item.
         let mut barcode_ids: Vec<Uuid> = Vec::new();
         for code in &codes {
             let barcode = sqlx::query!(
@@ -847,10 +832,6 @@ pub async fn update_order_item(
 
     let new_product_id = payload.product_id.unwrap_or(existing.product_id);
 
-    // The quantity/product on this line is changing, so any barcodes
-    // previously attached to it no longer necessarily correspond to the
-    // right units. Release them back to available stock; re-attach new
-    // ones via a follow-up scan if needed.
     sqlx::query!(
         "UPDATE barcodes SET is_sold = false, order_item_id = NULL WHERE order_item_id = $1",
         item_uuid
@@ -1020,8 +1001,6 @@ async fn remove_order_item_and_restock(
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
     .ok_or(StatusCode::NOT_FOUND)?;
 
-    // Release any barcodes attached to this item back to available stock
-    // before the row (and its FK) disappears.
     sqlx::query!(
         "UPDATE barcodes SET is_sold = false, order_item_id = NULL WHERE order_item_id = $1",
         item_uuid
@@ -1144,12 +1123,8 @@ pub async fn update_order_item_status(
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-        // A plain refund puts the physical units back on the shelf, so
-        // free up their barcodes too. Defective / refunded-defective units
-        // don't go back into sellable stock, so their barcodes stay
-        // attached to this (now closed) order item as a record.
         sqlx::query!(
-            "UPDATE barcodes SET is_sold = false, order_item_id = NULL WHERE order_item_id = $1",
+            "UPDATE barcodes SET is_sold = false WHERE order_item_id = $1",
             item_uuid
         )
         .execute(&mut *tx)

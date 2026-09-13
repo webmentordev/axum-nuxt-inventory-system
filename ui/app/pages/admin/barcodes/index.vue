@@ -7,7 +7,7 @@
             </div>
             <div class="flex items-center">
                 <AdminButton @click="fetchAll()" icon="tabler:refresh">Refresh</AdminButton>
-                <NuxtLink to="/admin/barcodes/add"
+                <NuxtLink to="/admin/barcodes/create"
                     class="px-4 py-2 rounded-md text-sm font-semibold bg-lime-main text-dark hover:bg-lime-hover transition-colors ml-2">
                     Add barcodes
                 </NuxtLink>
@@ -26,6 +26,7 @@
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Type</th>
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Product</th>
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Status</th>
+                        <th class="text-left px-4 py-3 font-semibold text-zinc-400">Item Status</th>
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Created</th>
                         <th class="text-right px-4 py-3 font-semibold text-zinc-400 w-12"></th>
                     </tr>
@@ -42,6 +43,13 @@
                                 : 'bg-lime-bg text-lime-main'">
                                 {{ barcode.is_sold ? 'Sold' : 'Available' }}
                             </span>
+                        </td>
+                        <td class="px-4 py-3">
+                            <span v-if="barcode.item_status" class="px-2 py-1 rounded text-xs font-semibold"
+                                :class="itemStatusClass(barcode.item_status)">
+                                {{ itemStatusLabel(barcode.item_status) }}
+                            </span>
+                            <span v-else class="text-zinc-600 text-xs">—</span>
                         </td>
                         <td class="px-4 py-3 text-zinc-400 whitespace-nowrap">{{ formatDate(barcode.created_at) }}</td>
                         <td class="px-4 py-3 text-right relative" :ref="(el) => setMenuRef(barcode.id, el)">
@@ -142,6 +150,28 @@ const typeLabels = {
     qr: 'QR'
 };
 
+const itemStatusLabels = {
+    sold: 'Sold',
+    refunded: 'Refunded',
+    refunded_defective: 'Refunded (Defective)',
+    defective: 'Defective'
+};
+
+const itemStatusClasses = {
+    sold: 'bg-lime-bg text-lime-main',
+    refunded: 'bg-red-500/10 text-red-400',
+    refunded_defective: 'bg-red-500/10 text-red-400',
+    defective: 'bg-orange-500/10 text-orange-400'
+};
+
+function itemStatusLabel(status) {
+    return itemStatusLabels[status] || status;
+}
+
+function itemStatusClass(status) {
+    return itemStatusClasses[status] || 'bg-dark-300 text-zinc-400';
+}
+
 function typeLabel(type) {
     return typeLabels[type] || type;
 }
@@ -172,7 +202,8 @@ const filteredBarcodes = computed(() => {
     return barcodes.value.filter((barcode) =>
         barcode.code.toLowerCase().includes(query) ||
         typeLabel(barcode.barcode_type).toLowerCase().includes(query) ||
-        productName(barcode.product_id).toLowerCase().includes(query)
+        productName(barcode.product_id).toLowerCase().includes(query) ||
+        (barcode.item_status && itemStatusLabel(barcode.item_status).toLowerCase().includes(query))
     );
 });
 
