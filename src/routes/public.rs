@@ -1,6 +1,7 @@
 use crate::AppState;
 use crate::auth::*;
 use crate::dashboard::contacts::*;
+use crate::public::barcodes::*;
 use crate::public::brands::*;
 use crate::public::categories::*;
 use crate::public::orders::*;
@@ -57,6 +58,8 @@ pub async fn init_public_route(state: AppState) -> Result<Router> {
             )),
         );
 
+    let barcodes = Router::new().route("/verify-purchase", post(verify_barcode));
+
     let routes = Router::new()
         .nest("/users", users)
         .nest("/contacts", contacts)
@@ -66,6 +69,7 @@ pub async fn init_public_route(state: AppState) -> Result<Router> {
         .nest("/products", products)
         .nest("/policies", policies)
         .nest("/orders", orders)
+        .nest("/barcodes", barcodes)
         .with_state(state);
 
     Ok(routes)

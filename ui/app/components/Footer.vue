@@ -56,6 +56,9 @@
                     <li>
                         <NuxtLink to="/contact-us" class="hover:text-orange">Contact Us</NuxtLink>
                     </li>
+                    <li>
+                        <NuxtLink to="/verify-purchase" class="hover:text-orange">Verify purchase</NuxtLink>
+                    </li>
                 </ul>
             </div>
 
