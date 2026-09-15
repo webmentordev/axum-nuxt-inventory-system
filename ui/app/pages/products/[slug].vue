@@ -59,14 +59,14 @@
                                 }}</NuxtLink>
                         </li>
                         <li v-if="stockLabel"><strong>Availability: </strong><span :class="stockClass">{{ stockLabel
-                                }}</span></li>
+                        }}</span></li>
                     </ul>
 
                     <div class="flex flex-col gap-1">
                         <div class="flex flex-wrap items-baseline gap-2 sm:gap-3">
                             <span class="text-xl sm:text-2xl font-bold text-navy">{{
                                 formatCurrency(product.selling_price)
-                                }}</span>
+                            }}</span>
                             <span v-if="hasDiscount" class="text-sm sm:text-base text-zinc-400 line-through">
                                 {{ formatCurrency(product.compare_at_selling_price) }}
                             </span>
@@ -124,7 +124,7 @@
         </div>
         <Transition name="toast-fade">
             <div v-if="toast.visible"
-                class="fixed bottom-5 left-1/2 -translate-x-1/2 sm:left-auto sm:right-5 sm:translate-x-0 z-50 bg-navy text-white text-sm font-medium px-4 py-2.5 rounded-md shadow-lg flex items-center gap-2">
+                class="fixed bottom-5 left-1/2 -translate-x-1/2 sm:left-auto sm:right-5 sm:translate-x-0 z-50 bg-white text-black text-sm font-medium px-4 py-2.5 rounded-md shadow-lg flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-orange" viewBox="0 0 20 20"
                     fill="currentColor">
                     <path fill-rule="evenodd"
