@@ -193,7 +193,7 @@ pub async fn login_user(
     .await
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    let exp = (Utc::now() + Duration::hours(24)).timestamp();
+    let exp = (Utc::now() + Duration::hours(24 * 30)).timestamp();
     let claims = Claims {
         sub: user.id,
         is_admin: user.is_admin,

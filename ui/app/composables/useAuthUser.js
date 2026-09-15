@@ -1,6 +1,6 @@
 export const useAuthUser = () => {
     const user = useCookie('klm_slr_user', {
-        maxAge: 60 * 60,
+        maxAge: 3600 * (24 * 30),
         sameSite: 'strict',
         secure: import.meta.client ? window.location.protocol === 'https:' : true,
         path: '/'

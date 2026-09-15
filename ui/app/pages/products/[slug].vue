@@ -122,6 +122,18 @@
                 <AppProducts :products="recently_viewed" />
             </div>
         </div>
+        <Transition name="toast-fade">
+            <div v-if="toast.visible"
+                class="fixed bottom-5 left-1/2 -translate-x-1/2 sm:left-auto sm:right-5 sm:translate-x-0 z-50 bg-navy text-white text-sm font-medium px-4 py-2.5 rounded-md shadow-lg flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-orange" viewBox="0 0 20 20"
+                    fill="currentColor">
+                    <path fill-rule="evenodd"
+                        d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z"
+                        clip-rule="evenodd" />
+                </svg>
+                {{ toast.message }}
+            </div>
+        </Transition>
     </section>
 </template>
 
@@ -139,17 +151,29 @@ const suggested_products = ref([]);
 const recently_viewed = ref([]);
 const processing = ref(true);
 
+const toast = ref({ visible: false, message: '' });
+let toastTimeout = null;
+
 const route = useRoute();
 const slug = route.params.slug;
 
 const siteUrl = useRuntimeConfig().public?.siteUrl || '';
-const canonicalUrl = computed(() => `${siteUrl}/policies/${slug}`);
+const canonicalUrl = computed(() => `${siteUrl}/products/${slug}`);
 
 const { addToCart: addProductToCart } = useCart();
 const { addRecentlyViewed, fetchRecentlyViewedProducts } = useRecentlyViewed();
 
+function showToast(message) {
+    toast.value = { visible: true, message };
+    clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => {
+        toast.value.visible = false;
+    }, 2500);
+}
+
 function addToCart() {
     addProductToCart(product.value, 1);
+    showToast(`${product.value.name} added to cart`);
 }
 
 const galleryImages = computed(() => {
@@ -314,5 +338,24 @@ function formatCurrency(amount) {
 
 .product :deep(li) {
     margin-bottom: 0.25rem;
+}
+
+.toast-fade-enter-active,
+.toast-fade-leave-active {
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.toast-fade-enter-from,
+.toast-fade-leave-to {
+    opacity: 0;
+    transform: translateY(8px) translateX(-50%);
+}
+
+@media (min-width: 640px) {
+
+    .toast-fade-enter-from,
+    .toast-fade-leave-to {
+        transform: translateY(8px) translateX(0);
+    }
 }
 </style>
