@@ -1,7 +1,7 @@
 <template>
     <nav class="flex flex-col justify-between w-full p-2 h-full">
         <div class="w-full mb-3 pb-3 border-b border-dark-400 flex items-center justify-between">
-            <img src="/kaleem-solar-logo-t-4.png" width="160px" class="justify-center flex w-fit">
+            <img src="/logos/kaleem-solar-logo-t-4.webp" width="160px" class="justify-center flex w-fit">
             <button class="lg:hidden text-zinc-300" @click="isOpen = false">
                 <Icon name="mdi:close" size="24" />
             </button>

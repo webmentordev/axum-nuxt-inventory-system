@@ -1,10 +1,10 @@
 <template>
     <NuxtLink :to='`/products/${product.slug}`' class="overflow-hidden flex flex-col relative bgfader-hover"
         :title="product.name">
-        <NuxtImg :src="product.image_url" width="400" height="160" :alt='`${product.name} Image`'
-            class="w-full h-28 sm:h-32 lg:h-40 object-contain" loading="lazy" />
+        <NuxtImg format="webp" quality="20" :src="product.image_url" width="400" height="160"
+            :alt='`${product.name} Image`' class="w-full h-28 sm:h-32 lg:h-40 object-contain" loading="lazy" />
         <img v-if="product.brand?.uploads.length" :src="product.brand?.uploads[0].file_path"
-            class="absolute top-1 left-1 w-8 sm:w-[50px]" loading="lazy" />
+            class="absolute top-1 left-1 w-8 sm:w-12.5" loading="lazy" />
         <span v-if="hasDiscount"
             class="absolute top-1 right-1 text-[10px] sm:text-xs font-semibold px-2 py-1 rounded-full bg-green-100 text-green-700">
             {{ discountPercent }}% off

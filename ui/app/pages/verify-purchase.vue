@@ -2,7 +2,7 @@
     <div class="w-full min-h-[80vh] flex items-center justify-center py-12">
         <div class="flex flex-col max-w-87.5 w-full">
             <div class="flex items-center m-auto mb-6">
-                <img src="/kaleem-solar-logo-t-2.png" alt="Kaleem solat logo" width="190px">
+                <img src="/logos/kaleem-solar-logo-t-2.webp" alt="Kaleem solar logo" width="190px">
             </div>
 
             <form v-if="!result" @submit.prevent="verifyBarcode" method="post">

@@ -27,8 +27,9 @@
         <section
             class="mx-auto grid max-w-7xl items-center gap-8 lg:gap-12 px-4 pb-16 lg:pb-20 grid-cols-1 lg:grid-cols-2 py-8 lg:py-12">
             <div class="relative">
-                <img src="https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&w=1200&q=80"
-                    class="h-64 sm:h-80 lg:h-105 w-full rounded-2xl object-cover shadow-xl" alt="Solar installation">
+                <img src="/solar-panel-image.webp"
+                    class="h-64 sm:h-80 lg:h-105 w-full rounded-2xl object-cover shadow-xl"
+                    alt="Solar installation panels image">
 
                 <div class="absolute left-3 top-3 sm:left-5 sm:top-5 rounded-xl bg-white p-3 sm:p-5 shadow-xl">
                     <strong class="text-xl sm:text-3xl text-orange">500+</strong>
@@ -90,14 +91,13 @@
 
         <section class="relative overflow-hidden bg-navy py-10 lg:py-14 text-white">
             <div class="absolute inset-0 opacity-10">
-                <img src="https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?auto=format&fit=crop&w=2000&q=80"
-                    class="h-full w-full object-cover" alt="">
+                <img src="/solar-panel-image.webp" class="h-full w-full object-cover" alt="Solar panels image">
             </div>
             <div
                 class="relative mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 lg:gap-8 px-4 md:flex-row">
                 <div class="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 text-center sm:text-left">
                     <div class="leading-none">
-                        <img src="/kaleem-solar-logo-t-4.png" width="120px">
+                        <img src="/logos/kaleem-solar-logo-t-4.webp" width="120px" alt="Kaleem solar logo">
                     </div>
                     <div>
                         <h2 class="text-2xl sm:text-3xl font-black">Ready to Switch to Solar?</h2>

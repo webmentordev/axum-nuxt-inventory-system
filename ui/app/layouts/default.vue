@@ -1,4 +1,5 @@
 <template>
+    <NuxtLoadingIndicator />
     <section class="h-screen flex bg-dark relative overflow-hidden">
         <button
             class="lg:hidden fixed top-3 left-3 z-50 bg-dark-100 border border-dark-300 rounded-md p-2 text-zinc-300"

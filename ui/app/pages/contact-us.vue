@@ -3,7 +3,7 @@
         <div class="w-full max-w-5xl mx-auto px-4 py-16 grid grid-cols-1 md:grid-cols-2 gap-10">
             <div class="flex flex-col">
                 <div class="flex items-center mb-6">
-                    <img src="/kaleem-solar-logo-t-2.png" alt="Kaleem solat logo" width="190px">
+                    <img src="/logos/kaleem-solar-logo-t-2.webp" alt="Kaleem solar logo" width="190px">
                 </div>
 
                 <h1 class="text-2xl font-bold text-gray-800 mb-1">Get in touch</h1>
@@ -104,6 +104,31 @@ definePageMeta({
 const { publicFetch } = usePublicFetch();
 
 const config = useRuntimeConfig().public;
+
+const canonicalUrl = `${config.siteUrl}/contact-us`;
+
+useSeoMeta({
+    title: 'Contact Us | KaleemSolarPK Multan',
+    description: 'Get in touch with KaleemSolarPK Multan for solar panels, inverters, batteries & accessories. Reach out for pricing, support or expert guidance.',
+    keywords: 'contact KaleemSolarPK, solar Multan contact, solar company Pakistan',
+    ogTitle: 'Contact Us | KaleemSolarPK Multan',
+    ogDescription: 'Get in touch with KaleemSolarPK Multan for solar panels, inverters, batteries & accessories. Reach out for pricing, support or expert guidance.',
+    ogImage: `${config.siteUrl}/kaleemsolar-banner.webp`,
+    ogUrl: canonicalUrl,
+    ogType: 'website',
+    twitterCard: 'summary_large_image',
+    twitterTitle: 'Contact Us | KaleemSolarPK Multan',
+    twitterDescription: 'Get in touch with KaleemSolarPK Multan for solar panels, inverters, batteries & accessories. Reach out for pricing, support or expert guidance.'
+});
+
+useHead({
+    link: [
+        {
+            rel: 'canonical',
+            href: canonicalUrl
+        }
+    ]
+});
 
 const turnstile = ref();
 const name = ref("");

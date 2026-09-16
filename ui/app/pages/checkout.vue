@@ -29,12 +29,12 @@
                             <span v-else class="text-zinc-400 text-xs">No image</span>
                         </div>
 
-                        <div class="flex-1 min-w-[120px]">
+                        <div class="flex-1 min-w-30">
                             <p class="text-sm font-semibold text-zinc-900 mb-1">{{ item.name }}</p>
                             <p class="text-xs text-zinc-500">SKU: {{ item.sku }}</p>
                         </div>
 
-                        <div class="flex items-center gap-2 order-3 sm:order-none">
+                        <div class="flex items-center gap-2 order-3 sm:order-0">
                             <button type="button" @click="updateQuantity(item.slug, item.quantity - 1)"
                                 class="w-7 h-7 rounded-md border border-gray-300 text-sm hover:bg-gray-50">-</button>
                             <input type="number" min="1" v-model.number="item.quantity"
@@ -45,7 +45,7 @@
                         </div>
 
                         <button type="button" @click="removeFromCart(item.slug)"
-                            class="text-xs text-red-500 hover:underline shrink-0 order-4 sm:order-none">Remove</button>
+                            class="text-xs text-red-500 hover:underline shrink-0 order-4 sm:order-0">Remove</button>
                     </div>
                 </div>
 

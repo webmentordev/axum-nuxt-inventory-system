@@ -43,14 +43,34 @@ export default defineNuxtConfig({
 
   app: {
     head: {
-      title: 'KaleemSolarPK Multan | A-Grade solar panels, inverters & accessories',
-      charset: 'utf-16',
+      title: 'KaleemSolarPK Multan | A-Grade Solar Panels, Inverters & Accessories',
+      titleTemplate: '%s',
+      charset: 'utf-8',
       viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
       htmlAttrs: {
         lang: 'en',
       },
       link: [
         { rel: 'icon', type: 'image/x-icon', href: '/kaleem-solar-fav.png' },
+        { rel: 'canonical', href: 'https://kaleemsolarpk.com' },
+      ],
+      meta: [
+        { name: 'description', content: 'KaleemSolarPK Multan offers A-Grade solar panels, inverters, batteries & accessories at the best prices. Trusted solar solutions in Multan, Pakistan.' },
+        { name: 'keywords', content: 'solar panels Multan, solar inverters Pakistan, solar accessories, A-Grade solar panels, KaleemSolarPK' },
+        { name: 'author', content: 'KaleemSolarPK' },
+        { name: 'robots', content: 'index, follow' },
+        { name: 'theme-color', content: '#ffffff' },
+        { property: 'og:type', content: 'website' },
+        { property: 'og:title', content: 'KaleemSolarPK Multan | A-Grade Solar Panels, Inverters & Accessories' },
+        { property: 'og:description', content: 'A-Grade solar panels, inverters, batteries & accessories at the best prices in Multan, Pakistan.' },
+        { property: 'og:url', content: 'https://kaleemsolarpk.com' },
+        { property: 'og:site_name', content: 'KaleemSolarPK' },
+        { property: 'og:image', content: 'https://kaleemsolarpk.com/og-image.jpg' },
+        { property: 'og:locale', content: 'en_PK' },
+        { name: 'twitter:card', content: 'summary_large_image' },
+        { name: 'twitter:title', content: 'KaleemSolarPK Multan | A-Grade Solar Panels, Inverters & Accessories' },
+        { name: 'twitter:description', content: 'A-Grade solar panels, inverters, batteries & accessories at the best prices in Multan, Pakistan.' },
+        { name: 'twitter:image', content: 'https://kaleemsolarpk.com/og-image.jpg' },
       ],
     },
   }

@@ -26,6 +26,9 @@ const errors = ref({});
 const route = useRoute();
 const slug = route.params.slug;
 
+const config = useRuntimeConfig();
+const canonicalUrl = computed(() => `${config.public.siteUrl}/categories/${slug}`);
+
 try {
     const data = await publicFetch('/api/public/categories/' + slug);
     if (data) {
@@ -41,4 +44,27 @@ try {
 } finally {
     processing.value = false;
 }
+
+useSeoMeta({
+    title: () => category.value?.name ? `${category.value.name} | KaleemSolarPK Multan` : 'Categories | KaleemSolarPK Multan',
+    description: () => category.value?.description || `Shop ${category.value?.name || ''} at KaleemSolarPK Multan. A-Grade solar panels, inverters & accessories.`,
+    keywords: () => `${category.value?.name || ''}, solar panels, solar inverters, Multan, Pakistan`,
+    ogTitle: () => category.value?.name ? `${category.value.name} | KaleemSolarPK Multan` : 'Categories | KaleemSolarPK Multan',
+    ogDescription: () => category.value?.description || `Shop ${category.value?.name || ''} at KaleemSolarPK Multan. A-Grade solar panels, inverters & accessories.`,
+    ogImage: `${config.public.siteUrl}/kaleemsolar-banner.webp`,
+    ogUrl: canonicalUrl.value,
+    ogType: 'website',
+    twitterCard: 'summary_large_image',
+    twitterTitle: () => category.value?.name ? `${category.value.name} | KaleemSolarPK Multan` : 'Categories | KaleemSolarPK Multan',
+    twitterDescription: () => category.value?.description || `Shop ${category.value?.name || ''} at KaleemSolarPK Multan. A-Grade solar panels, inverters & accessories.`
+});
+
+useHead({
+    link: [
+        {
+            rel: 'canonical',
+            href: canonicalUrl.value
+        }
+    ]
+});
 </script>

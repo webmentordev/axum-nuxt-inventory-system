@@ -93,6 +93,27 @@ const { publicFetch } = usePublicFetch();
 
 const config = useRuntimeConfig().public;
 
+const canonicalUrl = `${config.siteUrl}/order/track`;
+
+useSeoMeta({
+    title: 'Track Your Order | KaleemSolarPK Multan',
+    description: 'Track your KaleemSolarPK order status. Enter your order number to check delivery progress for solar panels, inverters & accessories.',
+    robots: 'noindex, follow',
+    ogTitle: 'Track Your Order | KaleemSolarPK Multan',
+    ogDescription: 'Track your KaleemSolarPK order status. Enter your order number to check delivery progress.',
+    ogUrl: canonicalUrl,
+    ogType: 'website'
+});
+
+useHead({
+    link: [
+        {
+            rel: 'canonical',
+            href: canonicalUrl
+        }
+    ]
+});
+
 const orderNumber = ref('')
 const processing = ref(false)
 const order = ref(null)

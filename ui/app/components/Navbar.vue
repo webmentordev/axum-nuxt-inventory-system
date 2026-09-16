@@ -2,7 +2,7 @@
     <nav class="border-b border-gray-300 bg-white w-full">
         <div class="mx-auto flex max-w-7xl items-center justify-between py-2 px-4 gap-3">
             <NuxtLink to="/" class="flex items-center shrink-0">
-                <img src="/kaleem-solar-logo-t-2.png" class="w-24 sm:w-30">
+                <img src="/logos/kaleem-solar-logo-t-2.webp" alt="Kaleem solar logo" width="130px">
             </NuxtLink>
 
             <div class="hidden md:block flex-1">

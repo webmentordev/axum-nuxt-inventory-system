@@ -2,7 +2,7 @@
     <div class="w-full min-h-[80vh] flex items-center justify-center py-12">
         <div class="flex flex-col max-w-87.5 w-full">
             <div class="flex items-center m-auto mb-6">
-                <img src="/kaleem-solar-logo-t-2.png" alt="Kaleem solat logo" width="190px">
+                <img src="/logos/kaleem-solar-logo-t-2.webp" alt="Kaleem solar logo" width="190px">
             </div>
             <form @submit.prevent="login" method="post">
                 <div class="grid grid-cols-1 gap-3">
@@ -32,7 +32,8 @@
                     class="bg-navy mt-4 text-white w-full py-3 rounded-xl flex items-center justify-center hover:bg-navy/90 group">
                     <span class="mr-3">Register</span>
                     <img class="mt-1 transition-all group-hover:transition-all group-hover:translate-x-4"
-                        src="https://api.iconify.design/line-md:arrow-right.svg?color=%23ffffff" width="15">
+                        src="https://api.iconify.design/line-md:arrow-right.svg?color=%23ffffff" width="15"
+                        alt="Caret down arrow icon">
                 </button>
 
 

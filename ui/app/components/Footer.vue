@@ -5,7 +5,7 @@
 
             <div class="col-span-2 lg:col-span-1">
                 <NuxtLink to="/" class="mb-5 text-right leading-none inline-block">
-                    <img src="/kaleem-solar-logo-t-4.png" alt="kaleemSolar Multan Logo" width="140px">
+                    <img src="/logos/kaleem-solar-logo-t-4.webp" alt="kaleemSolar Multan Logo" width="140px">
                 </NuxtLink>
 
                 <p class="text-sm leading-7 text-slate-300 mb-3">
@@ -89,8 +89,9 @@
                 class="mx-auto flex max-w-7xl flex-col justify-between gap-3 px-4 py-5 text-xs text-slate-400 md:flex-row text-center md:text-left">
                 <p>© 2026 کلیم سولر. All Rights Reserved.</p>
                 <p class="flex gap-1 items-center justify-center md:justify-start">Built in <img
-                        src="https://api.iconify.design/selfhst:nuxt-light.svg?color=%23ffffff" width="17px"> & <img
-                        src="https://api.iconify.design/material-icon-theme:rust.svg" width="17px">
+                        src="https://api.iconify.design/selfhst:nuxt-light.svg?color=%23ffffff" width="17px"
+                        alt="Nuxt logo"> & <img src="https://api.iconify.design/material-icon-theme:rust.svg"
+                        width="17px" alt="Rust logo">
                     | M Ahmer Tahir</p>
             </div>
         </div>

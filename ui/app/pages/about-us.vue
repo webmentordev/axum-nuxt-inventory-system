@@ -104,4 +104,29 @@ definePageMeta({
     layout: 'home'
 });
 
+const config = useRuntimeConfig();
+const canonicalUrl = `${config.public.siteUrl}/about-us`;
+
+useSeoMeta({
+    title: 'About Us | KaleemSolarPK Multan',
+    description: 'Kaleem Solar is a Multan based solar products retailer offering A-Grade solar panels, inverters & accessories with expert guidance and after sales support.',
+    keywords: 'About KaleemSolarPK, solar company Multan, solar retailer Pakistan',
+    ogTitle: 'About Us | KaleemSolarPK Multan',
+    ogDescription: 'Kaleem Solar is a Multan based solar products retailer offering A-Grade solar panels, inverters & accessories with expert guidance and after sales support.',
+    ogImage: `${config.public.siteUrl}/kaleemsolar-banner.webp`,
+    ogUrl: canonicalUrl,
+    ogType: 'website',
+    twitterCard: 'summary_large_image',
+    twitterTitle: 'About Us | KaleemSolarPK Multan',
+    twitterDescription: 'Kaleem Solar is a Multan based solar products retailer offering A-Grade solar panels, inverters & accessories with expert guidance and after sales support.'
+});
+
+useHead({
+    link: [
+        {
+            rel: 'canonical',
+            href: canonicalUrl
+        }
+    ]
+});
 </script>
