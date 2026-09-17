@@ -540,7 +540,7 @@ pub async fn update_upload(
             .extension()
             .map(|e| e.to_string_lossy().to_string())
             .unwrap_or_else(|| "bin".to_string());
-        let file_name = format!("{}.{}", Uuid::new_v4(), ext);
+        let file_name = format!("{}.{}", slugify(&name, true), ext);
         let new_path = move_tmp_to_final(&temp_name, &file_name).await?;
         let _ = fs::remove_file(&existing.file_path).await;
         new_path
@@ -549,7 +549,7 @@ pub async fn update_upload(
             .await
             .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-        let file_name = format!("{}.{}", Uuid::new_v4(), extension);
+        let file_name = format!("{}.{}", slugify(&name, true), extension);
         let new_path = format!("{UPLOAD_DIR}/{file_name}");
 
         let mut file = fs::File::create(&new_path)
