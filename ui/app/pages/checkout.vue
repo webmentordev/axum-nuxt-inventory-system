@@ -158,16 +158,23 @@ const errors = reactive({
     shipping_address: ''
 });
 
-const taxRate = 0;
-const flatShipping = 0;
-
 const subtotal = computed(() =>
     cartItems.value.reduce((sum, item) => sum + (Number(item.unit_price) || 0) * item.quantity, 0)
 );
-
-const taxAmount = computed(() => subtotal.value * taxRate);
-const shippingAmount = computed(() => (subtotal.value > 0 ? flatShipping : 0));
+const shippingAmount = computed(() =>
+    cartItems.value.reduce(
+        (sum, item) => sum + (Number(item.shipping_cost) || 0) * item.quantity,
+        0
+    )
+);
+const taxAmount = computed(() =>
+    cartItems.value.reduce((sum, item) => {
+        const lineTax = (Number(item.tax) || 0) * item.quantity;
+        return sum + lineTax;
+    }, 0)
+);
 const totalAmount = computed(() => subtotal.value + taxAmount.value + shippingAmount.value);
+
 
 function formatCurrency(amount) {
     const currency = useRuntimeConfig().public.currency;

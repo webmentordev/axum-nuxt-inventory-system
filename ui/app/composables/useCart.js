@@ -41,7 +41,9 @@ export function useCart() {
                 name: product.name,
                 image_url: product.image_url,
                 unit_price: Number(product.selling_price) || 0,
-                quantity
+                quantity,
+                shipping_cost: product.shipping_cost,
+                tax: product.tax,
             });
         }
     }

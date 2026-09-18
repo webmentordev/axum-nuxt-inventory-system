@@ -4,7 +4,7 @@
             class="mx-auto grid max-w-7xl gap-10 lg:gap-12 px-4 py-10 lg:py-14 grid-cols-2 md:grid-cols-2 lg:grid-cols-4">
 
             <div class="col-span-2 lg:col-span-1">
-                <NuxtLink to="/" class="mb-5 text-right leading-none inline-block">
+                <NuxtLink to="/" class="mb-5 text-right leading-none inline-block" aria-label="Kaleem solar home page">
                     <img src="/logos/kaleem-solar-logo-t-4.webp" alt="kaleemSolar Multan Logo" width="140px">
                 </NuxtLink>
 

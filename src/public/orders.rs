@@ -124,6 +124,8 @@ pub async fn create_public_order(
     let mut tx = state.db.begin().await.map_err(|_| OrderError::Internal)?;
 
     let mut subtotal = Decimal::ZERO;
+    let mut tax_amount = Decimal::ZERO;
+    let mut shipping_amount = Decimal::ZERO;
     let mut resolved_items: Vec<(Uuid, String, String, Decimal, i32, Decimal)> = Vec::new();
 
     for item in &payload.items {
@@ -132,7 +134,7 @@ pub async fn create_public_order(
         }
 
         let product = sqlx::query!(
-            r#"SELECT id, name, sku, selling_price, quantity_in_stock
+            r#"SELECT id, name, sku, selling_price, quantity_in_stock, shipping_cost, tax
                FROM products
                WHERE slug = $1 AND sku = $2 AND is_active = true
                FOR UPDATE"#,
@@ -153,8 +155,11 @@ pub async fn create_public_order(
             });
         }
 
-        let line_total = product.selling_price * Decimal::from(item.quantity);
+        let quantity_decimal = Decimal::from(item.quantity);
+        let line_total = product.selling_price * quantity_decimal;
         subtotal += line_total;
+        shipping_amount += product.shipping_cost * quantity_decimal;
+        tax_amount += product.tax * quantity_decimal;
 
         resolved_items.push((
             product.id,
@@ -175,8 +180,6 @@ pub async fn create_public_order(
         .map_err(|_| OrderError::Internal)?;
     }
 
-    let tax_amount = Decimal::ZERO;
-    let shipping_amount = Decimal::ZERO;
     let total_amount = subtotal + tax_amount + shipping_amount;
 
     let mut order = None;
