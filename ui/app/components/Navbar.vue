@@ -105,7 +105,7 @@
             <div v-if="drawerOpen"
                 class="fixed top-0 left-0 h-full w-72 max-w-[85vw] bg-navy text-white z-70 shadow-lg flex flex-col">
                 <div class="flex items-center justify-between px-4 py-3 border-b border-white/10">
-                    <img src="/logos/kaleem-solar-logo-t-2.webp" alt="Kaleem solar logo" width="120px">
+                    <img src="/logos/kaleem-solar-logo-t-4.webp" alt="Kaleem solar logo" width="120px">
                     <button @click="drawerOpen = false" aria-label="Close menu" class="text-2xl leading-none">
                         <Icon name="ic:outline-close" size="22px" />
                     </button>
@@ -137,7 +137,7 @@
                             <NuxtLink to="/verify-purchase" class="hover:text-orange" @click="drawerOpen = false">Verify
                                 purchase</NuxtLink>
                         </li>
-                        <li>
+                        <li v-if="!user">
                             <NuxtLink to="/login" class="hover:text-orange" @click="drawerOpen = false">Login</NuxtLink>
                         </li>
                     </ul>
