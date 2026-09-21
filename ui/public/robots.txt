@@ -1,2 +1,5 @@
-User-Agent: *
-Disallow:
+User-agent: *
+Disallow: /login
+Disallow: /register
+Disallow: /admin/*
+Allow: /

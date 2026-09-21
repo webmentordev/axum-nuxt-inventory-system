@@ -16,15 +16,16 @@
             </div>
 
             <div class="flex items-center gap-3 sm:gap-5 text-xl text-navy">
-                <button class="md:hidden h-fit flex items-center" @click="mobileSearchOpen = !mobileSearchOpen">
+                <button class="md:hidden h-fit flex items-center" @click="mobileSearchOpen = !mobileSearchOpen"
+                    aria-label="Search products button">
                     <Icon name="ic:outline-search" size="24px" />
                 </button>
 
                 <div class="relative" ref="cartDropdownRef">
-                    <button @click="cartDropdownOpen = !cartDropdownOpen" class="relative">
-                        🛒
+                    <button @click="cartDropdownOpen = !cartDropdownOpen" class="relative translate-y-0.5">
+                        <Icon name="ph:shopping-cart-simple-duotone" size="25px" class="text-blue-400 mt-1" />
                         <span v-if="cartCount > 0"
-                            class="absolute -top-2 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-orange px-1 text-[10px] font-semibold text-black">
+                            class="absolute -top-1 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-orange px-1 text-[10px] font-semibold text-black">
                             {{ cartCount }}
                         </span>
                     </button>
