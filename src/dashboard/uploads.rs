@@ -16,6 +16,8 @@ use crate::utils::*;
 
 const UPLOAD_DIR: &str = "uploads/files";
 const TMP_DIR: &str = "uploads/tmp";
+const MAX_IMAGE_DIM: u32 = 500;
+const WEBP_QUALITY: f32 = 80.0;
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct Upload {
@@ -89,6 +91,23 @@ pub struct TmpUpload {
     pub temp_name: String,
     pub original_name: String,
     pub size: u64,
+}
+
+fn process_image(bytes: Vec<u8>, extension: String) -> (Vec<u8>, String) {
+    match image::load_from_memory(&bytes) {
+        Ok(img) => {
+            let resized = if img.width() > MAX_IMAGE_DIM || img.height() > MAX_IMAGE_DIM {
+                img.thumbnail(MAX_IMAGE_DIM, MAX_IMAGE_DIM)
+            } else {
+                img
+            };
+            let rgba = resized.to_rgba8();
+            let encoder = webp::Encoder::from_rgba(&rgba, resized.width(), resized.height());
+            let webp_data = encoder.encode(WEBP_QUALITY).to_vec();
+            (webp_data, "webp".to_string())
+        }
+        Err(_) => (bytes, extension),
+    }
 }
 
 async fn attach_details(
@@ -223,6 +242,7 @@ pub async fn create_tmp_upload(mut multipart: Multipart) -> Result<Json<TmpUploa
     }
 
     let file_bytes = file_bytes.ok_or(StatusCode::BAD_REQUEST)?;
+    let (file_bytes, extension) = process_image(file_bytes, extension);
 
     fs::create_dir_all(TMP_DIR)
         .await
@@ -382,6 +402,7 @@ pub async fn create_upload(
         let file_name = format!("{}.{}", slugify(&name, true), ext);
         move_tmp_to_final(&temp_name, &file_name).await?
     } else if let Some(bytes) = file_bytes {
+        let (bytes, extension) = process_image(bytes, extension);
         let file_name = format!("{}.{}", slugify(&name, true), extension);
         let path = format!("{UPLOAD_DIR}/{file_name}");
         let mut file = fs::File::create(&path)
@@ -545,6 +566,8 @@ pub async fn update_upload(
         let _ = fs::remove_file(&existing.file_path).await;
         new_path
     } else if let Some(bytes) = new_file_bytes {
+        let (bytes, extension) = process_image(bytes, extension);
+
         fs::create_dir_all(UPLOAD_DIR)
             .await
             .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;

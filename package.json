@@ -1,0 +1,6 @@
+{
+  "devDependencies": {
+    "@iconify-json/ant-design": "^1.2.9",
+    "@iconify-json/si": "^1.2.17"
+  }
+}
