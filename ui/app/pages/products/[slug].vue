@@ -34,7 +34,7 @@
                 <div class="flex flex-col gap-4">
                     <div>
                         <div v-if="brandLogo" class="text-sm text-zinc-500 mb-3">
-                            <img :src="brandLogo" width="90px">
+                            <img :src="brandLogo" width="90px" :alt='`${product.brand.name} logo`'>
                         </div>
                         <h1 class="text-xl sm:text-2xl font-bold text-zinc-900 my-2">{{ product.name }}</h1>
                         <p v-if="product.model" class="text-sm text-zinc-500">Model: {{ product.model }}</p>
@@ -59,14 +59,14 @@
                                 }}</NuxtLink>
                         </li>
                         <li v-if="stockLabel"><strong>Availability: </strong><span :class="stockClass">{{ stockLabel
-                        }}</span></li>
+                                }}</span></li>
                     </ul>
 
                     <div class="flex flex-col gap-1">
                         <div class="flex flex-wrap items-baseline gap-2 sm:gap-3">
                             <span class="text-xl sm:text-2xl font-bold text-navy">{{
                                 formatCurrency(product.selling_price)
-                            }}</span>
+                                }}</span>
                             <span v-if="hasDiscount" class="text-sm sm:text-base text-zinc-400 line-through">
                                 {{ formatCurrency(product.compare_at_selling_price) }}
                             </span>

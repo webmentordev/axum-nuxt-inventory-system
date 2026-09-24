@@ -6,7 +6,8 @@
                 class="bg-slate-200 rounded-full w-full py-2 outline-none px-4 sm:px-5 text-xs sm:text-sm">
             <button @click="runSearch"
                 class="bg-navy shrink-0 flex items-center text-white py-2 px-3 sm:px-4 rounded-full ml-2">
-                <img src="https://api.iconify.design/ic:outline-search.svg?color=%23ffffff" width="18px">
+                <img src="https://api.iconify.design/ic:outline-search.svg?color=%23ffffff" width="18px"
+                    alt="Search products icon">
                 <strong class="hidden sm:inline text-sm ml-1 -translate-y-0.5">Search</strong>
             </button>
         </div>

@@ -22,7 +22,8 @@
                 </button>
 
                 <div class="relative" ref="cartDropdownRef">
-                    <button @click="cartDropdownOpen = !cartDropdownOpen" class="relative translate-y-0.5">
+                    <button @click="cartDropdownOpen = !cartDropdownOpen" class="relative translate-y-0.5"
+                        aria-label="Shopping cart">
                         <Icon name="ph:shopping-cart-simple-duotone" size="25px" class="text-blue-400 mt-1" />
                         <span v-if="cartCount > 0"
                             class="absolute -top-1 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-orange px-1 text-[10px] font-semibold text-black">
