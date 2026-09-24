@@ -1,8 +1,10 @@
 <template>
     <Announcements />
     <Navbar />
-    <div class="h-full">
-        <slot />
-    </div>
+    <main id="main-content" role="main">
+        <div class="h-full">
+            <slot />
+        </div>
+    </main>
     <Footer />
 </template>

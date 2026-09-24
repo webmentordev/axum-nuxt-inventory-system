@@ -53,6 +53,12 @@ export default defineNuxtConfig({
       link: [
         { rel: 'icon', type: 'image/x-icon', href: '/kaleem-solar-fav.png' },
         { rel: 'canonical', href: 'https://kaleemsolarpk.com' },
+        { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+        { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
+        {
+          rel: 'stylesheet',
+          href: 'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap',
+        },
       ],
       meta: [
         { name: 'description', content: 'KaleemSolarPK Multan offers A-Grade solar panels, inverters, batteries & accessories at the best prices. Trusted solar solutions in Multan, Pakistan.' },

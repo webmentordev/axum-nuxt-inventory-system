@@ -1,6 +1,8 @@
 <template>
     <Announcements />
     <Navbar />
-    <slot />
+    <main id="main-content" role="main">
+        <slot />
+    </main>
     <Footer />
 </template>

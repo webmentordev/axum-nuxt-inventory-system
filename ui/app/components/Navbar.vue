@@ -7,7 +7,7 @@
                 </button>
 
                 <NuxtLink to="/" class="flex items-center shrink-0" aria-label="Kaleem solar home page">
-                    <img src="/logos/kaleem-solar-logo-t-2.webp" alt="Kaleem solar logo" width="130px">
+                    <img src="/logos/kaleem-solar-logo-t-2.webp" alt="Kaleem solar logo" width="130" height="40">
                 </NuxtLink>
             </div>
 

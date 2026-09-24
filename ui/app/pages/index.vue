@@ -1,7 +1,8 @@
 <template>
     <section>
-        <header class="min-h-[220px] sm:min-h-[280px] lg:min-h-180 bg-cover bg-center mb-8 lg:mb-12"
-            style="background-image: url('/kaleemsolar-banner.webp');">
+        <header class="relative min-h-55 sm:min-h-70 lg:min-h-180 mb-8 lg:mb-12">
+            <img src="/kaleemsolar-banner.webp" alt="" fetchpriority="high"
+                class="absolute inset-0 w-full h-full object-cover -z-10">
         </header>
         <div class="max-w-7xl m-auto py-6 px-4" v-if="categories.length > 0">
             <h3 class="uppercase text-center font-semibold text-xl sm:text-2xl text-navy">Shop by category</h3>
@@ -32,17 +33,17 @@
                     alt="Solar installation panels image">
 
                 <div class="absolute left-3 top-3 sm:left-5 sm:top-5 rounded-xl bg-white p-3 sm:p-5 shadow-xl">
-                    <strong class="text-xl sm:text-3xl text-orange">500+</strong>
+                    <strong class="text-xl sm:text-3xl text-orange-dark">500+</strong>
                     <p class="text-xs sm:text-sm font-semibold text-navy">Happy Customers</p>
                 </div>
 
                 <div class="absolute bottom-3 right-3 sm:bottom-5 sm:right-5 rounded-xl bg-white p-3 sm:p-5 shadow-xl">
-                    <strong class="text-xl sm:text-3xl text-orange">1000+</strong>
+                    <strong class="text-xl sm:text-3xl text-orange-dark">1000+</strong>
                     <p class="text-xs sm:text-sm font-semibold text-navy">Projects Completed</p>
                 </div>
             </div>
             <div>
-                <p class="font-bold uppercase tracking-wide text-orange text-sm sm:text-base">Why Choose Us?</p>
+                <p class="font-bold uppercase tracking-wide text-orange-dark text-md sm:text-base">Why Choose Us?</p>
                 <h2 class="mt-2 text-2xl sm:text-3xl lg:text-4xl font-black text-navy">
                     Your Trusted Partner
                     <br>
@@ -50,7 +51,7 @@
                 </h2>
                 <div class="mt-6 lg:mt-8 space-y-5 lg:space-y-6">
                     <div class="flex gap-4 sm:gap-5 border-b pb-5">
-                        <span class="text-2xl sm:text-3xl text-orange">🛡</span>
+                        <span class="text-2xl sm:text-3xl text-orange-dark">🛡</span>
                         <div>
                             <h3 class="font-bold text-navy text-sm sm:text-base">Expert Guidance</h3>
                             <p class="mt-1 text-xs sm:text-sm text-slate-500">Get professional advice to choose the
@@ -97,7 +98,7 @@
                 class="relative mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 lg:gap-8 px-4 md:flex-row">
                 <div class="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 text-center sm:text-left">
                     <div class="leading-none">
-                        <img src="/logos/kaleem-solar-logo-t-4.webp" width="120px" alt="Kaleem solar logo">
+                        <img src="/logos/kaleem-solar-logo-t-4.webp" width="130" height="40" alt="Kaleem solar logo">
                     </div>
                     <div>
                         <h2 class="text-2xl sm:text-3xl font-black">Ready to Switch to Solar?</h2>
