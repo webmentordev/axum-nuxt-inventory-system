@@ -7,6 +7,7 @@ pub mod orders;
 pub mod policies;
 pub mod products;
 pub mod products_seo;
+pub mod specifications;
 pub mod stats;
 pub mod sub_categories;
 pub mod uploads;

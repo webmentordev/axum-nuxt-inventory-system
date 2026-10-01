@@ -9,6 +9,7 @@ use crate::dashboard::orders::*;
 use crate::dashboard::policies::*;
 use crate::dashboard::products::*;
 use crate::dashboard::products_seo::*;
+use crate::dashboard::specifications::*;
 use crate::dashboard::stats::*;
 use crate::dashboard::sub_categories::*;
 use crate::dashboard::uploads::*;
@@ -27,6 +28,10 @@ pub async fn init_admin_routes(state: AppState) -> Result<Router> {
         .route("/", get(get_products).post(create_product))
         .route("/list", get(get_products_list))
         .route("/{uuid}", get(get_product).patch(update_product));
+
+    let specifications = Router::new()
+        .route("/", get(get_specifications).post(create_specifications))
+        .route("/{uuid}", patch(update_specification));
 
     let categories = Router::new()
         .route("/", get(get_categories).post(create_category))
@@ -127,6 +132,7 @@ pub async fn init_admin_routes(state: AppState) -> Result<Router> {
 
     let routes = Router::new()
         .nest("/products", product)
+        .nest("/specifications", specifications)
         .nest("/categories", categories)
         .nest("/sub-categories", sub_categories)
         .nest("/orders", orders)
