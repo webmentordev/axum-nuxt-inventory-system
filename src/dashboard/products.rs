@@ -7,6 +7,7 @@ use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use std::collections::HashMap;
 use uuid::Uuid;
 
 use crate::auth::Claims;
@@ -152,10 +153,11 @@ pub struct ProductWithSeo {
     pub updated_at: DateTime<Utc>,
 
     pub seo: Option<ProductSeo>,
+    pub total_specs_count: i64,
 }
 
 impl ProductWithSeo {
-    fn from_product(p: Product, seo: Option<ProductSeo>) -> Self {
+    fn from_product(p: Product, seo: Option<ProductSeo>, total_specs_count: i64) -> Self {
         Self {
             id: p.id,
             category_id: p.category_id,
@@ -188,6 +190,7 @@ impl ProductWithSeo {
             created_at: p.created_at,
             updated_at: p.updated_at,
             seo,
+            total_specs_count,
         }
     }
 }
@@ -252,11 +255,26 @@ pub async fn get_products(
     .await
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
+    let spec_counts: HashMap<Uuid, i64> = sqlx::query!(
+        r#"SELECT product_id, COUNT(*) AS "count!"
+           FROM product_specifications
+           WHERE product_id = ANY($1)
+           GROUP BY product_id"#,
+        &product_ids
+    )
+    .fetch_all(&state.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+    .into_iter()
+    .map(|r| (r.product_id, r.count))
+    .collect();
+
     let result = products
         .into_iter()
         .map(|p| {
             let seo = seo_rows.iter().find(|s| s.product_id == p.id).cloned();
-            ProductWithSeo::from_product(p, seo)
+            let count = spec_counts.get(&p.id).copied().unwrap_or(0);
+            ProductWithSeo::from_product(p, seo, count)
         })
         .collect();
 
@@ -298,7 +316,19 @@ pub async fn get_product(
     .await
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    Ok(Json(ProductWithSeo::from_product(product, seo)))
+    let total_specs_count = sqlx::query_scalar!(
+        r#"SELECT COUNT(*) AS "count!" FROM product_specifications WHERE product_id = $1"#,
+        uuid
+    )
+    .fetch_one(&state.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    Ok(Json(ProductWithSeo::from_product(
+        product,
+        seo,
+        total_specs_count,
+    )))
 }
 
 pub async fn create_product(

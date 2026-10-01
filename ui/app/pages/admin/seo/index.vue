@@ -5,10 +5,10 @@
                 <h1 class="text-xl font-bold text-white">Product SEO</h1>
                 <p class="text-sm text-zinc-500 mt-1">{{ seoEntries.length }} total</p>
             </div>
-            <div class="flex items-center">
+            <div class="flex items-center gap-3">
                 <AdminButton @click="fetchSeoEntries()" icon="tabler:refresh">Refresh</AdminButton>
                 <NuxtLink to="/admin/seo/create"
-                    class="px-4 py-2 rounded-md text-sm font-semibold bg-lime-main text-dark hover:bg-lime-hover transition-colors ml-2">
+                    class="px-4 py-2 rounded-md text-sm font-semibold bg-lime-main text-dark hover:bg-lime-hover transition-colors">
                     Add SEO
                 </NuxtLink>
             </div>

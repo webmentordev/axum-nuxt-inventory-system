@@ -19,7 +19,7 @@
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Key</th>
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Value</th>
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Unit</th>
-                        <th class="text-left px-4 py-3 font-semibold text-zinc-400">Order</th>
+                        <th class="text-left px-4 py-3 font-semibold text-zinc-400">Sort Order</th>
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Highlighted</th>
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Filterable</th>
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Status</th>

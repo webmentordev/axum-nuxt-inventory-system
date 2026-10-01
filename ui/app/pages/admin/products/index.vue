@@ -5,10 +5,16 @@
                 <h1 class="text-xl font-bold text-white">Products</h1>
                 <p class="text-sm text-zinc-500 mt-1">{{ products.length }} total</p>
             </div>
-            <NuxtLink to="/admin/products/create"
-                class="px-4 py-2 rounded-md text-sm font-semibold bg-lime-main text-dark hover:bg-lime-hover transition-colors">
-                Add Product
-            </NuxtLink>
+            <div class="flex items-center gap-3">
+                <NuxtLink to="/admin/products/create"
+                    class="px-4 py-2 rounded-md text-sm font-semibold bg-lime-main text-dark hover:bg-lime-hover transition-colors">
+                    Add Product
+                </NuxtLink>
+                <NuxtLink to="/admin/specifications/create"
+                    class="px-4 py-2 rounded-md text-sm font-semibold bg-lime-main text-dark hover:bg-lime-hover transition-colors">
+                    Add specifications
+                </NuxtLink>
+            </div>
         </div>
 
         <div class="w-full border border-dark-300 rounded-lg bg-dark-100">
@@ -23,6 +29,8 @@
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Comp. Cost</th>
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Sell/C Cost</th>
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Stock</th>
+                        <th class="text-left px-4 py-3 font-semibold text-zinc-400" title="Product specifications">Specs
+                        </th>
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Status</th>
                         <th class="text-left px-4 py-3 font-semibold text-zinc-400">Created</th>
                         <th class="text-right px-4 py-3 font-semibold text-zinc-400 w-12"></th>
@@ -51,6 +59,7 @@
                         <td class="px-4 py-3 text-zinc-200">{{
                             formatCurrency(product.compare_at_selling_price) }}</td>
                         <td class="px-4 py-3 text-zinc-400">{{ product.quantity_in_stock }}</td>
+                        <td class="px-4 py-3 text-zinc-400">{{ product.total_specs_count }}</td>
                         <td class="px-4 py-3">
                             <span class="px-2 py-1 rounded text-xs font-semibold" :class="product.is_active
                                 ? 'bg-lime-bg text-lime-main'

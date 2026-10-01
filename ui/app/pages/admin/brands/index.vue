@@ -5,10 +5,10 @@
                 <h1 class="text-xl font-bold text-white">Brands</h1>
                 <p class="text-sm text-zinc-500 mt-1">{{ brands.length }} total</p>
             </div>
-            <div class="flex items-center">
+            <div class="flex items-center gap-3">
                 <AdminButton @click="fetchBrands()" icon="tabler:refresh">Refresh</AdminButton>
                 <NuxtLink to="/admin/brands/create"
-                    class="px-4 py-2 rounded-md text-sm font-semibold bg-lime-main text-dark hover:bg-lime-hover transition-colors ml-2">
+                    class="px-4 py-2 rounded-md text-sm font-semibold bg-lime-main text-dark hover:bg-lime-hover transition-colors">
                     Add brand
                 </NuxtLink>
             </div>

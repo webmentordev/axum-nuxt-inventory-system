@@ -68,16 +68,13 @@ fn map_db_error(e: sqlx::Error) -> StatusCode {
 
 pub async fn get_specifications(
     State(state): State<AppState>,
-    Path(product_id): Path<Uuid>,
 ) -> Result<Json<Vec<ProductSpecification>>, StatusCode> {
     let specs = sqlx::query_as!(
         ProductSpecification,
         r#"SELECT id, product_id, group_name, key, value, unit, sort_order,
                   is_highlighted, is_filterable, is_active, created_at, updated_at
            FROM product_specifications
-           WHERE product_id = $1
-           ORDER BY sort_order ASC, created_at ASC"#,
-        product_id
+           ORDER BY created_at DESC, sort_order ASC"#
     )
     .fetch_all(&state.db)
     .await
