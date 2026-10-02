@@ -59,14 +59,14 @@
                                 }}</NuxtLink>
                         </li>
                         <li v-if="stockLabel"><strong>Availability: </strong><span :class="stockClass">{{ stockLabel
-                                }}</span></li>
+                        }}</span></li>
                     </ul>
 
                     <div class="flex flex-col gap-1">
                         <div class="flex flex-wrap items-baseline gap-2 sm:gap-3">
                             <span class="text-xl sm:text-2xl font-bold text-navy">{{
                                 formatCurrency(product.selling_price)
-                                }}</span>
+                            }}</span>
                             <span v-if="hasDiscount" class="text-sm sm:text-base text-zinc-400 line-through">
                                 {{ formatCurrency(product.compare_at_selling_price) }}
                             </span>
@@ -82,12 +82,6 @@
 
                     <p v-if="product.description" class="text-sm sm:text-base text-zinc-700 leading-relaxed">{{
                         product.description }}</p>
-
-                    <ul v-if="specs.length" class="text-sm text-zinc-600 flex flex-col gap-1">
-                        <li v-for="spec in specs" :key="spec.label">
-                            <strong>{{ spec.label }}: </strong>{{ spec.value }}
-                        </li>
-                    </ul>
 
                     <p v-if="product.warranty_months" class="text-sm text-zinc-500">
                         {{ product.warranty_months }} month warranty
@@ -105,6 +99,28 @@
                     </div>
                 </div>
             </div>
+
+            <div v-if="hasSpecifications" class="mt-6">
+                <h3 class="text-lg sm:text-xl font-semibold mb-3">Specifications</h3>
+                <div v-for="(items, group) in product.specifications" :key="group"
+                    class="mb-4 border border-zinc-200 rounded-lg overflow-hidden">
+                    <h4 class="px-4 py-2 text-sm sm:text-base font-semibold text-zinc-900 bg-zinc-100">{{ group }}</h4>
+                    <table class="w-full text-sm">
+                        <tbody>
+                            <tr v-for="item in items" :key="item.key" class="border-t border-zinc-200">
+                                <td class="px-4 py-2 w-1/3 text-zinc-500"
+                                    :class="item.is_highlighted ? 'font-semibold text-zinc-900' : ''">
+                                    {{ item.key }}
+                                </td>
+                                <td class="px-4 py-2 text-zinc-800" :class="item.is_highlighted ? 'font-semibold' : ''">
+                                    {{ item.value }}<span v-if="item.unit"> {{ item.unit }}</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             <div v-if="product.content" class="mt-6">
                 <h3 class="text-lg sm:text-xl font-semibold mb-2" :title='`${product.name} details and specifications`'>
                     Product
@@ -277,16 +293,7 @@ const displayPricePerWatt = computed(() => {
     return Number.isNaN(perWatt) || !product.value.per_watt_price ? null : perWatt;
 });
 
-const specs = computed(() => {
-    if (!product.value) return [];
-    const p = product.value;
-    const list = [];
-    if (p.power_rating_watts) list.push({ label: 'Power', value: `${p.power_rating_watts} W` });
-    if (p.voltage_rating) list.push({ label: 'Voltage', value: `${p.voltage_rating} V` });
-    if (p.capacity_ah) list.push({ label: 'Capacity', value: `${p.capacity_ah} Ah` });
-    if (p.kilowatt_hour) list.push({ label: 'Kilowatt Hour', value: `${p.kilowatt_hour} kWh` });
-    return list;
-});
+const hasSpecifications = computed(() => Object.keys(product.value?.specifications || {}).length > 0);
 
 const stockLabel = computed(() => {
     if (!product.value) return '';

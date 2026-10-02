@@ -3,6 +3,7 @@ use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
 };
+use indexmap::IndexMap;
 use rust_decimal::Decimal;
 use serde::Serialize;
 use std::collections::HashMap;
@@ -76,6 +77,7 @@ pub struct PublicProduct {
     pub unit: String,
     pub image_url: String,
     pub uploads: Vec<Upload>,
+    pub specifications: IndexMap<String, Vec<PublicSpecification>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub suggested_products: Option<Vec<PublicProduct>>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -197,6 +199,23 @@ pub struct GetProductsQuery {
 pub struct RecentlyViewedRequest {
     pub slugs: Vec<String>,
 }
+
+#[derive(Debug, Serialize)]
+pub struct PublicSpecification {
+    pub key: String,
+    pub value: String,
+    pub unit: Option<String>,
+    pub is_highlighted: bool,
+}
+
+struct SpecificationRow {
+    group_name: Option<String>,
+    key: String,
+    value: String,
+    unit: Option<String>,
+    is_highlighted: bool,
+}
+
 pub async fn search_public_products(
     State(state): State<AppState>,
     Json(req): Json<SearchProductsRequest>,
@@ -429,6 +448,7 @@ pub fn build_public_product(
         unit: p.unit,
         image_url: p.image_url,
         uploads: product_uploads,
+        specifications: IndexMap::new(),
         suggested_products: None,
         seo: None,
     }
@@ -675,9 +695,41 @@ pub async fn get_public_product(
     };
 
     let product_id = p.id;
+
+    let spec_rows = sqlx::query_as!(
+        SpecificationRow,
+        r#"SELECT group_name, key, value, unit, is_highlighted
+           FROM product_specifications
+           WHERE product_id = $1 AND is_active = TRUE
+           ORDER BY sort_order ASC, created_at ASC"#,
+        product_id
+    )
+    .fetch_all(&state.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let mut specifications: IndexMap<String, Vec<PublicSpecification>> = IndexMap::new();
+    for row in spec_rows {
+        let group = row
+            .group_name
+            .filter(|g| !g.trim().is_empty())
+            .unwrap_or_else(|| "General".to_string());
+
+        specifications
+            .entry(group)
+            .or_default()
+            .push(PublicSpecification {
+                key: row.key,
+                value: row.value,
+                unit: row.unit,
+                is_highlighted: row.is_highlighted,
+            });
+    }
+
     let mut product = build_public_product(p, &uploads, &brand_map);
     product.category = category;
     product.sub_category = sub_category;
+    product.specifications = specifications;
     product.suggested_products = Some(fetch_suggested_products(&state, product_id).await?);
     product.seo = seo;
 
