@@ -59,14 +59,14 @@
                                 }}</NuxtLink>
                         </li>
                         <li v-if="stockLabel"><strong>Availability: </strong><span :class="stockClass">{{ stockLabel
-                        }}</span></li>
+                                }}</span></li>
                     </ul>
 
                     <div class="flex flex-col gap-1">
                         <div class="flex flex-wrap items-baseline gap-2 sm:gap-3">
                             <span class="text-xl sm:text-2xl font-bold text-navy">{{
                                 formatCurrency(product.selling_price)
-                            }}</span>
+                                }}</span>
                             <span v-if="hasDiscount" class="text-sm sm:text-base text-zinc-400 line-through">
                                 {{ formatCurrency(product.compare_at_selling_price) }}
                             </span>
@@ -75,9 +75,6 @@
                                 {{ discountPercent }}% off
                             </span>
                         </div>
-                        <span v-if="displayPricePerWatt" class="text-sm text-zinc-500">
-                            {{ formatCurrency(displayPricePerWatt) }} / watt
-                        </span>
                     </div>
 
                     <p v-if="product.description" class="text-sm sm:text-base text-zinc-700 leading-relaxed">{{
@@ -284,13 +281,6 @@ const discountPercent = computed(() => {
     const compareAt = Number(product.value.compare_at_selling_price);
     const selling = Number(product.value.selling_price);
     return Math.round(((compareAt - selling) / compareAt) * 100);
-});
-
-const displayPricePerWatt = computed(() => {
-    if (!product.value) return null;
-
-    const perWatt = Number(product.value.per_watt_price);
-    return Number.isNaN(perWatt) || !product.value.per_watt_price ? null : perWatt;
 });
 
 const hasSpecifications = computed(() => Object.keys(product.value?.specifications || {}).length > 0);

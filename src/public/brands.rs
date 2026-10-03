@@ -64,9 +64,9 @@ pub async fn get_public_brand(
 
     let products = sqlx::query_as!(
 PublicProductRow,
-r#"SELECT id, name, slug, sku, product_type, brand_id, category_id as "category_id!", sub_category_id, model, description, content, image_url as "image_url!",
-                  power_rating_watts, per_watt_price, voltage_rating, capacity_ah, warranty_months,
-                  selling_price, compare_at_selling_price, shipping_cost, tax, quantity_in_stock, unit
+r#"SELECT id, name, slug, sku, brand_id, category_id as "category_id!", sub_category_id, model, description, content, image_url as "image_url!",
+       warranty_months,
+       selling_price, compare_at_selling_price, shipping_cost, tax, quantity_in_stock, unit
            FROM products
            WHERE brand_id = $1 AND is_active = TRUE
            ORDER BY created_at DESC"#,

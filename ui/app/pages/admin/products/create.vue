@@ -5,7 +5,7 @@
             <p class="text-sm text-zinc-500 mt-1">Add a new product to the catalog.</p>
 
             <form @submit.prevent="handleSubmit" class="mt-6 flex flex-col gap-4" novalidate>
-                <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
                         <label class="block text-sm font-semibold text-zinc-300 mb-2">Category</label>
                         <AdminSelect v-model="categoryId" :options="categoryOptions"
@@ -28,12 +28,6 @@
                         <AdminSelect v-model="brandId" :options="brandOptions"
                             :placeholder="brandsLoading ? 'Loading brands...' : 'Select a brand'" />
                         <p v-if="errors.brand_id" class="text-xs text-red-400 mt-1">{{ errors.brand_id }}</p>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-semibold text-zinc-300 mb-2">Product Type</label>
-                        <AdminSelect v-model="productType" :options="productTypeOptions" placeholder="Select a type" />
-                        <p v-if="errors.product_type" class="text-xs text-red-400 mt-1">{{ errors.product_type }}</p>
                     </div>
                 </div>
 
@@ -76,46 +70,11 @@
                     <p v-if="errors.content" class="text-xs text-red-400 mt-1">{{ errors.content }}</p>
                 </div>
 
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    <div>
-                        <label class="block text-sm font-semibold text-zinc-300 mb-2">Power (W)</label>
-                        <AdminInput v-model="powerRatingWatts" type="number" step="0.01" placeholder="e.g. 500" />
-                        <p v-if="errors.power_rating_watts" class="text-xs text-red-400 mt-1">{{
-                            errors.power_rating_watts }}</p>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-semibold text-zinc-300 mb-2">Voltage (V)</label>
-                        <AdminInput v-model="voltageRating" type="number" step="0.01" placeholder="e.g. 12" />
-                        <p v-if="errors.voltage_rating" class="text-xs text-red-400 mt-1">{{ errors.voltage_rating }}
-                        </p>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-semibold text-zinc-300 mb-2">Capacity (Ah)</label>
-                        <AdminInput v-model="capacityAh" type="number" step="0.01" placeholder="e.g. 100" />
-                        <p v-if="errors.capacity_ah" class="text-xs text-red-400 mt-1">{{ errors.capacity_ah }}</p>
-                    </div>
-
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
                     <div>
                         <label class="block text-sm font-semibold text-zinc-300 mb-2">Warranty (mo.)</label>
                         <AdminInput v-model="warrantyMonths" type="number" step="1" placeholder="e.g. 24" />
                         <p v-if="errors.warranty_months" class="text-xs text-red-400 mt-1">{{ errors.warranty_months }}
-                        </p>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    <div>
-                        <label class="block text-sm font-semibold text-zinc-300 mb-2">Kilowatt Hour</label>
-                        <AdminInput v-model="kilowattHour" type="number" step="0.01" placeholder="e.g. 5" />
-                        <p v-if="errors.kilowatt_hour" class="text-xs text-red-400 mt-1">{{ errors.kilowatt_hour }}</p>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-semibold text-zinc-300 mb-2">Per Watt Price</label>
-                        <AdminInput v-model="perWattPrice" type="number" step="0.01" placeholder="Optional" />
-                        <p v-if="errors.per_watt_price" class="text-xs text-red-400 mt-1">{{ errors.per_watt_price }}
                         </p>
                     </div>
 
@@ -130,9 +89,6 @@
                         <AdminInput v-model="tax" type="number" step="0.01" placeholder="0" />
                         <p v-if="errors.tax" class="text-xs text-red-400 mt-1">{{ errors.tax }}</p>
                     </div>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
                         <label class="block text-sm font-semibold text-zinc-300 mb-2">Cost Price</label>
                         <AdminInput v-model="costPrice" type="number" step="0.01" placeholder="e.g. 15000" />
@@ -158,7 +114,7 @@
                         <label class="block text-sm font-semibold text-zinc-300 mb-2">Quantity in Stock</label>
                         <AdminInput v-model="quantityInStock" type="number" step="1" placeholder="0" />
                         <p v-if="errors.quantity_in_stock" class="text-xs text-red-400 mt-1">{{ errors.quantity_in_stock
-                            }}</p>
+                        }}</p>
                     </div>
 
                     <div>
@@ -209,7 +165,6 @@ const brandsLoading = ref(true);
 const categoryId = ref(null);
 const subCategoryId = ref(null);
 const brandId = ref(null);
-const productType = ref('other');
 
 const name = ref('');
 const slug = ref('');
@@ -218,18 +173,13 @@ const model = ref('');
 const description = ref('');
 const content = ref('');
 
-const powerRatingWatts = ref('');
-const voltageRating = ref('');
-const capacityAh = ref('');
 const warrantyMonths = ref('');
 
 const costPrice = ref('');
 const sellingPrice = ref('');
 const compareAtSellingPrice = ref('');
-const perWattPrice = ref('');
 const shippingCost = ref('0');
 const tax = ref('0');
-const kilowattHour = ref('');
 
 const quantityInStock = ref('0');
 const reorderLevel = ref('0');
@@ -243,11 +193,6 @@ const errors = ref({});
 const showStatus = ref(false);
 const statusType = ref('loading');
 const statusMessage = ref('');
-
-const productTypeOptions = [
-    { label: 'Other', value: 'other' },
-    { label: 'Solar Panel', value: 'solar' }
-];
 
 const categoryOptions = computed(() =>
     categories.value.map((category) => ({
@@ -384,10 +329,6 @@ function validate() {
         errors.value.compare_at_selling_price = 'Compare at selling price must be 0 or more.';
     }
 
-    if (perWattPrice.value !== '' && Number(perWattPrice.value) < 0) {
-        errors.value.per_watt_price = 'Per watt price must be 0 or more.';
-    }
-
     if (shippingCost.value === '' || Number(shippingCost.value) < 0) {
         errors.value.shipping_cost = 'Shipping cost must be 0 or more.';
     }
@@ -419,24 +360,18 @@ function resetForm() {
     categoryId.value = null;
     subCategoryId.value = null;
     brandId.value = null;
-    productType.value = 'other';
     name.value = '';
     slug.value = '';
     slugTouched.value = false;
     model.value = '';
     description.value = '';
     content.value = '';
-    powerRatingWatts.value = '';
-    voltageRating.value = '';
-    capacityAh.value = '';
     warrantyMonths.value = '';
     costPrice.value = '';
     sellingPrice.value = '';
     compareAtSellingPrice.value = '';
-    perWattPrice.value = '';
     shippingCost.value = '0';
     tax.value = '0';
-    kilowattHour.value = '';
     quantityInStock.value = '0';
     reorderLevel.value = '0';
     unit.value = 'piece';
@@ -458,31 +393,20 @@ async function handleSubmit() {
                 category_id: categoryId.value,
                 sub_category_id: subCategoryId.value,
                 brand_id: brandId.value,
-
                 name: name.value.trim(),
                 slug: slug.value.trim(),
                 model: model.value.trim() || null,
                 description: description.value.trim() || null,
                 content: content.value.trim() || null,
-                product_type: productType.value,
-
-                power_rating_watts: toNumberOrNull(powerRatingWatts.value),
-                voltage_rating: toNumberOrNull(voltageRating.value),
-                capacity_ah: toNumberOrNull(capacityAh.value),
                 warranty_months: toNumberOrNull(warrantyMonths.value),
-
                 cost_price: toNumberOrNull(costPrice.value),
                 selling_price: toNumberOrNull(sellingPrice.value),
                 compare_at_selling_price: toNumberOrNull(compareAtSellingPrice.value),
-                per_watt_price: toNumberOrNull(perWattPrice.value),
                 shipping_cost: toNumberOrNull(shippingCost.value) ?? 0,
                 tax: toNumberOrNull(tax.value) ?? 0,
-                kilowatt_hour: toNumberOrNull(kilowattHour.value),
-
                 quantity_in_stock: toNumberOrNull(quantityInStock.value) ?? 0,
                 reorder_level: toNumberOrNull(reorderLevel.value) ?? 0,
                 unit: unit.value.trim(),
-
                 image_url: imageUrl.value.trim() || null,
                 is_active: isActive.value
             }

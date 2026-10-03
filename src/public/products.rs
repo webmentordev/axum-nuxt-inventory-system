@@ -26,13 +26,8 @@ pub struct PublicProductRow {
     pub category_id: Uuid,
     pub sub_category_id: Option<Uuid>,
     pub model: Option<String>,
-    pub product_type: Option<String>,
     pub description: Option<String>,
     pub content: Option<String>,
-    pub power_rating_watts: Option<Decimal>,
-    pub per_watt_price: Option<Decimal>,
-    pub voltage_rating: Option<Decimal>,
-    pub capacity_ah: Option<Decimal>,
     pub warranty_months: Option<i16>,
     pub selling_price: Decimal,
     pub compare_at_selling_price: Option<Decimal>,
@@ -61,13 +56,8 @@ pub struct PublicProduct {
     pub category: Option<PublicProductCategoryMini>,
     pub sub_category: Option<PublicProductCategoryMini>,
     pub model: Option<String>,
-    pub product_type: Option<String>,
     pub description: Option<String>,
     pub content: Option<String>,
-    pub power_rating_watts: Option<Decimal>,
-    pub per_watt_price: Option<Decimal>,
-    pub voltage_rating: Option<Decimal>,
-    pub capacity_ah: Option<Decimal>,
     pub warranty_months: Option<i16>,
     pub selling_price: Decimal,
     pub compare_at_selling_price: Option<Decimal>,
@@ -143,13 +133,8 @@ struct SearchProductRow {
     category_id: Uuid,
     sub_category_id: Option<Uuid>,
     model: Option<String>,
-    product_type: Option<String>,
     description: Option<String>,
     content: Option<String>,
-    power_rating_watts: Option<Decimal>,
-    per_watt_price: Option<Decimal>,
-    voltage_rating: Option<Decimal>,
-    capacity_ah: Option<Decimal>,
     warranty_months: Option<i16>,
     selling_price: Decimal,
     compare_at_selling_price: Option<Decimal>,
@@ -171,13 +156,8 @@ impl From<SearchProductRow> for PublicProductRow {
             category_id: r.category_id,
             sub_category_id: r.sub_category_id,
             model: r.model,
-            product_type: r.product_type,
             description: r.description,
             content: r.content,
-            power_rating_watts: r.power_rating_watts,
-            per_watt_price: r.per_watt_price,
-            voltage_rating: r.voltage_rating,
-            capacity_ah: r.capacity_ah,
             warranty_months: r.warranty_months,
             selling_price: r.selling_price,
             quantity_in_stock: r.quantity_in_stock,
@@ -232,8 +212,7 @@ pub async fn search_public_products(
     let rows = sqlx::query_as!(
         SearchProductRow,
         r#"SELECT p.id, p.name, p.slug, p.sku, p.brand_id, p.category_id as "category_id!",
-                  p.sub_category_id, p.model, p.product_type, p.description, p.content,
-                  p.power_rating_watts, p.per_watt_price, p.voltage_rating, p.capacity_ah,
+                  p.sub_category_id, p.model, p.description, p.content,
                   p.warranty_months, p.selling_price, p.shipping_cost, p.tax, compare_at_selling_price, p.quantity_in_stock,
                   p.image_url as "image_url!", p.unit
            FROM products p
@@ -434,11 +413,6 @@ pub fn build_public_product(
         model: p.model,
         description: p.description,
         content: p.content,
-        power_rating_watts: p.power_rating_watts,
-        product_type: p.product_type,
-        per_watt_price: p.per_watt_price,
-        voltage_rating: p.voltage_rating,
-        capacity_ah: p.capacity_ah,
         warranty_months: p.warranty_months,
         selling_price: p.selling_price,
         compare_at_selling_price: p.compare_at_selling_price,
@@ -460,8 +434,8 @@ pub async fn fetch_suggested_products(
 ) -> Result<Vec<PublicProduct>, StatusCode> {
     let rows = sqlx::query_as!(
         PublicProductRow,
-        r#"SELECT id, name, slug, sku, product_type, brand_id, category_id as "category_id!", sub_category_id, model, description, content, image_url as "image_url!",
-                  power_rating_watts, per_watt_price, voltage_rating, capacity_ah, warranty_months,
+        r#"SELECT id, name, slug, sku, brand_id, category_id as "category_id!", sub_category_id, model, description, content, image_url as "image_url!",
+                  warranty_months,
                   selling_price, compare_at_selling_price, shipping_cost, tax, quantity_in_stock, unit
            FROM products
            WHERE is_active = TRUE AND id != $1
@@ -502,8 +476,8 @@ pub async fn get_public_products(
 ) -> Result<Json<Vec<PublicProduct>>, StatusCode> {
     let products = sqlx::query_as!(
         PublicProductRow,
-        r#"SELECT id, name, slug, sku, product_type, brand_id, category_id as "category_id!", sub_category_id, model, description, content, image_url as "image_url!",
-                  power_rating_watts, per_watt_price, voltage_rating, capacity_ah, warranty_months,
+        r#"SELECT id, name, slug, sku, brand_id, category_id as "category_id!", sub_category_id, model, description, content, image_url as "image_url!",
+                  warranty_months,
                   selling_price, compare_at_selling_price, shipping_cost, tax, quantity_in_stock, unit
            FROM products
            WHERE is_active = TRUE
@@ -626,8 +600,8 @@ pub async fn get_public_product(
 ) -> Result<Json<PublicProduct>, StatusCode> {
     let p = sqlx::query_as!(
         PublicProductRow,
-        r#"SELECT id, name, slug, sku, product_type, brand_id, category_id as "category_id!", sub_category_id, model, description, content, image_url as "image_url!",
-                power_rating_watts, per_watt_price, voltage_rating, capacity_ah, warranty_months,
+        r#"SELECT id, name, slug, sku, brand_id, category_id as "category_id!", sub_category_id, model, description, content, image_url as "image_url!",
+                warranty_months,
                 selling_price, compare_at_selling_price, shipping_cost, tax, quantity_in_stock, unit
         FROM products
         WHERE slug = $1 AND is_active = TRUE"#,
@@ -744,8 +718,8 @@ pub async fn get_public_products_limited(
 
     let products = sqlx::query_as!(
         PublicProductRow,
-        r#"SELECT id, name, slug, sku, product_type, brand_id, category_id as "category_id!", sub_category_id, model, description, content, image_url as "image_url!",
-                  power_rating_watts, per_watt_price, voltage_rating, capacity_ah, warranty_months,
+        r#"SELECT id, name, slug, sku, brand_id, category_id as "category_id!", sub_category_id, model, description, content, image_url as "image_url!",
+                  warranty_months,
                   selling_price, compare_at_selling_price, shipping_cost, tax, quantity_in_stock, unit
            FROM products
            WHERE is_active = TRUE
@@ -810,8 +784,8 @@ pub async fn get_recently_viewed_products(
 
     let products = sqlx::query_as!(
         PublicProductRow,
-        r#"SELECT id, name, slug, sku, product_type, brand_id, category_id as "category_id!", sub_category_id, model, description, content, image_url as "image_url!",
-                  power_rating_watts, per_watt_price, voltage_rating, capacity_ah, warranty_months,
+        r#"SELECT id, name, slug, sku, brand_id, category_id as "category_id!", sub_category_id, model, description, content, image_url as "image_url!",
+                  warranty_months,
                   selling_price, compare_at_selling_price, shipping_cost, tax, quantity_in_stock, unit
            FROM products
            WHERE slug = ANY($1) AND is_active = TRUE"#,

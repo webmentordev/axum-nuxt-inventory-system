@@ -6,13 +6,13 @@
                 <p class="text-sm text-zinc-500 mt-1">{{ products.length }} total</p>
             </div>
             <div class="flex items-center gap-3">
-                <NuxtLink to="/admin/products/create"
-                    class="px-4 py-2 rounded-md text-sm font-semibold bg-lime-main text-dark hover:bg-lime-hover transition-colors">
-                    Add Product
-                </NuxtLink>
                 <NuxtLink to="/admin/specifications/create"
                     class="px-4 py-2 rounded-md text-sm font-semibold bg-lime-main text-dark hover:bg-lime-hover transition-colors">
                     Add specifications
+                </NuxtLink>
+                <NuxtLink to="/admin/products/create"
+                    class="px-4 py-2 rounded-md text-sm font-semibold bg-lime-main text-dark hover:bg-lime-hover transition-colors">
+                    Add Product
                 </NuxtLink>
             </div>
         </div>
