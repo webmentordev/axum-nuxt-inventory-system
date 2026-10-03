@@ -12,6 +12,17 @@
                     <p v-if="errors.product" class="text-xs text-red-400 mt-1">{{ errors.product }}</p>
                 </div>
 
+                <div>
+                    <label class="block text-sm font-semibold text-zinc-300 mb-2">Quick Add</label>
+                    <div class="flex flex-wrap gap-2">
+                        <button v-for="preset in presets" :key="preset.key" type="button" @click="addPreset(preset)"
+                            :disabled="isPresetAdded(preset)"
+                            class="px-3 py-1.5 rounded-md text-xs font-semibold border border-dark-300 text-zinc-300 hover:bg-dark-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+                            + {{ preset.key }}
+                        </button>
+                    </div>
+                </div>
+
                 <div v-for="(row, index) in rows" :key="index"
                     class="border border-dark-300 bg-dark-100 rounded-lg p-4 flex flex-col gap-4">
                     <div class="flex items-center justify-between">
@@ -116,6 +127,14 @@ const showStatus = ref(false);
 const statusType = ref('loading');
 const statusMessage = ref('');
 
+const presets = [
+    { group_name: 'Electrical', key: 'Power Rating', unit: 'W', is_highlighted: true, is_filterable: true },
+    { group_name: 'Electrical', key: 'Voltage Rating', unit: 'V', is_highlighted: false, is_filterable: true },
+    { group_name: 'Battery', key: 'Capacity', unit: 'Ah', is_highlighted: false, is_filterable: true },
+    { group_name: 'Battery', key: 'Energy', unit: 'kWh', is_highlighted: false, is_filterable: true },
+    { group_name: 'Pricing', key: 'Price Per Watt', unit: 'PKR/W', is_highlighted: false, is_filterable: false }
+];
+
 function addRow() {
     rows.value.push(newRow(rows.value.length));
 }
@@ -158,6 +177,31 @@ function validate() {
     });
 
     return Object.keys(errors.value).length === 0 && Object.keys(rowErrors.value).length === 0;
+}
+
+function isPresetAdded(preset) {
+    return rows.value.some((row) => row.key.trim().toLowerCase() === preset.key.toLowerCase());
+}
+
+function addPreset(preset) {
+    if (isPresetAdded(preset)) return;
+
+    const first = rows.value[0];
+    const firstIsEmpty = rows.value.length === 1 && !first.key.trim() && !first.value.trim();
+    const row = {
+        ...newRow(firstIsEmpty ? 0 : rows.value.length),
+        group_name: preset.group_name,
+        key: preset.key,
+        unit: preset.unit,
+        is_highlighted: preset.is_highlighted,
+        is_filterable: preset.is_filterable
+    };
+
+    if (firstIsEmpty) {
+        rows.value[0] = row;
+    } else {
+        rows.value.push(row);
+    }
 }
 
 async function handleSubmit() {
