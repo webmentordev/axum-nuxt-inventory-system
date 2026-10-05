@@ -29,7 +29,7 @@
                         </div>
                     </div>
 
-                    <div class="my-3">
+                    <div class="my-3 m-auto w-fit">
                         <NuxtTurnstile ref="turnstile" v-model="ct_token" />
                     </div>
 

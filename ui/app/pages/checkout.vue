@@ -122,7 +122,7 @@
                         target="_blank">privacy</NuxtLink> & <NuxtLink class="text-orange underline" to="/return-policy"
                         target="_blank">refund policy</NuxtLink>
                 </p>
-                <div class="my-3">
+                <div class="my-3 m-auto w-fit">
                     <NuxtTurnstile ref="turnstile" v-model="ct_token" />
                 </div>
             </div>

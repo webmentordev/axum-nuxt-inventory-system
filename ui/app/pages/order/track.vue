@@ -26,7 +26,7 @@
                 <Loading v-if="processing" message="Fetching order..." />
                 <AlertsError v-if="errors.message" :message="errors.message" />
 
-                <div class="my-3 flex items-center justify-center">
+                <div class="my-3 m-auto w-fit">
                     <NuxtTurnstile ref="turnstile" v-model="ct_token" />
                 </div>
             </form>

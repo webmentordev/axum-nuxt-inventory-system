@@ -4,32 +4,28 @@
             <div class="flex items-center m-auto mb-6">
                 <img src="/logos/kaleem-solar-logo-t-2.webp" alt="Kaleem solar logo" width="190px">
             </div>
-            <form @submit.prevent="login" method="post">
+            <form @submit.prevent="forgotPassword" method="post">
                 <div class="grid grid-cols-1 gap-3">
                     <div class="flex flex-col">
                         <Input v-model="email" type="email" placeholder="Email address" />
                         <AlertsAlertError v-if="errors.email" error="Email field is required" />
                     </div>
-                    <div class="flex flex-col">
-                        <Input v-model="password" type="password" placeholder="Password" />
-                        <AlertsAlertError v-if="errors.password" error="Password field is required" />
-                    </div>
                 </div>
                 <button v-if="!processing" type="submit"
                     class="bg-navy mt-4 text-white w-full py-3 rounded-xl flex items-center justify-center hover:bg-navy/90 group">
-                    <span class="mr-3">Login</span>
+                    <span class="mr-3">Send reset link</span>
                     <img class="mt-1 transition-all group-hover:transition-all group-hover:translate-x-4"
                         src="https://api.iconify.design/line-md:arrow-right.svg?color=%23ffffff" width="15"
-                        alt="Caret down arrow icon">
+                        alt="Arrow right icon">
                 </button>
 
-                <p class="text-para-light inline-block text-sm ml-1 mt-3">
-                    <NuxtLink to="/forgot-password" class="text-navy underline">Forgot password?</NuxtLink>
+                <p class="text-para-light inline-block text-sm ml-1 mt-3">Remembered your password? <NuxtLink
+                        to="/login" class="text-navy underline">Back to login</NuxtLink>
                 </p>
 
-                <p class="text-para-light inline-block text-sm ml-1 mt-3">Don't have an account? <NuxtLink
-                        to="/register" class="text-navy underline">Register here</NuxtLink>
-                </p>
+                <div class="my-3 m-auto w-fit">
+                    <NuxtTurnstile ref="turnstile" v-model="ct_token" />
+                </div>
 
                 <AlertsSuccess v-if="message" :message="message" @close="message = ''" />
                 <Loading v-if="processing" message="Processing request..." />
@@ -45,49 +41,38 @@ definePageMeta({
     layout: 'guest'
 });
 const { authFetch } = useAuthFetch();
-const { setToken } = useAuthToken();
-const { setUser } = useAuthUser();
 
 const email = ref("");
-const password = ref("");
+const ct_token = ref("");
 const processing = ref(false);
-const message = ref(false);
+const message = ref("");
 const errors = ref({
     count: 0
 });
 
-async function login() {
+async function forgotPassword() {
     processing.value = true;
-    message.value = false;
+    message.value = "";
     reset_errors();
-    if (email.value == "") {
+    if (email.value.trim() == "") {
         errors.value.email = "Email is required";
-        errors.value.count += 1;
-    }
-    if (password.value == "") {
-        errors.value.password = "Password is required";
         errors.value.count += 1;
     }
     if (errors.value.count > 0) {
         processing.value = false;
         return;
-    };
+    }
     try {
-        const data = await authFetch('/api/account/login', {
+        const data = await authFetch('/api/account/forgot-password', {
             method: "POST",
             body: {
                 email: email.value.trim(),
-                password: password.value.trim()
+                ct_token: ct_token.value
             }
         });
         if (data) {
-            setToken(data.token);
-            setUser(data.user);
-            if (data.user.is_admin == true) {
-                await navigateTo('/admin/dashboard');
-            } else {
-                await navigateTo('/');
-            }
+            message.value = data.message || 'Password reset link has been sent to your email.';
+            email.value = "";
         }
     } catch (e) {
         errors.value.message = e.statusMessage || 'Something went wrong!';
@@ -101,5 +86,4 @@ function reset_errors() {
         count: 0
     };
 }
-
 </script>
