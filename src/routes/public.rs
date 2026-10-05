@@ -1,6 +1,7 @@
 use crate::AppState;
 use crate::auth::*;
 use crate::dashboard::contacts::*;
+use crate::public::account::*;
 use crate::public::barcodes::*;
 use crate::public::brands::*;
 use crate::public::categories::*;
@@ -60,6 +61,12 @@ pub async fn init_public_route(state: AppState) -> Result<Router> {
 
     let barcodes = Router::new().route("/verify-purchase", post(verify_barcode));
 
+    let account = Router::new()
+        .route("/forgot-password", post(forgot_password))
+        .route("/reset-password", post(reset_password))
+        .route("/verify-email", post(verify_email))
+        .route("/resend-verification", post(resend_verification));
+
     let routes = Router::new()
         .nest("/users", users)
         .nest("/contacts", contacts)
@@ -70,6 +77,7 @@ pub async fn init_public_route(state: AppState) -> Result<Router> {
         .nest("/policies", policies)
         .nest("/orders", orders)
         .nest("/barcodes", barcodes)
+        .nest("/account", account)
         .with_state(state);
 
     Ok(routes)

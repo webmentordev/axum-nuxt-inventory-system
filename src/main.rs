@@ -1,9 +1,11 @@
 mod auth;
 mod dashboard;
 mod db;
+mod mailer;
 mod middleware;
 mod public;
 mod routes;
+mod tokens;
 mod utils;
 
 use db::*;
@@ -19,10 +21,13 @@ use axum::{Router, http::StatusCode, routing::get};
 use serde_json::json;
 use tower_http::services::ServeDir;
 
+use crate::mailer::Mailer;
+
 #[derive(Clone)]
 pub struct AppState {
     pub db: sqlx::PgPool,
     pub jwt_secret: String,
+    pub mailer: Mailer,
 }
 
 #[tokio::main]
@@ -35,6 +40,7 @@ async fn main() -> Result<()> {
     let state = AppState {
         db: pool,
         jwt_secret,
+        mailer: Mailer::from_env()?,
     };
 
     let public_routes = init_public_route(state.clone()).await?;

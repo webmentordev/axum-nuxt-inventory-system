@@ -13,6 +13,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::AppState;
+use crate::public::account::queue_verification_email;
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct User {
@@ -84,6 +85,8 @@ pub struct UpdateUser {
 pub struct Claims {
     pub sub: Uuid,
     pub is_admin: bool,
+    #[serde(default)]
+    pub ver: i32,
     pub exp: i64,
 }
 
@@ -107,6 +110,17 @@ pub async fn register_user(
     State(state): State<AppState>,
     Json(payload): Json<RegisterUser>,
 ) -> Result<(StatusCode, Json<UserPublic>), StatusCode> {
+    let name = payload.name.trim().to_string();
+    let email = payload.email.trim().to_lowercase();
+
+    if name.is_empty()
+        || !email.contains('@')
+        || payload.password.len() < 8
+        || payload.password.len() > 128
+    {
+        return Err(StatusCode::BAD_REQUEST);
+    }
+
     let salt = SaltString::generate(&mut OsRng);
     let password_hash = Argon2::default()
         .hash_password(payload.password.as_bytes(), &salt)
@@ -137,8 +151,8 @@ pub async fn register_user(
         r#"INSERT INTO users (name, email, password_hash, is_admin)
            VALUES ($1, $2, $3, $4)
            RETURNING id, name, email, password_hash, is_admin, is_active, last_login_at, created_at, updated_at"#,
-        payload.name,
-        payload.email,
+        name,
+        email,
         password_hash,
         is_admin
     )
@@ -155,6 +169,8 @@ pub async fn register_user(
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
+    queue_verification_email(state.clone(), user.id, user.email.clone());
+
     Ok((StatusCode::CREATED, Json(UserPublic::from(user))))
 }
 
@@ -162,12 +178,14 @@ pub async fn login_user(
     State(state): State<AppState>,
     Json(payload): Json<LoginUser>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
+    let email = payload.email.trim().to_lowercase();
+
     let user = sqlx::query_as!(
         User,
         r#"SELECT id, name, email, password_hash, is_admin, is_active, last_login_at, created_at, updated_at
            FROM users
-           WHERE email = $1"#,
-        payload.email
+           WHERE LOWER(email) = $1"#,
+        email
     )
     .fetch_optional(&state.db)
     .await
@@ -185,11 +203,11 @@ pub async fn login_user(
         .verify_password(payload.password.as_bytes(), &parsed_hash)
         .map_err(|_| StatusCode::UNAUTHORIZED)?;
 
-    sqlx::query!(
-        "UPDATE users SET last_login_at = NOW() WHERE id = $1",
+    let token_version = sqlx::query_scalar!(
+        r#"UPDATE users SET last_login_at = NOW() WHERE id = $1 RETURNING token_version as "token_version!""#,
         user.id
     )
-    .execute(&state.db)
+    .fetch_one(&state.db)
     .await
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
@@ -197,6 +215,7 @@ pub async fn login_user(
     let claims = Claims {
         sub: user.id,
         is_admin: user.is_admin,
+        ver: token_version,
         exp,
     };
 
