@@ -177,7 +177,7 @@ pub async fn register_user(
 pub async fn login_user(
     State(state): State<AppState>,
     Json(payload): Json<LoginUser>,
-) -> Result<Json<serde_json::Value>, StatusCode> {
+) -> Result<(StatusCode, Json<serde_json::Value>), StatusCode> {
     let email = payload.email.trim().to_lowercase();
 
     let user = sqlx::query_as!(
@@ -203,11 +203,29 @@ pub async fn login_user(
         .verify_password(payload.password.as_bytes(), &parsed_hash)
         .map_err(|_| StatusCode::UNAUTHORIZED)?;
 
-    let token_version = sqlx::query_scalar!(
-        r#"UPDATE users SET last_login_at = NOW() WHERE id = $1 RETURNING token_version as "token_version!""#,
+    let auth_state = sqlx::query!(
+        "SELECT token_version, email_verified_at FROM users WHERE id = $1",
         user.id
     )
     .fetch_one(&state.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    if auth_state.email_verified_at.is_none() {
+        return Ok((
+            StatusCode::FORBIDDEN,
+            Json(serde_json::json!({
+                "code": "email_not_verified",
+                "message": "Please verify your email address before logging in."
+            })),
+        ));
+    }
+
+    sqlx::query!(
+        "UPDATE users SET last_login_at = NOW() WHERE id = $1",
+        user.id
+    )
+    .execute(&state.db)
     .await
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
@@ -215,7 +233,7 @@ pub async fn login_user(
     let claims = Claims {
         sub: user.id,
         is_admin: user.is_admin,
-        ver: token_version,
+        ver: auth_state.token_version,
         exp,
     };
 
@@ -226,10 +244,13 @@ pub async fn login_user(
     )
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    Ok(Json(serde_json::json!({
-        "token": token,
-        "user": UserPublic::from(user)
-    })))
+    Ok((
+        StatusCode::OK,
+        Json(serde_json::json!({
+            "token": token,
+            "user": UserPublic::from(user)
+        })),
+    ))
 }
 
 pub async fn get_user(
@@ -276,18 +297,31 @@ pub async fn update_user(
         return Err(StatusCode::FORBIDDEN);
     }
 
+    let name = payload.name.as_deref().map(|n| n.trim().to_string());
+    let email = payload.email.as_deref().map(|e| e.trim().to_lowercase());
+
+    if name.as_deref().is_some_and(|n| n.is_empty())
+        || email.as_deref().is_some_and(|e| !e.contains('@'))
+    {
+        return Err(StatusCode::BAD_REQUEST);
+    }
+
     let user = sqlx::query_as!(
         User,
         r#"UPDATE users
            SET name = COALESCE($1, name),
+               email_verified_at = CASE
+                   WHEN $2::text IS NOT NULL AND $2::text <> email THEN NULL
+                   ELSE email_verified_at
+               END,
                email = COALESCE($2, email),
                is_admin = COALESCE($3, is_admin),
                is_active = COALESCE($4, is_active),
                updated_at = NOW()
            WHERE id = $5
            RETURNING id, name, email, password_hash, is_admin, is_active, last_login_at, created_at, updated_at"#,
-        payload.name,
-        payload.email,
+        name,
+        email,
         payload.is_admin,
         payload.is_active,
         uuid
