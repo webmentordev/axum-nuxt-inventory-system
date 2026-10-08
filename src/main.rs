@@ -35,6 +35,23 @@ async fn main() -> Result<()> {
     let pool = connect_database()
         .await
         .context("could not establish database connection pool")?;
+
+    let args: Vec<String> = std::env::args().collect();
+
+    if args.get(1).map(|s| s.as_str()) == Some("seed-products") {
+        let count = args
+            .get(2)
+            .and_then(|s| s.parse::<usize>().ok())
+            .unwrap_or(100);
+
+        let n = dashboard::products::seed_fake_products(&pool, count)
+            .await
+            .context("seed failed")?;
+        println!("created {} products", n);
+
+        return Ok(());
+    }
+
     let jwt_secret = std::env::var("JWT_SECRET").expect("JWT_SECRET must be set");
 
     let state = AppState {

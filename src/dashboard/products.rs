@@ -7,6 +7,7 @@ use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use sqlx::PgPool;
 use std::collections::HashMap;
 use uuid::Uuid;
 
@@ -463,4 +464,122 @@ pub async fn update_product(
     .await;
 
     Ok(Json(product))
+}
+
+// CLI based seeder. Not served on the a URL
+fn rnd(max: u128) -> u128 {
+    Uuid::new_v4().as_u128() % max
+}
+pub async fn seed_fake_products(db: &PgPool, count: usize) -> Result<usize, sqlx::Error> {
+    const ADJECTIVES: [&str; 10] = [
+        "Premium",
+        "Classic",
+        "Smart",
+        "Ultra",
+        "Compact",
+        "Pro",
+        "Eco",
+        "Deluxe",
+        "Essential",
+        "Advanced",
+    ];
+    const NOUNS: [&str; 10] = [
+        "Speaker",
+        "Headphones",
+        "Keyboard",
+        "Mouse",
+        "Monitor",
+        "Charger",
+        "Router",
+        "Webcam",
+        "Lamp",
+        "Backpack",
+    ];
+    const BRANDS: [&str; 5] = ["Acme", "Nova", "Zenith", "Orbit", "Vertex"];
+
+    let category_ids: Vec<Uuid> = sqlx::query_scalar("SELECT id FROM categories")
+        .fetch_all(db)
+        .await?;
+    let sub_category_ids: Vec<Uuid> = sqlx::query_scalar("SELECT id FROM sub_categories")
+        .fetch_all(db)
+        .await?;
+    let brand_ids: Vec<Uuid> = sqlx::query_scalar("SELECT id FROM brands")
+        .fetch_all(db)
+        .await?;
+
+    if category_ids.is_empty() || sub_category_ids.is_empty() || brand_ids.is_empty() {
+        return Err(sqlx::Error::Protocol(
+            "categories, sub_categories and brands must not be empty".into(),
+        ));
+    }
+
+    let mut tx = db.begin().await?;
+
+    for i in 1..=count {
+        let adjective = ADJECTIVES[rnd(ADJECTIVES.len() as u128) as usize];
+        let noun = NOUNS[rnd(NOUNS.len() as u128) as usize];
+        let brand = BRANDS[rnd(BRANDS.len() as u128) as usize];
+        let short_id = Uuid::new_v4().simple().to_string()[..6].to_string();
+
+        let category_id = category_ids[rnd(category_ids.len() as u128) as usize];
+        let sub_category_id = sub_category_ids[rnd(sub_category_ids.len() as u128) as usize];
+        let brand_id = brand_ids[rnd(brand_ids.len() as u128) as usize];
+
+        let name = format!("{} {} {} {}", adjective, noun, i, short_id);
+        let slug = slugify(&name, true);
+        let sku = generate_sku(&name);
+
+        let cost = Decimal::new(500 + rnd(50_000) as i64, 2);
+        let selling = cost + Decimal::new(100 + rnd(20_000) as i64, 2);
+        let compare_at = selling + Decimal::new(100 + rnd(5_000) as i64, 2);
+        let shipping = Decimal::new(rnd(2_000) as i64, 2);
+        let tax = Decimal::new(rnd(1_500) as i64, 2);
+        let quantity = rnd(500) as i32;
+        let reorder = rnd(50) as i32;
+        let warranty = rnd(25) as i16;
+        let image_url = format!("https://picsum.photos/seed/{}/600/600", Uuid::new_v4());
+
+        sqlx::query(
+            r#"INSERT INTO products (
+                   category_id, sub_category_id, brand_id, name, slug, sku, brand, model, description, content,
+                   warranty_months,
+                   cost_price, selling_price, compare_at_selling_price,
+                   shipping_cost, tax,
+                   quantity_in_stock, reorder_level, unit, image_url
+               )
+               VALUES (
+                   $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+                   $11,
+                   $12, $13, $14,
+                   $15, $16,
+                   $17, $18, $19, $20
+               )"#,
+        )
+        .bind(category_id)
+        .bind(sub_category_id)
+        .bind(brand_id)
+        .bind(&name)
+        .bind(&slug)
+        .bind(&sku)
+        .bind(brand)
+        .bind(format!("M-{}", short_id.to_uppercase()))
+        .bind(format!("{} {} by {}.", adjective, noun, brand))
+        .bind(format!("<p>Placeholder content for {}.</p>", name))
+        .bind(warranty)
+        .bind(cost)
+        .bind(selling)
+        .bind(compare_at)
+        .bind(shipping)
+        .bind(tax)
+        .bind(quantity)
+        .bind(reorder)
+        .bind("piece")
+        .bind(&image_url)
+        .execute(&mut *tx)
+        .await?;
+    }
+
+    tx.commit().await?;
+
+    Ok(count)
 }

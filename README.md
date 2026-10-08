@@ -31,3 +31,7 @@ Fix:
 ```
 Use PUT instead to patch to rest values on update!
 ```  
+Seed the database
+```
+cargo run -- seed-products 100
+```

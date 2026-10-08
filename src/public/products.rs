@@ -471,21 +471,43 @@ pub async fn fetch_suggested_products(
         .collect())
 }
 
+#[derive(Debug, serde::Deserialize)]
+pub struct PublicProductsQuery {
+    pub limit: Option<i64>,
+    pub offset: Option<i64>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct PublicProductsPage {
+    pub products: Vec<PublicProduct>,
+    pub has_more: bool,
+}
+
 pub async fn get_public_products(
     State(state): State<AppState>,
-) -> Result<Json<Vec<PublicProduct>>, StatusCode> {
-    let products = sqlx::query_as!(
+    Query(params): Query<PublicProductsQuery>,
+) -> Result<Json<PublicProductsPage>, StatusCode> {
+    let limit = params.limit.unwrap_or(20).clamp(1, 100);
+    let offset = params.offset.unwrap_or(0).max(0);
+
+    let mut products = sqlx::query_as!(
         PublicProductRow,
         r#"SELECT id, name, slug, sku, brand_id, category_id as "category_id!", sub_category_id, model, description, content, image_url as "image_url!",
                   warranty_months,
                   selling_price, compare_at_selling_price, shipping_cost, tax, quantity_in_stock, unit
            FROM products
            WHERE is_active = TRUE
-           ORDER BY created_at DESC"#
+           ORDER BY created_at DESC, id DESC
+           LIMIT $1 OFFSET $2"#,
+        limit + 1,
+        offset
     )
     .fetch_all(&state.db)
     .await
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let has_more = products.len() as i64 > limit;
+    products.truncate(limit as usize);
 
     let product_ids: Vec<Uuid> = products.iter().map(|p| p.id).collect();
 
@@ -510,7 +532,7 @@ pub async fn get_public_products(
     let category_map = fetch_category_minis(&state, &category_ids).await?;
     let sub_category_map = fetch_sub_category_minis(&state, &sub_category_ids).await?;
 
-    let result = products
+    let products = products
         .into_iter()
         .map(|p| {
             let category = category_map.get(&p.category_id).cloned();
@@ -525,7 +547,7 @@ pub async fn get_public_products(
         })
         .collect();
 
-    Ok(Json(result))
+    Ok(Json(PublicProductsPage { products, has_more }))
 }
 
 pub async fn fetch_category_minis(
