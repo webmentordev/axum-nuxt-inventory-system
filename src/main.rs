@@ -58,6 +58,7 @@ async fn main() -> Result<()> {
     let addr = SocketAddr::from(([0, 0, 0, 0], 7765));
     let listener = tokio::net::TcpListener::bind(addr).await?;
     println!("🚀 Server running at http://127.0.0.1:{}", addr.port());
+    dashboard::uploads::spawn_tmp_cleanup();
     axum::serve(listener, app).await?;
     Ok(())
 }

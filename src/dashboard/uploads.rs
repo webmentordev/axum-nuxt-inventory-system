@@ -7,6 +7,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::path::Path as FsPath;
+use std::time::{Duration, SystemTime};
 use tokio::{fs, io::AsyncWriteExt};
 use uuid::Uuid;
 
@@ -18,6 +19,9 @@ const UPLOAD_DIR: &str = "uploads/files";
 const TMP_DIR: &str = "uploads/tmp";
 const MAX_IMAGE_DIM: u32 = 500;
 const WEBP_QUALITY: f32 = 80.0;
+
+const TMP_MAX_AGE: Duration = Duration::from_secs(13 * 60 * 60);
+const TMP_CLEANUP_INTERVAL: Duration = Duration::from_secs(60 * 60);
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct Upload {
@@ -676,4 +680,43 @@ pub async fn delete_upload(
     .await;
 
     Ok(StatusCode::NO_CONTENT)
+}
+
+pub async fn cleanup_tmp_files() {
+    let mut entries = match fs::read_dir(TMP_DIR).await {
+        Ok(e) => e,
+        Err(_) => return,
+    };
+
+    let now = SystemTime::now();
+
+    while let Ok(Some(entry)) = entries.next_entry().await {
+        let Ok(meta) = entry.metadata().await else {
+            continue;
+        };
+        if !meta.is_file() {
+            continue;
+        }
+        let Ok(modified) = meta.modified() else {
+            continue;
+        };
+        let age = now.duration_since(modified).unwrap_or_default();
+
+        if age > TMP_MAX_AGE {
+            if let Err(e) = fs::remove_file(entry.path()).await {
+                eprintln!("failed to remove tmp file {:?}: {e}", entry.path());
+            }
+        }
+    }
+}
+
+pub fn spawn_tmp_cleanup() {
+    tokio::spawn(async move {
+        let mut ticker = tokio::time::interval(TMP_CLEANUP_INTERVAL);
+        ticker.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+        loop {
+            ticker.tick().await;
+            cleanup_tmp_files().await;
+        }
+    });
 }
