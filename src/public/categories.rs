@@ -14,6 +14,7 @@ pub struct PublicCategoryDetail {
     pub slug: String,
     pub description: Option<String>,
     pub products: Vec<PublicProduct>,
+    pub has_more: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -177,7 +178,11 @@ pub async fn get_public_categories(
 pub async fn get_public_category(
     State(state): State<AppState>,
     Path(slug): Path<String>,
+    Query(params): Query<PublicProductsQuery>,
 ) -> Result<Json<PublicCategoryDetail>, StatusCode> {
+    let limit = params.limit.unwrap_or(20).clamp(1, 100);
+    let offset = params.offset.unwrap_or(0).max(0);
+
     let category = sqlx::query_as!(
         CategoryDetailRow,
         r#"SELECT id, name, slug, description
@@ -190,19 +195,25 @@ pub async fn get_public_category(
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
     .ok_or(StatusCode::NOT_FOUND)?;
 
-    let products = sqlx::query_as!(
+    let mut products = sqlx::query_as!(
         PublicProductRow,
         r#"SELECT id, name, slug, sku, brand_id, category_id as "category_id!", sub_category_id, model, description, content, image_url as "image_url!",
-       warranty_months,
-       selling_price, compare_at_selling_price, shipping_cost, tax, quantity_in_stock, unit
+                  warranty_months,
+                  selling_price, compare_at_selling_price, shipping_cost, tax, quantity_in_stock, unit
            FROM products
            WHERE category_id = $1 AND is_active = TRUE
-           ORDER BY created_at DESC"#,
-        category.id
+           ORDER BY created_at DESC, id DESC
+           LIMIT $2 OFFSET $3"#,
+        category.id,
+        limit + 1,
+        offset
     )
     .fetch_all(&state.db)
     .await
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let has_more = products.len() as i64 > limit;
+    products.truncate(limit as usize);
 
     let product_ids: Vec<Uuid> = products.iter().map(|p| p.id).collect();
 
@@ -246,5 +257,6 @@ pub async fn get_public_category(
         slug: category.slug,
         description: category.description,
         products,
+        has_more,
     }))
 }

@@ -1,6 +1,6 @@
 use axum::{
     Json,
-    extract::{Path, State},
+    extract::{Path, Query, State},
     http::StatusCode,
 };
 use serde::Serialize;
@@ -20,6 +20,7 @@ pub struct PublicBrandDetail {
     pub slug: String,
     pub description: Option<String>,
     pub products: Vec<PublicProduct>,
+    pub has_more: bool,
 }
 
 struct BrandDetailRow {
@@ -49,7 +50,11 @@ pub async fn get_public_brands(
 pub async fn get_public_brand(
     State(state): State<AppState>,
     Path(slug): Path<String>,
+    Query(params): Query<PublicProductsQuery>,
 ) -> Result<Json<PublicBrandDetail>, StatusCode> {
+    let limit = params.limit.unwrap_or(20).clamp(1, 100);
+    let offset = params.offset.unwrap_or(0).max(0);
+
     let brand = sqlx::query_as!(
         BrandDetailRow,
         r#"SELECT id, name, slug, description
@@ -62,33 +67,39 @@ pub async fn get_public_brand(
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
     .ok_or(StatusCode::NOT_FOUND)?;
 
-    let products = sqlx::query_as!(
-PublicProductRow,
-r#"SELECT id, name, slug, sku, brand_id, category_id as "category_id!", sub_category_id, model, description, content, image_url as "image_url!",
-       warranty_months,
-       selling_price, compare_at_selling_price, shipping_cost, tax, quantity_in_stock, unit
+    let mut products = sqlx::query_as!(
+        PublicProductRow,
+        r#"SELECT id, name, slug, sku, brand_id, category_id as "category_id!", sub_category_id, model, description, content, image_url as "image_url!",
+                  warranty_months,
+                  selling_price, compare_at_selling_price, shipping_cost, tax, quantity_in_stock, unit
            FROM products
            WHERE brand_id = $1 AND is_active = TRUE
-           ORDER BY created_at DESC"#,
-brand.id
+           ORDER BY created_at DESC, id DESC
+           LIMIT $2 OFFSET $3"#,
+        brand.id,
+        limit + 1,
+        offset
     )
-.fetch_all(&state.db)
-.await
-.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    .fetch_all(&state.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let has_more = products.len() as i64 > limit;
+    products.truncate(limit as usize);
 
     let product_ids: Vec<Uuid> = products.iter().map(|p| p.id).collect();
 
     let uploads = sqlx::query_as!(
-Upload,
-r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, file_type, created_at
+        Upload,
+        r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, file_type, created_at
            FROM uploads
            WHERE product_id = ANY($1)
            ORDER BY created_at ASC"#,
-&product_ids
+        &product_ids
     )
-.fetch_all(&state.db)
-.await
-.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    .fetch_all(&state.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     let brand_ids: Vec<Uuid> = products.iter().filter_map(|p| p.brand_id).collect();
     let brand_map = fetch_product_brands(&state, &brand_ids).await?;
@@ -118,5 +129,6 @@ r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_pat
         slug: brand.slug,
         description: brand.description,
         products,
+        has_more,
     }))
 }
