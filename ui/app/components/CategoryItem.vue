@@ -10,7 +10,7 @@
                 {{ category.name }}</h2>
             <div class="flex items-center m-auto">
                 <span class="mr-2 text-navy text-xs sm:text-sm capitalize">View products</span>
-                <Icon name="ic:outline-arrow-right-alt" class="text-orange" size="20px" />
+                <Icon name="ic:outline-arrow-right-alt" class="text-main" size="20px" />
             </div>
         </div>
     </NuxtLink>

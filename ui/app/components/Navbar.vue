@@ -6,8 +6,8 @@
                     <Icon name="ic:outline-menu" size="26px" />
                 </button>
 
-                <NuxtLink to="/" class="flex items-center shrink-0" aria-label="Kaleem solar home page">
-                    <img src="/logos/kaleem-solar-logo-t-2.webp" alt="Kaleem solar logo" width="130" height="40">
+                <NuxtLink to="/" class="flex items-center shrink-0" aria-label="Example mart home page">
+                    <img src="/logo-2.webp" alt="Example mart" width="130" height="40">
                 </NuxtLink>
             </div>
 
@@ -93,7 +93,7 @@
                             class="block w-full px-4 py-2 text-left text-sm text-navy hover:bg-gray-100">Logout</button>
                     </div>
                 </div>
-                <NuxtLink v-else to="/login" class="text-sm font-medium hover:text-orange">Login</NuxtLink>
+                <NuxtLink v-else to="/login" class="text-sm font-medium hover:text-main">Login</NuxtLink>
             </div>
         </div>
 
@@ -107,7 +107,7 @@
             <div v-if="drawerOpen"
                 class="fixed top-0 left-0 h-full w-72 max-w-[85vw] bg-navy text-white z-70 shadow-lg flex flex-col">
                 <div class="flex items-center justify-between px-4 py-3 border-b border-white/10">
-                    <img src="/logos/kaleem-solar-logo-t-4.webp" alt="Kaleem solar logo" width="120px">
+                    <img src="/logo-1.webp" alt="Example mart" width="120px">
                     <button @click="drawerOpen = false" aria-label="Close menu" class="text-2xl leading-none">
                         <Icon name="ic:outline-close" size="22px" />
                     </button>
@@ -117,30 +117,30 @@
                     <h3 class="mb-4 lg:mb-5 text-base lg:text-lg font-bold">QUICK LINKS</h3>
                     <ul class="space-y-3 text-sm text-slate-300">
                         <li>
-                            <NuxtLink to="/" class="hover:text-orange" @click="drawerOpen = false">Home</NuxtLink>
+                            <NuxtLink to="/" class="hover:text-main" @click="drawerOpen = false">Home</NuxtLink>
                         </li>
                         <li>
-                            <NuxtLink to="/products" class="hover:text-orange" @click="drawerOpen = false">Products
+                            <NuxtLink to="/products" class="hover:text-main" @click="drawerOpen = false">Products
                             </NuxtLink>
                         </li>
                         <li>
-                            <NuxtLink to="/about-us" class="hover:text-orange" @click="drawerOpen = false">About Us
+                            <NuxtLink to="/about-us" class="hover:text-main" @click="drawerOpen = false">About Us
                             </NuxtLink>
                         </li>
                         <li>
-                            <NuxtLink to="/order/track" class="hover:text-orange" @click="drawerOpen = false">Track your
+                            <NuxtLink to="/order/track" class="hover:text-main" @click="drawerOpen = false">Track your
                                 order</NuxtLink>
                         </li>
                         <li>
-                            <NuxtLink to="/contact-us" class="hover:text-orange" @click="drawerOpen = false">Contact Us
+                            <NuxtLink to="/contact-us" class="hover:text-main" @click="drawerOpen = false">Contact Us
                             </NuxtLink>
                         </li>
                         <li>
-                            <NuxtLink to="/verify-purchase" class="hover:text-orange" @click="drawerOpen = false">Verify
+                            <NuxtLink to="/verify-purchase" class="hover:text-main" @click="drawerOpen = false">Verify
                                 purchase</NuxtLink>
                         </li>
                         <li v-if="!user">
-                            <NuxtLink to="/login" class="hover:text-orange" @click="drawerOpen = false">Login</NuxtLink>
+                            <NuxtLink to="/login" class="hover:text-main" @click="drawerOpen = false">Login</NuxtLink>
                         </li>
                     </ul>
                 </div>

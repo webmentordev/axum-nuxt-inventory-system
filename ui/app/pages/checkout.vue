@@ -4,7 +4,7 @@
             <div class="text-center py-16 sm:py-20">
                 <h1 class="text-lg sm:text-xl font-bold text-zinc-900">Your cart is empty</h1>
                 <p class="text-sm text-zinc-500 mt-2">Add some products before checking out.</p>
-                <NuxtLink to="/" class="inline-block mt-4 text-orange hover:underline">Back to home</NuxtLink>
+                <NuxtLink to="/" class="inline-block mt-4 text-main hover:underline">Back to home</NuxtLink>
             </div>
         </div>
 
@@ -12,7 +12,7 @@
             <h1 class="text-xl sm:text-2xl font-bold text-zinc-900">Order placed</h1>
             <p class="text-sm text-zinc-500 mt-2">Your order number is</p>
             <p class="text-base sm:text-lg font-semibold text-navy mt-1">{{ orderNumber }}</p>
-            <NuxtLink to="/" class="inline-block mt-6 text-orange hover:underline">Continue shopping</NuxtLink>
+            <NuxtLink to="/" class="inline-block mt-6 text-main hover:underline">Continue shopping</NuxtLink>
         </div>
 
         <div class="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8" v-else>
@@ -54,7 +54,7 @@
 
                     <p v-if="!user?.id"
                         class="text-xs text-zinc-500 bg-gray-50 border border-gray-200 rounded-md px-3 py-2">
-                        Want to track your orders later? <NuxtLink to="/register" class="text-orange underline">Create
+                        Want to track your orders later? <NuxtLink to="/register" class="text-main underline">Create
                             an account</NuxtLink> to keep them in your dashboard.
                     </p>
 
@@ -116,11 +116,11 @@
                     class="px-4 py-2 rounded-md text-sm font-semibold border border-navy bg-navy text-white hover:bg-orange hover:text-black hover:border-orange transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
                     {{ submitting ? 'Placing order...' : 'Place order' }}
                 </button>
-                <p class="text-sm mb-2">By placing your order you agree to our <NuxtLink class="text-orange underline"
+                <p class="text-sm mb-2">By placing your order you agree to our <NuxtLink class="text-main underline"
                         to="/terms-of-service" target="_blank">Terms of
-                        service</NuxtLink>, <NuxtLink class="text-orange underline" to="/privacy-policy"
-                        target="_blank">privacy</NuxtLink> & <NuxtLink class="text-orange underline" to="/return-policy"
-                        target="_blank">refund policy</NuxtLink>
+                        service</NuxtLink>, <NuxtLink class="text-main underline" to="/privacy-policy" target="_blank">
+                        privacy</NuxtLink> & <NuxtLink class="text-main underline" to="/return-policy" target="_blank">
+                        refund policy</NuxtLink>
                 </p>
                 <div class="my-3 m-auto w-fit">
                     <NuxtTurnstile ref="turnstile" v-model="ct_token" />

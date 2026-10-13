@@ -43,7 +43,7 @@ export default defineNuxtConfig({
 
   app: {
     head: {
-      title: 'KaleemSolarPK Multan | A-Grade Solar Panels, Inverters & Accessories',
+      title: 'Example Mart | Quality Groceries, Household Essentials & Everyday Products',
       titleTemplate: '%s',
       charset: 'utf-8',
       viewport: 'width=device-width, initial-scale=1',
@@ -51,8 +51,8 @@ export default defineNuxtConfig({
         lang: 'en',
       },
       link: [
-        { rel: 'icon', type: 'image/x-icon', href: '/kaleem-solar-fav.png' },
-        { rel: 'canonical', href: 'https://kaleemsolarpk.com' },
+        { rel: 'icon', type: 'image/x-icon', href: '/favicon.webp' },
+        { rel: 'canonical', href: 'https://examplemart.com' },
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
         { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
         {
@@ -61,22 +61,22 @@ export default defineNuxtConfig({
         },
       ],
       meta: [
-        { name: 'description', content: 'KaleemSolarPK Multan offers A-Grade solar panels, inverters, batteries & accessories at the best prices. Trusted solar solutions in Multan, Pakistan.' },
-        { name: 'keywords', content: 'solar panels Multan, solar inverters Pakistan, solar accessories, A-Grade solar panels, KaleemSolarPK' },
-        { name: 'author', content: 'KaleemSolarPK' },
+        { name: 'description', content: 'Example Mart offers quality groceries, household essentials & everyday products at the best prices. Your trusted local mart in Pakistan.' },
+        { name: 'keywords', content: 'online mart, grocery store, household essentials, everyday products, Example Mart' },
+        { name: 'author', content: 'Example Mart' },
         { name: 'robots', content: 'index, follow' },
         { name: 'theme-color', content: '#ffffff' },
         { property: 'og:type', content: 'website' },
-        { property: 'og:title', content: 'KaleemSolarPK Multan | A-Grade Solar Panels, Inverters & Accessories' },
-        { property: 'og:description', content: 'A-Grade solar panels, inverters, batteries & accessories at the best prices in Multan, Pakistan.' },
-        { property: 'og:url', content: 'https://kaleemsolarpk.com' },
-        { property: 'og:site_name', content: 'KaleemSolarPK' },
-        { property: 'og:image', content: 'https://kaleemsolarpk.com/og-image.jpg' },
+        { property: 'og:title', content: 'Example Mart | Quality Groceries, Household Essentials & Everyday Products' },
+        { property: 'og:description', content: 'Quality groceries, household essentials & everyday products at the best prices in Pakistan.' },
+        { property: 'og:url', content: 'https://examplemart.com' },
+        { property: 'og:site_name', content: 'Example Mart' },
+        { property: 'og:image', content: 'https://examplemart.com/mart-image.webp' },
         { property: 'og:locale', content: 'en_PK' },
         { name: 'twitter:card', content: 'summary_large_image' },
-        { name: 'twitter:title', content: 'KaleemSolarPK Multan | A-Grade Solar Panels, Inverters & Accessories' },
-        { name: 'twitter:description', content: 'A-Grade solar panels, inverters, batteries & accessories at the best prices in Multan, Pakistan.' },
-        { name: 'twitter:image', content: 'https://kaleemsolarpk.com/og-image.jpg' },
+        { name: 'twitter:title', content: 'Example Mart | Quality Groceries, Household Essentials & Everyday Products' },
+        { name: 'twitter:description', content: 'Quality groceries, household essentials & everyday products at the best prices in Pakistan.' },
+        { name: 'twitter:image', content: 'https://examplemart.com/mart-image.webp' },
       ],
     },
   }

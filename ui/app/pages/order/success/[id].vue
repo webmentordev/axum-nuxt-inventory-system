@@ -3,7 +3,7 @@
         <div class="w-full h-full flex items-center justify-center py-12">
             <div class="flex flex-col max-w-87.5 w-full">
                 <div class="flex items-center m-auto mb-6">
-                    <img src="/kaleem-solar-logo-t-2.png" alt="Kaleem solat logo" width="190px">
+                    <img src="/logo-2.webp" alt="Example Mart" width="190px">
                 </div>
 
                 <Loading v-if="processing" message="Loading your order..." />

@@ -75,17 +75,17 @@ try {
 }
 
 useSeoMeta({
-    title: () => brand.value?.name ? `${brand.value.name} Solar Products | KaleemSolarPK Multan` : 'Brands | KaleemSolarPK Multan',
-    description: () => brand.value?.description || `Shop ${brand.value?.name || ''} solar panels, inverters & accessories at KaleemSolarPK Multan.`,
-    keywords: () => `${brand.value?.name || ''} solar panels, ${brand.value?.name || ''} inverters, Multan, Pakistan`,
-    ogTitle: () => brand.value?.name ? `${brand.value.name} Solar Products | KaleemSolarPK Multan` : 'Brands | KaleemSolarPK Multan',
-    ogDescription: () => brand.value?.description || `Shop ${brand.value?.name || ''} solar panels, inverters & accessories at KaleemSolarPK Multan.`,
-    ogImage: `${config.public.siteUrl}/kaleemsolar-banner.webp`,
+    title: () => brand.value?.name ? `${brand.value.name} Products | Example Mart` : 'Brands | Example Mart',
+    description: () => brand.value?.description || `Shop ${brand.value?.name || ''} products at Example Mart. Quality groceries, household essentials & everyday items.`,
+    keywords: () => `${brand.value?.name || ''} products, ${brand.value?.name || ''} grocery, Example Mart, Pakistan`,
+    ogTitle: () => brand.value?.name ? `${brand.value.name} Products | Example Mart` : 'Brands | Example Mart',
+    ogDescription: () => brand.value?.description || `Shop ${brand.value?.name || ''} products at Example Mart. Quality groceries, household essentials & everyday items.`,
+    ogImage: `${config.public.siteUrl}/mart-image.webp`,
     ogUrl: canonicalUrl.value,
     ogType: 'website',
     twitterCard: 'summary_large_image',
-    twitterTitle: () => brand.value?.name ? `${brand.value.name} Solar Products | KaleemSolarPK Multan` : 'Brands | KaleemSolarPK Multan',
-    twitterDescription: () => brand.value?.description || `Shop ${brand.value?.name || ''} solar panels, inverters & accessories at KaleemSolarPK Multan.`
+    twitterTitle: () => brand.value?.name ? `${brand.value.name} Products | Example Mart` : 'Brands | Example Mart',
+    twitterDescription: () => brand.value?.description || `Shop ${brand.value?.name || ''} products at Example Mart. Quality groceries, household essentials & everyday items.`
 });
 
 useHead({

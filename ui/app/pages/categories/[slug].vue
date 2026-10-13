@@ -76,17 +76,17 @@ try {
 }
 
 useSeoMeta({
-    title: () => category.value?.name ? `${category.value.name} | KaleemSolarPK Multan` : 'Categories | KaleemSolarPK Multan',
-    description: () => category.value?.description || `Shop ${category.value?.name || ''} at KaleemSolarPK Multan. A-Grade solar panels, inverters & accessories.`,
-    keywords: () => `${category.value?.name || ''}, solar panels, solar inverters, Multan, Pakistan`,
-    ogTitle: () => category.value?.name ? `${category.value.name} | KaleemSolarPK Multan` : 'Categories | KaleemSolarPK Multan',
-    ogDescription: () => category.value?.description || `Shop ${category.value?.name || ''} at KaleemSolarPK Multan. A-Grade solar panels, inverters & accessories.`,
-    ogImage: `${config.public.siteUrl}/kaleemsolar-banner.webp`,
+    title: () => category.value?.name ? `${category.value.name} | Example Mart` : 'Categories | Example Mart',
+    description: () => category.value?.description || `Shop ${category.value?.name || ''} at Example Mart. Quality groceries, household essentials & everyday products.`,
+    keywords: () => `${category.value?.name || ''}, groceries, household essentials, everyday products, Example Mart`,
+    ogTitle: () => category.value?.name ? `${category.value.name} | Example Mart` : 'Categories | Example Mart',
+    ogDescription: () => category.value?.description || `Shop ${category.value?.name || ''} at Example Mart. Quality groceries, household essentials & everyday products.`,
+    ogImage: `${config.public.siteUrl}/mart-image.webp`,
     ogUrl: canonicalUrl.value,
     ogType: 'website',
     twitterCard: 'summary_large_image',
-    twitterTitle: () => category.value?.name ? `${category.value.name} | KaleemSolarPK Multan` : 'Categories | KaleemSolarPK Multan',
-    twitterDescription: () => category.value?.description || `Shop ${category.value?.name || ''} at KaleemSolarPK Multan. A-Grade solar panels, inverters & accessories.`
+    twitterTitle: () => category.value?.name ? `${category.value.name} | Example Mart` : 'Categories | Example Mart',
+    twitterDescription: () => category.value?.description || `Shop ${category.value?.name || ''} at Example Mart. Quality groceries, household essentials & everyday products.`
 });
 
 useHead({

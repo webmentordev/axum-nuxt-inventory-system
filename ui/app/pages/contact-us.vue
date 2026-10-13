@@ -3,7 +3,7 @@
         <div class="w-full max-w-5xl mx-auto px-4 py-16 grid grid-cols-1 md:grid-cols-2 gap-10">
             <div class="flex flex-col">
                 <div class="flex items-center mb-6">
-                    <img src="/logos/kaleem-solar-logo-t-2.webp" alt="Kaleem solar logo" width="190px">
+                    <img src="/logo-2.webp" alt="Example mart" width="190px">
                 </div>
 
                 <h1 class="text-2xl font-bold text-gray-800 mb-1">Get in touch</h1>
@@ -108,17 +108,17 @@ const config = useRuntimeConfig().public;
 const canonicalUrl = `${config.siteUrl}/contact-us`;
 
 useSeoMeta({
-    title: 'Contact Us | KaleemSolarPK Multan',
-    description: 'Get in touch with KaleemSolarPK Multan for solar panels, inverters, batteries & accessories. Reach out for pricing, support or expert guidance.',
-    keywords: 'contact KaleemSolarPK, solar Multan contact, solar company Pakistan',
-    ogTitle: 'Contact Us | KaleemSolarPK Multan',
-    ogDescription: 'Get in touch with KaleemSolarPK Multan for solar panels, inverters, batteries & accessories. Reach out for pricing, support or expert guidance.',
-    ogImage: `${config.siteUrl}/kaleemsolar-banner.webp`,
+    title: 'Contact Us | Example Mart',
+    description: 'Get in touch with Example Mart for groceries, household essentials & everyday products. Reach out for pricing, support or any queries.',
+    keywords: 'contact Example Mart, mart contact, grocery store contact, local mart Pakistan',
+    ogTitle: 'Contact Us | Example Mart',
+    ogDescription: 'Get in touch with Example Mart for groceries, household essentials & everyday products. Reach out for pricing, support or any queries.',
+    ogImage: `${config.siteUrl}/mart-image.webp`,
     ogUrl: canonicalUrl,
     ogType: 'website',
     twitterCard: 'summary_large_image',
-    twitterTitle: 'Contact Us | KaleemSolarPK Multan',
-    twitterDescription: 'Get in touch with KaleemSolarPK Multan for solar panels, inverters, batteries & accessories. Reach out for pricing, support or expert guidance.'
+    twitterTitle: 'Contact Us | Example Mart',
+    twitterDescription: 'Get in touch with Example Mart for groceries, household essentials & everyday products. Reach out for pricing, support or any queries.'
 });
 
 useHead({

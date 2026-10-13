@@ -2,7 +2,7 @@
     <div class="w-full min-h-[80vh] flex items-center justify-center py-12">
         <div class="flex flex-col max-w-87.5 w-full">
             <div class="flex items-center m-auto mb-6">
-                <img src="/kaleem-solar-logo-t-2.png" alt="Kaleem solat logo" width="190px">
+                <img src="/logo-2.webp" alt="Example Mart" width="190px">
             </div>
 
             <form v-if="!order" @submit.prevent="trackOrder" method="post">
@@ -96,11 +96,11 @@ const config = useRuntimeConfig().public;
 const canonicalUrl = `${config.siteUrl}/order/track`;
 
 useSeoMeta({
-    title: 'Track Your Order | KaleemSolarPK Multan',
-    description: 'Track your KaleemSolarPK order status. Enter your order number to check delivery progress for solar panels, inverters & accessories.',
+    title: 'Track Your Order | Example Mart',
+    description: 'Track your Example Mart order status. Enter your order number to check delivery progress for groceries, household essentials & everyday products.',
     robots: 'noindex, follow',
-    ogTitle: 'Track Your Order | KaleemSolarPK Multan',
-    ogDescription: 'Track your KaleemSolarPK order status. Enter your order number to check delivery progress.',
+    ogTitle: 'Track Your Order | Example Mart',
+    ogDescription: 'Track your Example Mart order status. Enter your order number to check delivery progress.',
     ogUrl: canonicalUrl,
     ogType: 'website'
 });

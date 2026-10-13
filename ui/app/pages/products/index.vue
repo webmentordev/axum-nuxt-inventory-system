@@ -66,17 +66,17 @@ try {
 }
 
 useSeoMeta({
-    title: 'Solar Products | KaleemSolarPK Multan',
-    description: 'Browse our full range of A-Grade solar panels, inverters, batteries & accessories at the best prices in Multan, Pakistan.',
-    keywords: 'solar panels, solar inverters, solar batteries, solar accessories, Multan, Pakistan',
-    ogTitle: 'Solar Products | KaleemSolarPK Multan',
-    ogDescription: 'Browse our full range of A-Grade solar panels, inverters, batteries & accessories at the best prices in Multan, Pakistan.',
-    ogImage: `${config.public.siteUrl}/kaleemsolar-banner.webp`,
+    title: 'Products | Example Mart',
+    description: 'Browse our full range of quality groceries, household essentials & everyday products at the best prices in Pakistan.',
+    keywords: 'groceries, household essentials, everyday products, online mart, Pakistan',
+    ogTitle: 'Products | Example Mart',
+    ogDescription: 'Browse our full range of quality groceries, household essentials & everyday products at the best prices in Pakistan.',
+    ogImage: `${config.public.siteUrl}/mart-image.webp`,
     ogUrl: canonicalUrl.value,
     ogType: 'website',
     twitterCard: 'summary_large_image',
-    twitterTitle: 'Solar Products | KaleemSolarPK Multan',
-    twitterDescription: 'Browse our full range of A-Grade solar panels, inverters, batteries & accessories at the best prices in Multan, Pakistan.'
+    twitterTitle: 'Products | Example Mart',
+    twitterDescription: 'Browse our full range of quality groceries, household essentials & everyday products at the best prices in Pakistan.'
 });
 
 useHead({
