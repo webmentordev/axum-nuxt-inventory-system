@@ -59,14 +59,14 @@
                                 }}</NuxtLink>
                         </li>
                         <li v-if="stockLabel"><strong>Availability: </strong><span :class="stockClass">{{ stockLabel
-                                }}</span></li>
+                        }}</span></li>
                     </ul>
 
                     <div class="flex flex-col gap-1">
                         <div class="flex flex-wrap items-baseline gap-2 sm:gap-3">
                             <span class="text-xl sm:text-2xl font-bold text-navy">{{
                                 formatCurrency(product.selling_price)
-                                }}</span>
+                            }}</span>
                             <span v-if="hasDiscount" class="text-sm sm:text-base text-zinc-400 line-through">
                                 {{ formatCurrency(product.compare_at_selling_price) }}
                             </span>
@@ -216,36 +216,44 @@ try {
         product.value = data;
         addRecentlyViewed(product.value.slug);
         suggested_products.value = data.suggested_products;
-        seo.value = data.seo;
-        if (seo.value) {
-            useSeoMeta({
-                title: () => product.value?.name || 'Product',
-                description: () => seo.value?.meta_description || undefined,
-                keywords: () => seo.value?.meta_keywords || undefined,
-                ogTitle: () => seo.value?.og_title || seo.value?.meta_title || product.value?.name || 'Product',
-                ogDescription: () => seo.value?.og_description || seo.value?.meta_description || undefined,
-                ogImage: () => seo.value?.og_image_url || undefined,
-                ogUrl: () => canonicalUrl.value,
-                ogType: 'article',
-                twitterCard: 'summary_large_image',
-                twitterTitle: () => seo.value?.og_title || seo.value?.meta_title || product.value?.name || 'Product',
-                twitterDescription: () => seo.value?.og_description || seo.value?.meta_description || undefined
-            });
+        seo.value = data.seo || {};
 
-            useHead({
-                meta: [
-                    { property: 'product:price:amount', content: () => product.value?.selling_price },
-                    { property: 'product:price:currency', content: 'PKR' },
-                    { property: 'og:availability', content: () => product.value?.in_stock ? 'instock' : 'oos' }
-                ],
-                link: [
-                    {
-                        rel: 'canonical',
-                        href: seo.value?.canonical_url || canonicalUrl.value
-                    }
-                ]
-            });
-        }
+        const title = () => seo.value?.meta_title || product.value?.name || 'Product';
+        const description = () => seo.value?.meta_description || product.value?.content || product.value?.description || undefined;
+        const keywords = () => seo.value?.meta_keywords || seo.value?.focus_keyword || undefined;
+        const ogTitle = () => seo.value?.og_title || seo.value?.meta_title || product.value?.name || 'Product';
+        const ogDescription = () => seo.value?.og_description || seo.value?.meta_description || product.value?.content || product.value?.description || undefined;
+        const ogImage = () => seo.value?.og_image_url || product.value?.image_url || undefined;
+        const canonical = () => seo.value?.canonical_url || canonicalUrl.value;
+
+        useSeoMeta({
+            title,
+            description,
+            keywords,
+            ogTitle,
+            ogDescription,
+            ogImage,
+            ogUrl: () => canonicalUrl.value,
+            ogType: 'article',
+            twitterCard: 'summary_large_image',
+            twitterTitle: ogTitle,
+            twitterDescription: ogDescription,
+            twitterImage: ogImage
+        });
+
+        useHead({
+            meta: [
+                { property: 'product:price:amount', content: () => product.value?.selling_price },
+                { property: 'product:price:currency', content: 'PKR' },
+                { property: 'og:availability', content: () => (product.value?.in_stock ? 'instock' : 'oos') }
+            ],
+            link: [
+                {
+                    rel: 'canonical',
+                    href: canonical
+                }
+            ]
+        });
     }
 } catch (e) {
     throw createError({
