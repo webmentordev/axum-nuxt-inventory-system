@@ -52,21 +52,21 @@
                                 product.category.name }}
                             </NuxtLink>
                         </li>
-                        <li v-if="product.sub_category"><strong>Tech Type: </strong>
+                        <li v-if="product.sub_category"><strong>Type: </strong>
                             <NuxtLink class="underline" :to='`/sub-categories/${product.sub_category.slug}`'
                                 target="_blank">{{
                                     product.sub_category.name
                                 }}</NuxtLink>
                         </li>
                         <li v-if="stockLabel"><strong>Availability: </strong><span :class="stockClass">{{ stockLabel
-                        }}</span></li>
+                                }}</span></li>
                     </ul>
 
                     <div class="flex flex-col gap-1">
                         <div class="flex flex-wrap items-baseline gap-2 sm:gap-3">
                             <span class="text-xl sm:text-2xl font-bold text-navy">{{
                                 formatCurrency(product.selling_price)
-                            }}</span>
+                                }}</span>
                             <span v-if="hasDiscount" class="text-sm sm:text-base text-zinc-400 line-through">
                                 {{ formatCurrency(product.compare_at_selling_price) }}
                             </span>

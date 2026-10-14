@@ -312,8 +312,13 @@ async function handleSubmit() {
         if (tempName.value) {
             formData.append('temp_name', tempName.value);
         }
-        if (assignMode.value === 'assign' && targetType.value && targetId.value) {
-            formData.append(targetType.value, targetId.value);
+
+        for (const key of Object.values(targetKeyFromDetail)) {
+            const active =
+                assignMode.value === 'assign' &&
+                targetType.value === key &&
+                targetId.value;
+            formData.append(key, active ? targetId.value : '');
         }
 
         const data = await authFetch(`/api/admin/uploads/${uploadId}`, {

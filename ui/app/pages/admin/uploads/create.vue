@@ -86,7 +86,7 @@ const assignModeOptions = [
 ];
 
 const targetTypeOptions = [
-    { label: 'Product', value: 'product_id' },
+    { label: 'Gallery (Product)', value: 'product_id' },
     { label: 'Category', value: 'category_id' },
     { label: 'Sub-category', value: 'sub_category_id' },
     { label: 'Brand', value: 'brand_id' }

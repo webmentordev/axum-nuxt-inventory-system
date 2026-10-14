@@ -6,9 +6,9 @@
                 <Icon name="mdi:close" size="24" />
             </button>
         </div>
-        <div class="w-full flex flex-col gap-1 h-full overflow-y-auto themed-scroll">
+        <div class="w-full flex flex-col gap-2 h-full overflow-y-auto themed-scroll">
             <NuxtLink v-for="item in links" :key="item.to" :to="item.to" @click="isOpen = false"
-                class="w-full flex items-center px-3 py-2 rounded-md text-sm font-semibold text-zinc-300 transition-colors hover:text-white hover:bg-dark-300"
+                class="w-full flex items-center px-3 py-2 rounded-md text-sm text-zinc-300 transition-colors hover:text-white hover:bg-dark-300"
                 active-class="!text-lime-main !bg-lime-bg !border !border-lime-main/30">
                 <Icon :name="item.icon" size="20" />
                 <strong class="ml-1">{{ item.label }}</strong>
