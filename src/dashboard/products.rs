@@ -15,6 +15,12 @@ use crate::auth::Claims;
 use crate::dashboard::products_seo::ProductSeo;
 use crate::{AppState, utils::*};
 
+type ApiError = (StatusCode, Json<serde_json::Value>);
+
+fn err(status: StatusCode, message: &str) -> ApiError {
+    (status, Json(json!({ "message": message })))
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct Product {
     pub id: Uuid,
@@ -57,12 +63,12 @@ pub struct CreateProduct {
     pub name: String,
     pub brand: Option<String>,
     pub model: Option<String>,
-    pub description: Option<String>,
-    pub content: Option<String>,
+    pub description: String,
+    pub content: String,
     pub warranty_months: Option<i16>,
     pub cost_price: Decimal,
     pub selling_price: Decimal,
-    pub compare_at_selling_price: Option<Decimal>,
+    pub compare_at_selling_price: Decimal,
     pub shipping_cost: Option<Decimal>,
     pub tax: Option<Decimal>,
     pub quantity_in_stock: Option<i32>,
@@ -302,13 +308,79 @@ pub async fn create_product(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
     Json(payload): Json<CreateProduct>,
-) -> Result<(StatusCode, Json<Product>), StatusCode> {
+) -> Result<(StatusCode, Json<Product>), ApiError> {
+    let name = payload.name.trim().to_string();
+
+    if name.chars().count() < 2 {
+        return Err(err(
+            StatusCode::BAD_REQUEST,
+            "Name must be at least 2 characters.",
+        ));
+    }
+    if name.chars().count() > 150 {
+        return Err(err(
+            StatusCode::BAD_REQUEST,
+            "Name must be 150 characters or fewer.",
+        ));
+    }
+    if payload.description.trim().chars().count() > 500 {
+        return Err(err(
+            StatusCode::BAD_REQUEST,
+            "Description must be 500 characters or fewer.",
+        ));
+    }
+    if payload.content.trim().chars().count() > 10000 {
+        return Err(err(
+            StatusCode::BAD_REQUEST,
+            "Content must be 10,000 characters or fewer.",
+        ));
+    }
+    if payload.compare_at_selling_price < Decimal::ZERO {
+        return Err(err(
+            StatusCode::BAD_REQUEST,
+            "Compare at selling price must be 0 or more.",
+        ));
+    }
+
+    if payload.cost_price < Decimal::ZERO {
+        return Err(err(
+            StatusCode::BAD_REQUEST,
+            "Cost price must be 0 or more.",
+        ));
+    }
+    if payload.selling_price < Decimal::ZERO {
+        return Err(err(
+            StatusCode::BAD_REQUEST,
+            "Selling price must be 0 or more.",
+        ));
+    }
+    if payload.shipping_cost.is_some_and(|v| v < Decimal::ZERO) {
+        return Err(err(
+            StatusCode::BAD_REQUEST,
+            "Shipping cost must be 0 or more.",
+        ));
+    }
+    if payload.tax.is_some_and(|v| v < Decimal::ZERO) {
+        return Err(err(StatusCode::BAD_REQUEST, "Tax must be 0 or more."));
+    }
+    if payload.quantity_in_stock.is_some_and(|v| v < 0) {
+        return Err(err(StatusCode::BAD_REQUEST, "Quantity must be 0 or more."));
+    }
+    if payload.compare_at_selling_price > Decimal::ZERO
+        && payload.compare_at_selling_price < payload.selling_price
+    {
+        return Err(err(
+            StatusCode::BAD_REQUEST,
+            "Compare at selling price must not be less than the selling price.",
+        ));
+    }
+
     let quantity_in_stock = payload.quantity_in_stock.unwrap_or(0);
     let reorder_level = payload.reorder_level.unwrap_or(0);
     let unit = payload.unit.unwrap_or_else(|| "piece".to_string());
     let shipping_cost = payload.shipping_cost.unwrap_or_default();
     let tax = payload.tax.unwrap_or_default();
-    let slug = slugify(&payload.name, true);
+    let slug = slugify(&name, true);
 
     let product = sqlx::query_as!(
         Product,
@@ -335,9 +407,9 @@ pub async fn create_product(
         Some(payload.category_id),
         Some(payload.sub_category_id),
         Some(payload.brand_id),
-        payload.name,
+        name,
         slug,
-        generate_sku(&payload.name),
+        generate_sku(&name),
         payload.brand,
         payload.model,
         payload.description,
@@ -355,14 +427,15 @@ pub async fn create_product(
     )
     .fetch_one(&state.db)
     .await
-    .map_err(|err| match &err {
-        sqlx::Error::Database(db_err) if db_err.code().as_deref() == Some("23505") => {
-            StatusCode::CONFLICT
+    .map_err(|e| match &e {
+        sqlx::Error::Database(d) if d.code().as_deref() == Some("23505") => {
+            err(StatusCode::CONFLICT, "A product with this name already exists.")
         }
-        sqlx::Error::Database(db_err) if db_err.code().as_deref() == Some("23503") => {
-            StatusCode::BAD_REQUEST
-        }
-        _ => StatusCode::INTERNAL_SERVER_ERROR,
+        sqlx::Error::Database(d) if d.code().as_deref() == Some("23503") => err(
+            StatusCode::BAD_REQUEST,
+            "Selected category, sub-category or brand does not exist.",
+        ),
+        _ => err(StatusCode::INTERNAL_SERVER_ERROR, "Failed to create product."),
     })?;
 
     log_audit(
@@ -384,8 +457,120 @@ pub async fn update_product(
     Extension(claims): Extension<Claims>,
     Path(uuid): Path<Uuid>,
     Json(payload): Json<UpdateProduct>,
-) -> Result<Json<Product>, StatusCode> {
-    let new_slug = payload.name.as_ref().map(|name| slugify(name, true));
+) -> Result<Json<Product>, ApiError> {
+    let name = payload.name.as_ref().map(|n| n.trim().to_string());
+    let unit = payload.unit.as_ref().map(|u| u.trim().to_string());
+
+    if let Some(n) = &name {
+        if n.chars().count() < 2 {
+            return Err(err(
+                StatusCode::BAD_REQUEST,
+                "Name must be at least 2 characters.",
+            ));
+        }
+        if n.chars().count() > 150 {
+            return Err(err(
+                StatusCode::BAD_REQUEST,
+                "Name must be 150 characters or fewer.",
+            ));
+        }
+    }
+    if let Some(u) = &unit {
+        if u.is_empty() {
+            return Err(err(StatusCode::BAD_REQUEST, "Unit is required."));
+        }
+        if u.chars().count() > 20 {
+            return Err(err(
+                StatusCode::BAD_REQUEST,
+                "Unit must be 20 characters or fewer.",
+            ));
+        }
+    }
+    if payload
+        .model
+        .as_ref()
+        .is_some_and(|v| v.trim().chars().count() > 100)
+    {
+        return Err(err(
+            StatusCode::BAD_REQUEST,
+            "Model must be 100 characters or fewer.",
+        ));
+    }
+    if payload
+        .description
+        .as_ref()
+        .is_some_and(|v| v.trim().chars().count() > 500)
+    {
+        return Err(err(
+            StatusCode::BAD_REQUEST,
+            "Description must be 500 characters or fewer.",
+        ));
+    }
+    if payload
+        .content
+        .as_ref()
+        .is_some_and(|v| v.trim().chars().count() > 10000)
+    {
+        return Err(err(
+            StatusCode::BAD_REQUEST,
+            "Content must be 10,000 characters or fewer.",
+        ));
+    }
+    if payload.cost_price.is_some_and(|v| v < Decimal::ZERO) {
+        return Err(err(
+            StatusCode::BAD_REQUEST,
+            "Cost price must be 0 or more.",
+        ));
+    }
+    if payload.selling_price.is_some_and(|v| v < Decimal::ZERO) {
+        return Err(err(
+            StatusCode::BAD_REQUEST,
+            "Selling price must be 0 or more.",
+        ));
+    }
+    if payload
+        .compare_at_selling_price
+        .is_some_and(|v| v < Decimal::ZERO)
+    {
+        return Err(err(
+            StatusCode::BAD_REQUEST,
+            "Compare at selling price must be 0 or more.",
+        ));
+    }
+    if let (Some(compare_at), Some(selling)) =
+        (payload.compare_at_selling_price, payload.selling_price)
+    {
+        if compare_at > Decimal::ZERO && compare_at < selling {
+            return Err(err(
+                StatusCode::BAD_REQUEST,
+                "Compare at selling price must not be less than the selling price.",
+            ));
+        }
+    }
+    if payload.shipping_cost.is_some_and(|v| v < Decimal::ZERO) {
+        return Err(err(
+            StatusCode::BAD_REQUEST,
+            "Shipping cost must be 0 or more.",
+        ));
+    }
+    if payload.tax.is_some_and(|v| v < Decimal::ZERO) {
+        return Err(err(StatusCode::BAD_REQUEST, "Tax must be 0 or more."));
+    }
+    if payload.quantity_in_stock.is_some_and(|v| v < 0) {
+        return Err(err(StatusCode::BAD_REQUEST, "Quantity must be 0 or more."));
+    }
+    if payload.reorder_level.is_some_and(|v| v < 0) {
+        return Err(err(
+            StatusCode::BAD_REQUEST,
+            "Reorder level must be 0 or more.",
+        ));
+    }
+    if payload.warranty_months.is_some_and(|v| v < 0) {
+        return Err(err(StatusCode::BAD_REQUEST, "Warranty must be 0 or more."));
+    }
+
+    let new_slug = name.as_ref().map(|n| slugify(n, true));
+
     let product = sqlx::query_as!(
         Product,
         r#"UPDATE products
@@ -418,7 +603,7 @@ pub async fn update_product(
                      quantity_in_stock, reorder_level, unit,
                      image_url, is_active, created_at, updated_at"#,
         payload.category_id,
-        payload.name,
+        name,
         new_slug,
         payload.brand,
         payload.cost_price,
@@ -427,7 +612,7 @@ pub async fn update_product(
         payload.tax,
         payload.quantity_in_stock,
         payload.reorder_level,
-        payload.unit,
+        unit,
         payload.is_active,
         payload.sub_category_id,
         payload.brand_id,
@@ -441,16 +626,17 @@ pub async fn update_product(
     )
     .fetch_optional(&state.db)
     .await
-    .map_err(|err| match &err {
-        sqlx::Error::Database(db_err) if db_err.code().as_deref() == Some("23505") => {
-            StatusCode::CONFLICT
+    .map_err(|e| match &e {
+        sqlx::Error::Database(d) if d.code().as_deref() == Some("23505") => {
+            err(StatusCode::CONFLICT, "A product with this name already exists.")
         }
-        sqlx::Error::Database(db_err) if db_err.code().as_deref() == Some("23503") => {
-            StatusCode::BAD_REQUEST
-        }
-        _ => StatusCode::INTERNAL_SERVER_ERROR,
+        sqlx::Error::Database(d) if d.code().as_deref() == Some("23503") => err(
+            StatusCode::BAD_REQUEST,
+            "Selected category, sub-category or brand does not exist.",
+        ),
+        _ => err(StatusCode::INTERNAL_SERVER_ERROR, "Failed to update product."),
     })?
-    .ok_or(StatusCode::NOT_FOUND)?;
+    .ok_or_else(|| err(StatusCode::NOT_FOUND, "Product not found."))?;
 
     log_audit(
         &state.db,

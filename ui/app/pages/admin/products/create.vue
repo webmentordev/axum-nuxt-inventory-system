@@ -58,16 +58,18 @@
                     </div>
                 </div>
 
-                <div>
+                <div class="w-full">
                     <label class="block text-sm font-semibold text-zinc-300 mb-2">Description</label>
                     <AdminTextarea v-model="description" placeholder="Optional description..." rows="4" />
                     <p v-if="errors.description" class="text-xs text-red-400 mt-1">{{ errors.description }}</p>
+                    <span class="text-lime-300 text-sm flex justify-end">{{ description.length }}/500</span>
                 </div>
 
                 <div>
                     <label class="block text-sm font-semibold text-zinc-300 mb-2">Content</label>
                     <AdminTextarea v-model="content" placeholder="Optional long-form content..." rows="6" />
                     <p v-if="errors.content" class="text-xs text-red-400 mt-1">{{ errors.content }}</p>
+                    <span class="text-lime-300 text-sm flex justify-end">{{ content.length }}/10,000</span>
                 </div>
 
                 <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
@@ -103,7 +105,8 @@
 
                     <div>
                         <label class="block text-sm font-semibold text-zinc-300 mb-2">Compare At Selling Price</label>
-                        <AdminInput v-model="compareAtSellingPrice" type="number" step="0.01" placeholder="Optional" />
+                        <AdminInput v-model="compareAtSellingPrice" type="number" step="0.01"
+                            placeholder="e.g. 19999" />
                         <p v-if="errors.compare_at_selling_price" class="text-xs text-red-400 mt-1">{{
                             errors.compare_at_selling_price }}</p>
                     </div>
@@ -114,7 +117,7 @@
                         <label class="block text-sm font-semibold text-zinc-300 mb-2">Quantity in Stock</label>
                         <AdminInput v-model="quantityInStock" type="number" step="1" placeholder="0" />
                         <p v-if="errors.quantity_in_stock" class="text-xs text-red-400 mt-1">{{ errors.quantity_in_stock
-                        }}</p>
+                            }}</p>
                     </div>
 
                     <div>
@@ -307,6 +310,26 @@ function validate() {
         errors.value.name = 'Name is required.';
     } else if (name.value.trim().length < 2) {
         errors.value.name = 'Name must be at least 2 characters.';
+    } else if (name.value.trim().length > 150) {
+        errors.value.name = 'Name must be 150 characters or fewer.';
+    }
+
+    if (model.value.trim().length > 100) {
+        errors.value.model = 'Model must be 100 characters or fewer.';
+    }
+
+    if (!unit.value.trim()) {
+        errors.value.unit = 'Unit is required.';
+    } else if (unit.value.trim().length > 20) {
+        errors.value.unit = 'Unit must be 20 characters or fewer.';
+    }
+
+    if (!subCategoryId.value) {
+        errors.value.sub_category_id = 'Sub-category is required.';
+    }
+
+    if (!brandId.value) {
+        errors.value.brand_id = 'Brand is required.';
     }
 
     if (!slug.value.trim()) {
@@ -315,6 +338,10 @@ function validate() {
 
     if (description.value && description.value.trim().length > 500) {
         errors.value.description = 'Description must be under 500 characters.';
+    }
+
+    if (content.value && content.value.trim().length > 10000) {
+        errors.value.content = 'Content must be under 10,000 characters.';
     }
 
     if (costPrice.value === '' || Number(costPrice.value) < 0) {
@@ -345,12 +372,16 @@ function validate() {
         errors.value.reorder_level = 'Reorder level must be 0 or more.';
     }
 
-    if (!unit.value.trim()) {
-        errors.value.unit = 'Unit is required.';
-    }
-
     if (warrantyMonths.value !== '' && Number(warrantyMonths.value) < 0) {
         errors.value.warranty_months = 'Warranty must be 0 or more.';
+    }
+
+    if (
+        compareAtSellingPrice.value !== '' &&
+        Number(compareAtSellingPrice.value) > 0 &&
+        Number(compareAtSellingPrice.value) < Number(sellingPrice.value)
+    ) {
+        errors.value.compare_at_selling_price = 'Compare at selling price must not be less than the selling price.';
     }
 
     return Object.keys(errors.value).length === 0;
@@ -396,12 +427,12 @@ async function handleSubmit() {
                 name: name.value.trim(),
                 slug: slug.value.trim(),
                 model: model.value.trim() || null,
-                description: description.value.trim() || null,
-                content: content.value.trim() || null,
+                description: description.value.trim(),
+                content: content.value.trim(),
+                compare_at_selling_price: toNumberOrNull(compareAtSellingPrice.value) ?? 0,
                 warranty_months: toNumberOrNull(warrantyMonths.value),
                 cost_price: toNumberOrNull(costPrice.value),
                 selling_price: toNumberOrNull(sellingPrice.value),
-                compare_at_selling_price: toNumberOrNull(compareAtSellingPrice.value),
                 shipping_cost: toNumberOrNull(shippingCost.value) ?? 0,
                 tax: toNumberOrNull(tax.value) ?? 0,
                 quantity_in_stock: toNumberOrNull(quantityInStock.value) ?? 0,
@@ -419,7 +450,7 @@ async function handleSubmit() {
         }
     } catch (e) {
         statusType.value = 'error';
-        statusMessage.value = e.statusMessage || 'Failed to create product.';
+        statusMessage.value = e.data?.message || e.statusMessage || 'Failed to create product.';
     } finally {
         setTimeout(() => {
             showStatus.value = false;

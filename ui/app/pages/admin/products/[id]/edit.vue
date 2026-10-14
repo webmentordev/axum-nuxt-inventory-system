@@ -62,12 +62,14 @@
                     <label class="block text-sm font-semibold text-zinc-300 mb-2">Description</label>
                     <AdminTextarea v-model="description" placeholder="Optional description..." rows="4" />
                     <p v-if="errors.description" class="text-xs text-red-400 mt-1">{{ errors.description }}</p>
+                    <span class="text-lime-300 text-sm flex justify-end">{{ description.length }}/500</span>
                 </div>
 
                 <div>
                     <label class="block text-sm font-semibold text-zinc-300 mb-2">Content</label>
                     <AdminTextarea v-model="content" placeholder="Optional long-form content..." rows="6" />
                     <p v-if="errors.content" class="text-xs text-red-400 mt-1">{{ errors.content }}</p>
+                    <span class="text-lime-300 text-sm flex justify-end">{{ content.length }}/10,000</span>
                 </div>
 
                 <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
@@ -362,18 +364,42 @@ function validate() {
         errors.value.category_id = 'Category is required.';
     }
 
+    if (!subCategoryId.value) {
+        errors.value.sub_category_id = 'Sub-category is required.';
+    }
+
+    if (!brandId.value) {
+        errors.value.brand_id = 'Brand is required.';
+    }
+
     if (!name.value.trim()) {
         errors.value.name = 'Name is required.';
     } else if (name.value.trim().length < 2) {
         errors.value.name = 'Name must be at least 2 characters.';
+    } else if (name.value.trim().length > 150) {
+        errors.value.name = 'Name must be 150 characters or fewer.';
     }
 
     if (!slug.value.trim()) {
         errors.value.slug = 'Slug is required.';
     }
 
+    if (model.value.trim().length > 100) {
+        errors.value.model = 'Model must be 100 characters or fewer.';
+    }
+
+    if (!unit.value.trim()) {
+        errors.value.unit = 'Unit is required.';
+    } else if (unit.value.trim().length > 20) {
+        errors.value.unit = 'Unit must be 20 characters or fewer.';
+    }
+
     if (description.value && description.value.trim().length > 500) {
         errors.value.description = 'Description must be under 500 characters.';
+    }
+
+    if (content.value && content.value.trim().length > 10000) {
+        errors.value.content = 'Content must be under 10,000 characters.';
     }
 
     if (costPrice.value === '' || Number(costPrice.value) < 0) {
@@ -386,6 +412,12 @@ function validate() {
 
     if (compareAtSellingPrice.value !== '' && Number(compareAtSellingPrice.value) < 0) {
         errors.value.compare_at_selling_price = 'Compare at selling price must be 0 or more.';
+    } else if (
+        compareAtSellingPrice.value !== '' &&
+        Number(compareAtSellingPrice.value) > 0 &&
+        Number(compareAtSellingPrice.value) < Number(sellingPrice.value)
+    ) {
+        errors.value.compare_at_selling_price = 'Compare at selling price must not be less than the selling price.';
     }
 
     if (shippingCost.value === '' || Number(shippingCost.value) < 0) {
@@ -404,16 +436,13 @@ function validate() {
         errors.value.reorder_level = 'Reorder level must be 0 or more.';
     }
 
-    if (!unit.value.trim()) {
-        errors.value.unit = 'Unit is required.';
-    }
-
     if (warrantyMonths.value !== '' && Number(warrantyMonths.value) < 0) {
         errors.value.warranty_months = 'Warranty must be 0 or more.';
     }
 
     return Object.keys(errors.value).length === 0;
 }
+
 
 async function handleSubmit() {
     if (!validate()) return;
@@ -457,7 +486,7 @@ async function handleSubmit() {
         }
     } catch (e) {
         statusType.value = 'error';
-        statusMessage.value = e.statusMessage || 'Failed to update product.';
+        statusMessage.value = e.data?.message || e.statusMessage || 'Failed to update product.';
     } finally {
         setTimeout(() => {
             showStatus.value = false;
