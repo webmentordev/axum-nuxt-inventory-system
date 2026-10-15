@@ -2,6 +2,7 @@ pub mod account;
 pub mod barcodes;
 pub mod brands;
 pub mod categories;
+pub mod info_cards;
 pub mod orders;
 pub mod policies;
 pub mod products;

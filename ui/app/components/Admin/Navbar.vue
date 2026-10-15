@@ -27,6 +27,7 @@ const links = [
     { to: '/', icon: 'mdi-light:home', label: 'Home' },
     { to: '/admin/dashboard', icon: 'mdi-light:view-dashboard', label: 'Dashboard' },
     { to: '/admin/users', icon: 'mdi:account-outline', label: 'Users' },
+    { to: '/admin/cards', icon: 'material-symbols:cards-stack-sharp', label: 'Info Cards' },
     { to: '/admin/products', icon: 'game-icons:cargo-ship', label: 'Products' },
     { to: '/admin/seo', icon: 'boxicons:search-big', label: 'Product SEO' },
     { to: '/admin/specifications', icon: 'ph:perspective-duotone', label: 'Specifications' },

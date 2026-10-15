@@ -25,6 +25,27 @@
             </NuxtLink>
         </section>
 
+        <section class="max-w-7xl m-auto py-6 px-4" v-if="infoCards.length > 0">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                <div v-for="(card, index) in infoCards" :key="card.id"
+                    class="relative z-0 overflow-hidden rounded-2xl min-h-52 sm:min-h-64 p-6 sm:p-8 flex items-center"
+                    :style="{ backgroundColor: cardColor(index) }">
+                    <div class="relative z-10 max-w-[60%]">
+                        <span class="text-sm font-semibold text-orange-dark">{{ card.offer_title }}</span>
+                        <h3 class="mt-2 text-xl sm:text-2xl font-black text-navy">{{ card.title }}</h3>
+                        <p class="mt-2 text-sm text-slate-500 line-clamp-2">{{ card.description }}</p>
+                        <NuxtLink :to="card.path_url"
+                            class="mt-4 inline-flex items-center gap-1 rounded-full bg-orange px-5 py-2.5 text-sm font-bold text-white hover:opacity-90 transition-opacity">
+                            <span>Shop Now</span>
+                            <Icon name="ri:arrow-right-up-line" size="18px" />
+                        </NuxtLink>
+                    </div>
+                    <img v-if="card.image_url" :src="card.image_url" :alt="card.title" loading="lazy"
+                        class="absolute bottom-0 right-0 z-0 h-4/5 w-auto max-w-[45%] object-contain object-bottom">
+                </div>
+            </div>
+        </section>
+
         <section
             class="mx-auto grid max-w-7xl items-center gap-8 lg:gap-12 px-4 pb-16 lg:pb-20 grid-cols-1 lg:grid-cols-2 py-8 lg:py-12">
             <div class="relative">
@@ -171,4 +192,15 @@ const { data: categories } = await useAsyncData('home-categories', () => {
     });
     return publicFetch(`/api/public/categories?${params}`);
 }, { default: () => [] });
+
+const { data: infoCards } = await useAsyncData('home-info-cards', () =>
+    publicFetch('/api/public/info-cards'),
+    { default: () => [] }
+);
+
+const cardColors = ['#fff4e7', '#e8f4ff', '#eafaf1', '#fdeaf3', '#f1ecff', '#fffbe0'];
+
+function cardColor(index) {
+    return cardColors[index % cardColors.length];
+}
 </script>
