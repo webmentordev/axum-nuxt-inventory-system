@@ -37,6 +37,11 @@
                 <div>
                     <label class="block text-sm font-semibold text-zinc-300 mb-2">File</label>
 
+                    <label v-if="fileType === 'image'" class="flex items-center gap-2 mb-3 cursor-pointer w-fit">
+                        <input type="checkbox" v-model="optimize" class="accent-lime-500" />
+                        <span class="text-sm text-zinc-300">Optimize</span>
+                    </label>
+
                     <label
                         class="flex flex-col items-center justify-center w-full border border-dashed border-dark-300 bg-dark-200 rounded-xl p-6 cursor-pointer hover:border-lime-main/50 transition-colors">
                         <img v-if="previewUrl" :src="previewUrl" alt="Preview"
@@ -93,6 +98,7 @@ const targetTypeOptions = [
 ];
 
 const fileType = ref('image');
+const optimize = ref(true);
 const assignMode = ref('none');
 const targetType = ref(null);
 const targetId = ref(null);
@@ -160,6 +166,7 @@ function uploadToTmp(selectedFile) {
         const xhr = new XMLHttpRequest();
         const body = new FormData();
         body.append('file', selectedFile);
+        body.append('optimize', String(optimize.value && fileType.value === 'image'));
 
         xhr.upload.addEventListener('progress', (e) => {
             if (e.lengthComputable) {
@@ -200,21 +207,10 @@ function uploadToTmp(selectedFile) {
     });
 }
 
-
-async function handleFileChange(event) {
-    const selected = event.target.files[0];
-    if (!selected) return;
-
-    file.value = selected;
+async function startUpload(selected) {
     tempName.value = null;
     uploadProgress.value = 0;
     errors.value.file = '';
-
-    if (fileType.value === 'image') {
-        previewUrl.value = URL.createObjectURL(selected);
-    } else {
-        previewUrl.value = '';
-    }
 
     uploading.value = true;
     try {
@@ -228,6 +224,33 @@ async function handleFileChange(event) {
         uploading.value = false;
     }
 }
+
+async function handleFileChange(event) {
+    const selected = event.target.files[0];
+    if (!selected) return;
+
+    file.value = selected;
+
+    if (fileType.value === 'image') {
+        previewUrl.value = URL.createObjectURL(selected);
+    } else {
+        previewUrl.value = '';
+    }
+
+    await startUpload(selected);
+}
+
+watch([optimize, fileType], () => {
+    if (!file.value || uploading.value) return;
+
+    if (fileType.value === 'image') {
+        previewUrl.value = URL.createObjectURL(file.value);
+    } else {
+        previewUrl.value = '';
+    }
+
+    startUpload(file.value);
+});
 
 function validate() {
     errors.value = {};
@@ -271,6 +294,7 @@ async function handleSubmit() {
             targetType.value = null;
             targetId.value = null;
             fileType.value = 'image';
+            optimize.value = true;
             name.value = '';
             file.value = null;
             tempName.value = null;

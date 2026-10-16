@@ -97,7 +97,10 @@ pub struct TmpUpload {
     pub size: u64,
 }
 
-fn process_image(bytes: Vec<u8>, extension: String) -> (Vec<u8>, String) {
+fn process_image(bytes: Vec<u8>, extension: String, optimize: bool) -> (Vec<u8>, String) {
+    if !optimize {
+        return (bytes, extension);
+    }
     match image::load_from_memory(&bytes) {
         Ok(img) => {
             let resized = if img.width() > MAX_IMAGE_DIM || img.height() > MAX_IMAGE_DIM {
@@ -227,26 +230,36 @@ pub async fn create_tmp_upload(mut multipart: Multipart) -> Result<Json<TmpUploa
     let mut file_bytes: Option<Vec<u8>> = None;
     let mut original_name = String::from("file");
     let mut extension = String::from("bin");
+    let mut optimize = true;
 
     while let Some(field) = multipart
         .next_field()
         .await
         .map_err(|_| StatusCode::BAD_REQUEST)?
     {
-        if field.name().unwrap_or("") == "file" {
-            if let Some(filename) = field.file_name() {
-                original_name = filename.to_string();
-                if let Some(ext) = FsPath::new(filename).extension() {
-                    extension = ext.to_string_lossy().to_string();
-                }
+        let field_name = field.name().unwrap_or("").to_string();
+
+        match field_name.as_str() {
+            "optimize" => {
+                let text = field.text().await.map_err(|_| StatusCode::BAD_REQUEST)?;
+                optimize = text == "true";
             }
-            let data = field.bytes().await.map_err(|_| StatusCode::BAD_REQUEST)?;
-            file_bytes = Some(data.to_vec());
+            "file" => {
+                if let Some(filename) = field.file_name() {
+                    original_name = filename.to_string();
+                    if let Some(ext) = FsPath::new(filename).extension() {
+                        extension = ext.to_string_lossy().to_string();
+                    }
+                }
+                let data = field.bytes().await.map_err(|_| StatusCode::BAD_REQUEST)?;
+                file_bytes = Some(data.to_vec());
+            }
+            _ => {}
         }
     }
 
     let file_bytes = file_bytes.ok_or(StatusCode::BAD_REQUEST)?;
-    let (file_bytes, extension) = process_image(file_bytes, extension);
+    let (file_bytes, extension) = process_image(file_bytes, extension, optimize);
 
     fs::create_dir_all(TMP_DIR)
         .await
@@ -328,6 +341,7 @@ pub async fn create_upload(
     let mut file_bytes: Option<Vec<u8>> = None;
     let mut extension = String::from("bin");
     let mut temp_name: Option<String> = None;
+    let mut optimize = true;
 
     while let Some(field) = multipart
         .next_field()
@@ -337,6 +351,10 @@ pub async fn create_upload(
         let field_name = field.name().unwrap_or("").to_string();
 
         match field_name.as_str() {
+            "optimize" => {
+                let text = field.text().await.map_err(|_| StatusCode::BAD_REQUEST)?;
+                optimize = text == "true";
+            }
             "product_id" => {
                 let text = field.text().await.map_err(|_| StatusCode::BAD_REQUEST)?;
                 if !text.is_empty() {
@@ -406,7 +424,7 @@ pub async fn create_upload(
         let file_name = format!("{}.{}", slugify(&name, true), ext);
         move_tmp_to_final(&temp_name, &file_name).await?
     } else if let Some(bytes) = file_bytes {
-        let (bytes, extension) = process_image(bytes, extension);
+        let (bytes, extension) = process_image(bytes, extension, optimize);
         let file_name = format!("{}.{}", slugify(&name, true), extension);
         let path = format!("{UPLOAD_DIR}/{file_name}");
         let mut file = fs::File::create(&path)
@@ -490,6 +508,7 @@ pub async fn update_upload(
     let mut new_file_bytes: Option<Vec<u8>> = None;
     let mut extension = String::from("bin");
     let mut temp_name: Option<String> = None;
+    let mut optimize = true;
 
     while let Some(field) = multipart
         .next_field()
@@ -499,6 +518,10 @@ pub async fn update_upload(
         let field_name = field.name().unwrap_or("").to_string();
 
         match field_name.as_str() {
+            "optimize" => {
+                let text = field.text().await.map_err(|_| StatusCode::BAD_REQUEST)?;
+                optimize = text == "true";
+            }
             "product_id" => {
                 let text = field.text().await.map_err(|_| StatusCode::BAD_REQUEST)?;
                 product_id = if text.is_empty() {
@@ -570,7 +593,7 @@ pub async fn update_upload(
         let _ = fs::remove_file(&existing.file_path).await;
         new_path
     } else if let Some(bytes) = new_file_bytes {
-        let (bytes, extension) = process_image(bytes, extension);
+        let (bytes, extension) = process_image(bytes, extension, optimize);
 
         fs::create_dir_all(UPLOAD_DIR)
             .await
