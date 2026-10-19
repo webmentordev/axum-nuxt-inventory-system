@@ -1,6 +1,7 @@
 export default defineEventHandler(async (event) => {
     const apiUrl = useRuntimeConfig(event).apiUrl;
     const slug = getRouterParam(event, 'slug');
+    const query = getQuery(event);
     if (!slug) {
         throw createError({
             statusCode: 400,
@@ -9,7 +10,7 @@ export default defineEventHandler(async (event) => {
         });
     }
     try {
-        const data = await $fetch(`${apiUrl}/api/public/categories/${slug}`);
+        const data = await $fetch(`${apiUrl}/api/public/categories/${slug}`, { query });
         return data;
     } catch (e) {
         throw createError({

@@ -23,7 +23,7 @@ definePageMeta({
     layout: 'public'
 });
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 60;
 
 const { publicFetch } = usePublicFetch();
 

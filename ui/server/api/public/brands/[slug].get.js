@@ -1,5 +1,6 @@
 export default defineEventHandler(async (event) => {
     const apiUrl = useRuntimeConfig(event).apiUrl;
+    const query = getQuery(event);
     const slug = getRouterParam(event, 'slug');
     if (!slug) {
         throw createError({
@@ -9,7 +10,7 @@ export default defineEventHandler(async (event) => {
         });
     }
     try {
-        const data = await $fetch(`${apiUrl}/api/public/brands/${slug}`);
+        const data = await $fetch(`${apiUrl}/api/public/brands/${slug}`, { query });
         return data;
     } catch (e) {
         throw createError({

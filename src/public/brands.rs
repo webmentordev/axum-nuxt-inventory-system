@@ -69,13 +69,14 @@ pub async fn get_public_brand(
 
     let mut products = sqlx::query_as!(
         PublicProductRow,
-        r#"SELECT id, name, slug, sku, brand_id, category_id as "category_id!", sub_category_id, model, description, content, image_url as "image_url!",
-                  warranty_months,
-                  selling_price, compare_at_selling_price, shipping_cost, tax, quantity_in_stock, unit
-           FROM products
-           WHERE brand_id = $1 AND is_active = TRUE
-           ORDER BY created_at DESC, id DESC
-           LIMIT $2 OFFSET $3"#,
+        r#"SELECT id, name, slug, sku, brand_id, category_id as "category_id!", sub_category_id, model, description, content,
+                COALESCE(image_url, '') as "image_url!",
+                warranty_months,
+                selling_price, compare_at_selling_price, shipping_cost, tax, quantity_in_stock, unit
+        FROM products
+        WHERE brand_id = $1 AND is_active = TRUE
+        ORDER BY created_at DESC, id DESC
+        LIMIT $2 OFFSET $3"#,
         brand.id,
         limit + 1,
         offset
