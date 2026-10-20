@@ -18,7 +18,7 @@
             <div class="flex items-center gap-3 sm:gap-5 text-xl text-navy">
                 <button class="md:hidden h-fit flex items-center" @click="mobileSearchOpen = !mobileSearchOpen"
                     aria-label="Search products button">
-                    <Icon name="ic:outline-search" size="24px" />
+                    <Icon name="material-symbols:search-rounded" size="24px" />
                 </button>
 
                 <div class="relative" ref="cartDropdownRef">

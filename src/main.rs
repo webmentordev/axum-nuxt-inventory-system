@@ -27,6 +27,7 @@ use crate::mailer::Mailer;
 pub struct AppState {
     pub db: sqlx::PgPool,
     pub jwt_secret: String,
+    pub currency: String,
     pub mailer: Mailer,
 }
 
@@ -53,10 +54,12 @@ async fn main() -> Result<()> {
     }
 
     let jwt_secret = std::env::var("JWT_SECRET").expect("JWT_SECRET must be set");
+    let currency = std::env::var("CURRENCY").expect("CURRENCY must be set");
 
     let state = AppState {
         db: pool,
         jwt_secret,
+        currency,
         mailer: Mailer::from_env()?,
     };
 

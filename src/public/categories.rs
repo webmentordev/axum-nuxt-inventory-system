@@ -13,7 +13,7 @@ pub struct PublicCategoryDetail {
     pub name: String,
     pub slug: String,
     pub description: Option<String>,
-    pub products: Vec<PublicProduct>,
+    pub products: Vec<PublicProductCard>,
     pub has_more: bool,
 }
 
@@ -195,12 +195,11 @@ pub async fn get_public_category(
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
     .ok_or(StatusCode::NOT_FOUND)?;
 
-    let mut products = sqlx::query_as!(
-        PublicProductRow,
-        r#"SELECT id, name, slug, sku, brand_id, category_id as "category_id!", sub_category_id, model, description, content,
-                COALESCE(image_url, '') as "image_url!",
-                warranty_months,
-                selling_price, compare_at_selling_price, shipping_cost, tax, quantity_in_stock, unit
+    let mut rows = sqlx::query_as!(
+        PublicProductCardRow,
+        r#"SELECT name, slug, brand_id, model,
+                selling_price, compare_at_selling_price, quantity_in_stock,
+                COALESCE(image_url, '') as "image_url!"
         FROM products
         WHERE category_id = $1 AND is_active = TRUE
         ORDER BY created_at DESC, id DESC
@@ -213,45 +212,10 @@ pub async fn get_public_category(
     .await
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    let has_more = products.len() as i64 > limit;
-    products.truncate(limit as usize);
+    let has_more = rows.len() as i64 > limit;
+    rows.truncate(limit as usize);
 
-    let product_ids: Vec<Uuid> = products.iter().map(|p| p.id).collect();
-
-    let uploads = sqlx::query_as!(
-        Upload,
-        r#"SELECT id, product_id, category_id, sub_category_id, brand_id, name, file_path, file_type, created_at
-           FROM uploads
-           WHERE product_id = ANY($1)
-           ORDER BY created_at ASC"#,
-        &product_ids
-    )
-    .fetch_all(&state.db)
-    .await
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    let brand_ids: Vec<Uuid> = products.iter().filter_map(|p| p.brand_id).collect();
-    let brand_map = fetch_product_brands(&state, &brand_ids).await?;
-
-    let category_ids: Vec<Uuid> = products.iter().map(|p| p.category_id).collect();
-    let sub_category_ids: Vec<Uuid> = products.iter().filter_map(|p| p.sub_category_id).collect();
-
-    let category_map = fetch_category_minis(&state, &category_ids).await?;
-    let sub_category_map = fetch_sub_category_minis(&state, &sub_category_ids).await?;
-
-    let products = products
-        .into_iter()
-        .map(|p| {
-            let cat = category_map.get(&p.category_id).cloned();
-            let sub = p
-                .sub_category_id
-                .and_then(|id| sub_category_map.get(&id).cloned());
-            let mut product = build_public_product(p, &uploads, &brand_map);
-            product.category = cat;
-            product.sub_category = sub;
-            product
-        })
-        .collect();
+    let products = cards_from_rows(&state, rows).await?;
 
     Ok(Json(PublicCategoryDetail {
         name: category.name,
