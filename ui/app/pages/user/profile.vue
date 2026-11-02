@@ -24,8 +24,8 @@
                                 class="px-3 py-1 rounded-full text-xs font-medium capitalize">
                                 {{ order.status == 'walkin' ? 'In Person-Order' : order.status }}
                             </span>
-                            <img :class="expanded.has(order.id) ? 'rotate-180' : ''" class="transition-transform"
-                                src="https://api.iconify.design/line-md:chevron-down.svg?color=%23374151" width="18">
+                            <Icon :class="expanded.has(order.id) ? 'rotate-180' : ''"
+                                class="transition-transform text-gray-700" name="line-md:chevron-down" size="18px" />
                         </div>
                     </button>
 

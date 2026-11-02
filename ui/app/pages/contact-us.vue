@@ -36,8 +36,9 @@
                     <button v-if="!processing" type="submit"
                         class="bg-navy mt-4 text-white w-full py-3 rounded-xl flex items-center justify-center hover:bg-navy/90 group">
                         <span class="mr-3">Send message</span>
-                        <img class="mt-1 transition-all group-hover:transition-all group-hover:translate-x-4"
-                            src="https://api.iconify.design/line-md:arrow-right.svg?color=%23ffffff" width="15">
+                        <Icon name="line-md:arrow-right"
+                            class="mt-1 transition-all group-hover:transition-all group-hover:translate-x-4 text-white"
+                            size="15px" />
                     </button>
 
                     <AlertsSuccess v-if="successMessage" :message="successMessage" @close="successMessage = ''" />
@@ -55,8 +56,7 @@
 
                 <div class="flex flex-col gap-5">
                     <div class="flex items-start gap-3">
-                        <img src="https://api.iconify.design/mdi-light:phone.svg?color=%23062B5B" width="20"
-                            class="mt-0.5">
+                        <Icon name="mdi-light:phone" class="text-navy mt-0.5" size="20px" />
                         <div>
                             <p class="text-sm font-semibold text-gray-800">Phone</p>
                             <p class="text-sm text-gray-500">{{ config.phone }}</p>
@@ -64,8 +64,7 @@
                     </div>
 
                     <div class="flex items-start gap-3">
-                        <img src="https://api.iconify.design/material-symbols-light:mail-outline-sharp.svg?color=%23062B5B"
-                            width="20" class="mt-0.5">
+                        <Icon name="material-symbols-light:mail-outline-sharp" class="text-navy mt-0.5" size="20px" />
                         <div>
                             <p class="text-sm font-semibold text-gray-800">Email address</p>
                             <p class="text-sm text-gray-500">{{ config.email }}</p>
@@ -73,8 +72,7 @@
                     </div>
 
                     <div class="flex items-start gap-3">
-                        <img src="https://api.iconify.design/mdi-light:map-marker.svg?color=%23062B5B" width="20"
-                            class="mt-0.5">
+                        <Icon name="mdi-light:map-marker" class="text-navy mt-0.5" size="20px" />
                         <div>
                             <p class="text-sm font-semibold text-gray-800">Address</p>
                             <p class="text-sm text-gray-500">Shop # 12, Cantt Bazaar, Multan Cantt, Multan, Punjab,
@@ -83,8 +81,7 @@
                     </div>
 
                     <div class="flex items-start gap-3">
-                        <img src="https://api.iconify.design/mdi-light:clock.svg?color=%23062B5B" width="20"
-                            class="mt-0.5">
+                        <Icon name="mdi-light:clock" class="text-navy mt-0.5" size="20px" />
                         <div>
                             <p class="text-sm font-semibold text-gray-800">Open hours</p>
                             <p class="text-sm text-gray-500">Mon – Sun: 10:00 AM – 6:00 PM</p>
