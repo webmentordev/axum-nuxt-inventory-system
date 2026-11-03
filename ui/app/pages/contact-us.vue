@@ -55,8 +55,7 @@
 
                 <div class="flex flex-col gap-5">
                     <div class="flex items-start gap-3">
-                        <img src="https://api.iconify.design/mdi-light:phone.svg?color=%23062B5B" width="20"
-                            class="mt-0.5">
+                        <Icon name="mdi-light:phone" class="text-[#062B5B] mt-0.5" size="20px" />
                         <div>
                             <p class="text-sm font-semibold text-gray-800">Phone</p>
                             <p class="text-sm text-gray-500">{{ config.phone }}</p>
@@ -64,8 +63,8 @@
                     </div>
 
                     <div class="flex items-start gap-3">
-                        <img src="https://api.iconify.design/material-symbols-light:mail-outline-sharp.svg?color=%23062B5B"
-                            width="20" class="mt-0.5">
+                        <Icon name="material-symbols-light:mail-outline-sharp" class="text-[#062B5B] mt-0.5"
+                            size="20px" />
                         <div>
                             <p class="text-sm font-semibold text-gray-800">Email address</p>
                             <p class="text-sm text-gray-500">{{ config.email }}</p>
@@ -73,8 +72,7 @@
                     </div>
 
                     <div class="flex items-start gap-3">
-                        <img src="https://api.iconify.design/mdi-light:map-marker.svg?color=%23062B5B" width="20"
-                            class="mt-0.5">
+                        <Icon name="mdi-light:map-marker" class="text-[#062B5B] mt-0.5" size="20px" />
                         <div>
                             <p class="text-sm font-semibold text-gray-800">Address</p>
                             <p class="text-sm text-gray-500">Shop # 12, Cantt Bazaar, Multan Cantt, Multan, Punjab,
@@ -83,8 +81,7 @@
                     </div>
 
                     <div class="flex items-start gap-3">
-                        <img src="https://api.iconify.design/mdi-light:clock.svg?color=%23062B5B" width="20"
-                            class="mt-0.5">
+                        <Icon name="mdi-light:clock" class="text-[#062B5B] mt-0.5" size="20px" />
                         <div>
                             <p class="text-sm font-semibold text-gray-800">Open hours</p>
                             <p class="text-sm text-gray-500">Mon – Sun: 10:00 AM – 6:00 PM</p>

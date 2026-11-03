@@ -12,8 +12,7 @@
 
                 <div v-else-if="order" class="flex flex-col gap-4">
                     <div class="flex flex-col items-center text-center gap-2 mb-2">
-                        <img class="w-14 h-14"
-                            src="https://api.iconify.design/line-md:confirm-circle.svg?color=%2316a34a" width="56">
+                        <Icon name="line-md:confirm-circle" class="w-14 h-14 text-[#16a34a]" size="56px" />
                         <h1 class="text-xl font-semibold">Order placed successfully!</h1>
                         <p class="text-sm text-para-light">Thank you for your order.</p>
                     </div>

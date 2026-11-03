@@ -15,8 +15,9 @@
                 <button v-if="!processing" type="submit"
                     class="bg-navy mt-4 text-white w-full py-3 rounded-xl flex items-center justify-center hover:bg-navy/90 group">
                     <span class="mr-3">Track Order</span>
-                    <img class="mt-1 transition-all group-hover:transition-all group-hover:translate-x-4"
-                        src="https://api.iconify.design/line-md:arrow-right.svg?color=%23ffffff" width="15">
+                    <Icon name="line-md:arrow-right"
+                        class="mt-1 transition-all group-hover:transition-all group-hover:translate-x-4 text-white"
+                        size="15px" />
                 </button>
 
                 <p class="text-para-light inline-block text-sm ml-1 mt-3">Need help? <NuxtLink to="/contact-us"

@@ -15,8 +15,9 @@
                 <button v-if="!processing" type="submit"
                     class="bg-navy mt-4 text-white w-full py-3 rounded-xl flex items-center justify-center hover:bg-navy/90 group">
                     <span class="mr-3">Verify Barcode</span>
-                    <img class="mt-1 transition-all group-hover:transition-all group-hover:translate-x-4"
-                        src="https://api.iconify.design/line-md:arrow-right.svg?color=%23ffffff" width="15">
+                    <Icon name="line-md:arrow-right"
+                        class="mt-1 transition-all group-hover:transition-all group-hover:translate-x-4 text-white"
+                        size="15px" />
                 </button>
 
                 <p class="text-para-light inline-block text-sm ml-1 mt-3">Need help? <NuxtLink to="/contact-us"
@@ -33,8 +34,7 @@
 
             <div v-else-if="result.exists" class="flex flex-col gap-4">
                 <div class="flex flex-col items-center text-center gap-2 mb-2">
-                    <img class="w-14 h-14" src="https://api.iconify.design/line-md:confirm-circle.svg?color=%2316a34a"
-                        width="56">
+                    <Icon name="line-md:confirm-circle" class="w-14 h-14 text-[#16a34a]" size="56px" />
                     <h1 class="text-xl font-semibold">Genuine Product</h1>
                     <p class="text-sm text-para-light">This item was purchased from us.</p>
                 </div>
@@ -57,8 +57,7 @@
 
             <div v-else class="flex flex-col gap-4">
                 <div class="flex flex-col items-center text-center gap-2 mb-2">
-                    <img class="w-14 h-14" src="https://api.iconify.design/line-md:close-circle.svg?color=%23dc2626"
-                        width="56">
+                    <Icon name="line-md:close-circle" class="w-14 h-14 text-[#dc2626]" size="56px" />
                     <h1 class="text-xl font-semibold">Not Verified</h1>
                     <p class="text-sm text-para-light">We couldn't confirm this item was purchased from us.</p>
                 </div>
