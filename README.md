@@ -1,3 +1,5 @@
+## ✅ System is ready of production
+
 ## Inventory management system In Rust
 
 Start Nuxt project in production
@@ -26,11 +28,7 @@ Policies reminder
 ├── shipping-policy.vue
 ├── terms-of-service.vue
 └── warranty-policy.vue
-```  
-Fix:
-```
-Use PUT instead to patch to rest values on update!
-```  
+```   
 Seed the database
 ```
 cargo run -- seed-products 100
